@@ -21,7 +21,7 @@ endif
 #################################################################################
 
 ## Install Python Dependencies
-requirements: test_environment
+requirements:
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
@@ -72,10 +72,6 @@ else
 	@echo ">>> New virtualenv created. Activate with:\nworkon $(PROJECT_NAME)"
 endif
 
-## Test python environment is setup correctly
-test_environment:
-	$(PYTHON_INTERPRETER) test_environment.py
-
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
@@ -89,7 +85,7 @@ test_environment:
 .DEFAULT_GOAL := help
 
 # Inspired by <http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html>
-# sed script explained:
+# sed scripmodt explained:
 # /^##/:
 # 	* save line in hold space
 # 	* purge line
