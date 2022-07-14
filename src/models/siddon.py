@@ -64,9 +64,8 @@ class Siddon:
         alphamin, alphamax, minidx, maxidx = self.initialize(origin, target)
         alphacurr = alphamin
 
-        steps = self.get_alpha(
-            minidx, origin, target
-        )  # Get the potential next steps in the xyz planes
+        # Get the potential next steps in the xyz planes
+        steps = self.get_alpha(minidx, origin, target)
         idx = steps.argmin()  # Find the smallest step
         alphanext = steps[idx]  # I.e., the next plane
 
