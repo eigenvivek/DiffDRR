@@ -21,12 +21,14 @@ class Detector:
         assert torch.allclose(w, normal)
 
         # Construt the detector plane
-        t = torch.arange(-self.height // 2, self.height // 2) * self.delx
-        s = torch.arange(-self.width // 2, self.width // 2) * self.dely
-        plane = [_get_coord(u, v, coef, self.center) for coef in product(t, s)]
-        rays = [(self.source, target) for target in plane]
-
-        return rays
+        t = (torch.arange(-self.height // 2, self.height // 2) + 1) * self.delx
+        s = (torch.arange(-self.width // 2, self.width // 2) + 1) * self.dely
+        t = t.repeat(self.height, 1)
+        s = s.repeat(self.width, 1).T
+        coefs = torch.stack([t, s])
+        coefs = coefs.transpose(2, 0)
+        targets = coefs @ torch.stack([u, v])
+        return targets
 
 
 def _get_basis(normal):
@@ -43,7 +45,3 @@ def _get_noncollinear_vector(w):
     i = torch.argmin(torch.abs(w))
     t[i] = 1
     return t
-
-
-def _get_coord(u, v, coef, center):
-    return coef[0] * u + coef[1] * v + center
