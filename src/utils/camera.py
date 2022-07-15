@@ -28,6 +28,8 @@ class Detector:
         coefs = torch.stack([t, s])
         coefs = coefs.transpose(2, 0)
         targets = coefs @ torch.stack([u, v])
+        targets += self.center
+        targets = targets.transpose(0, 2)
         return targets
 
 
