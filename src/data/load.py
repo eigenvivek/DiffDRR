@@ -24,7 +24,7 @@ def read_dicom(dcmdir="data/cxr"):
         delZs.append(ds.ImagePositionPatient[2])
 
     delZs = np.diff(delZs)
-    delZ = np.unique(delZs)[0]
+    delZ = np.abs(np.unique(delZs)[0])
     spacing = [delX, delY, delZ]
 
     return volume, spacing
