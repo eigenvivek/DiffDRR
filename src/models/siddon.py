@@ -77,7 +77,7 @@ class Siddon:
         alphacurr = alphanext.clone()
 
         # Loop over all voxels that the ray passes through
-        while alphacurr < alphamax:
+        while alphacurr < alphamax and not torch.isclose(alphacurr, alphamax):
             voxel[idx] += update_idxs[idx]
             steps[idx] += update_alpha[idx]
             idx = steps.argmin()
