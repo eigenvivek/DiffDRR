@@ -2,14 +2,14 @@ import torch
 
 
 class Siddon:
-    def __init__(self, spacing, center, volume):
+    def __init__(self, spacing, isocenter, volume):
         self.spacing = torch.tensor(spacing)
-        self.center = torch.tensor(center)
+        self.isocenter = torch.tensor(isocenter)
         self.dims = torch.tensor(volume.shape) + 1.0
         self.volume = volume
 
     def get_alpha(self, planes, source, target):
-        return (self.center + planes * self.spacing - source) / (target - source)
+        return (self.isocenter + planes * self.spacing - source) / (target - source)
 
     def get_alpha_minmax(self, source, target):
         planes = torch.tensor([[1, 1, 1], self.dims]) - 1
@@ -22,7 +22,7 @@ class Siddon:
 
     def get_coords(self, alpha, source, target):
         pxyz = source + alpha * (target - source)
-        return (pxyz - self.center) / self.spacing
+        return (pxyz - self.isocenter) / self.spacing
 
     def initialize(self, source, target):
         alphamin, alphamax, minis, maxis = self.get_alpha_minmax(source, target)
