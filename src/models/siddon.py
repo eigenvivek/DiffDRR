@@ -2,21 +2,24 @@ import torch
 
 
 class Siddon:
-    def __init__(self, spacing, isocenter, volume, device):
+    def __init__(self, spacing, isocenter, volume, device, eps=10e-10):
         self.spacing = torch.tensor(spacing, device=device)
         self.isocenter = torch.tensor(isocenter, device=device)
         self.dims = torch.tensor(volume.shape, device=device) + 1.0
         self.volume = torch.tensor(volume, device=device)
         self.device = device
+        self.eps = eps
 
     def get_alpha(self, planes, source, target):
-        return (self.isocenter + planes * self.spacing - source) / (target - source)
+        return (self.isocenter + planes * self.spacing - source) / (
+            target - source + self.eps
+        )
 
     def get_alpha_minmax(self, source, target):
         planes = torch.tensor([0, 0, 0], device=self.device)
-        alpha0 = (self.isocenter + planes * self.spacing - source) / (target - source)
+        alpha0 = self.get_alpha(planes, source, target)
         planes = self.dims - 1
-        alpha1 = (self.isocenter + planes * self.spacing - source) / (target - source)
+        alpha1 = self.get_alpha(planes, source, target)
         alphas = torch.stack([alpha0, alpha1])
 
         minis = torch.min(alphas, dim=0).values
@@ -26,7 +29,7 @@ class Siddon:
         return alphamin, alphamax, minis, maxis
 
     def get_coords(self, alpha, source, target):
-        pxyz = source + alpha.unsqueeze(-1) * (target - source)
+        pxyz = source + alpha.unsqueeze(-1) * (target - source + self.eps)
         return (pxyz - self.isocenter) / self.spacing
 
     def initialize(self, source, target):
@@ -89,15 +92,15 @@ class Siddon:
 
         # Get the update conditions
         ones = torch.ones(3, device=self.device)
-        update_idxs = (source < target) * ones - (source >= target) * ones
-        update_alpha = self.spacing / torch.abs(target - source)
+        update_idxs = (source < target) * ones - (source > target) * ones
+        update_alpha = self.spacing / torch.abs(target - source + self.eps)
 
         # Initialize the loop
         alphamin, alphamax, minidx, _, n_iters = self.initialize(source, target)
         alphamax = alphamax.clone()
         alphacurr = alphamin.clone()
 
-        # Get the potneital next steps in the xyz planes
+        # Get the potential next steps in the xyz planes
         steps = self.get_alpha(minidx, source, target)
         alphanext, idxs = self.get_next_step(steps)
 
