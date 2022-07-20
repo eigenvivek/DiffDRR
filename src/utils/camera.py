@@ -1,16 +1,15 @@
-from itertools import product
-
 import torch
 
 
 class Detector:
-    def __init__(self, source, center, height, width, delx, dely):
-        self.source = torch.tensor(source, requires_grad=True)
-        self.center = torch.tensor(center, requires_grad=True)
+    def __init__(self, source, center, height, width, delx, dely, device):
+        self.source = torch.tensor(source, device=device, requires_grad=True)
+        self.center = torch.tensor(center, device=device, requires_grad=True)
         self.height = height
         self.width = width
         self.delx = delx
         self.dely = dely
+        self.device = device
 
     def make_xrays(self):
 
@@ -21,20 +20,15 @@ class Detector:
         assert torch.allclose(w, normal)
 
         # Construt the detector plane
-        t = (torch.arange(-self.height // 2, self.height // 2) + 1) * self.delx
-        s = (torch.arange(-self.width // 2, self.width // 2) + 1) * self.dely
-        t = t.repeat(self.height, 1)
-        s = s.repeat(self.width, 1).T
-        coefs = torch.stack([t, s])
-        coefs = coefs.transpose(2, 0)
+        t = (torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1) * self.delx
+        s = (torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1) * self.dely
+        coefs = torch.cartesian_prod(t, s).reshape(self.height, self.width, 2)
         targets = coefs @ torch.stack([u, v])
         targets += self.center
-        targets = targets.transpose(0, 2)
         return targets
 
 
-def _get_basis(normal):
-    w = normal / torch.norm(normal)
+def _get_basis(w):
     t = _get_noncollinear_vector(w)
     t = t / torch.norm(t)
     u = torch.cross(t, w)
