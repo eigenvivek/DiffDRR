@@ -1,7 +1,7 @@
 import torch
 
 
-class Siddon:
+class SiddonJacobs:
     def __init__(self, spacing, isocenter, volume, device, eps=10e-10):
         self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
         self.isocenter = torch.tensor(isocenter, dtype=torch.float32, device=device)
