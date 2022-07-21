@@ -3,10 +3,10 @@ import torch
 
 class Siddon:
     def __init__(self, spacing, isocenter, volume, device, eps=10e-10):
-        self.spacing = torch.tensor(spacing, device=device)
-        self.isocenter = torch.tensor(isocenter, device=device)
-        self.dims = torch.tensor(volume.shape, device=device) + 1.0
-        self.volume = torch.tensor(volume, device=device)
+        self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
+        self.isocenter = torch.tensor(isocenter, dtype=torch.float32, device=device)
+        self.dims = torch.tensor(volume.shape, dtype=torch.float32, device=device) + 1.0
+        self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
         self.device = device
         self.eps = eps
 

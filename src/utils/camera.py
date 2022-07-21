@@ -3,8 +3,8 @@ import torch
 
 class Detector:
     def __init__(self, source, center, height, width, delx, dely, device):
-        self.source = torch.tensor(source, device=device, requires_grad=True)
-        self.center = torch.tensor(center, device=device, requires_grad=True)
+        self.source = torch.tensor(source, dtype=torch.float32, device=device, requires_grad=True)
+        self.center = torch.tensor(center, dtype=torch.float32, device=device, requires_grad=True)
         self.height = height
         self.width = width
         self.delx = delx
