@@ -39,7 +39,7 @@ class Siddon:
         alphax = alphax.unsqueeze(-1).unsqueeze(-1) / sdd[:, :, 0]
         alphay = alphay.unsqueeze(-1).unsqueeze(-1) / sdd[:, :, 1]
         alphaz = alphaz.unsqueeze(-1).unsqueeze(-1) / sdd[:, :, 2]
-        alphas = torch.stack([alphax, alphay, alphaz])
+        alphas = torch.vstack([alphax, alphay, alphaz])
 
         # Get the alphas within the range [alphamin, alphamax]
         alphamin, alphamax = self.get_alpha_minmax(source, target)
