@@ -117,4 +117,6 @@ class SiddonJacobs:
             drr += (alphanext - alphacurr) * self.get_voxel(voxelidxs)
             alphacurr = alphanext.clone()
 
+        raylength = (target - source + self.eps).norm(dim=-1)
+        drr *= raylength
         return drr
