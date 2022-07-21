@@ -7,17 +7,18 @@ class Siddon:
     def __init__(self, spacing, isocenter, volume, device, eps=10e-10):
         self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
         self.isocenter = torch.tensor(isocenter, dtype=torch.float32, device=device)
-        self.dims = torch.tensor(volume.shape, dtype=torch.float32, device=device) + 1.0
+        self.dims = torch.tensor(volume.shape, dtype=torch.float32, device=device)
         self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
         self.device = device
         self.eps = eps
 
     def get_alpha_minmax(self, source, target):
-        target -= source + self.eps
+        ssd = target - source + self.eps
         planes = torch.tensor([0, 0, 0], device=self.device)
-        alpha0 = (self.isocenter + planes * self.spacing - source) / (target)
-        alpha1 = (self.isocenter + self.dims * self.spacing - source) / (target)
+        alpha0 = (self.isocenter + planes * self.spacing - source) / ssd
+        alpha1 = (self.isocenter + self.dims * self.spacing - source) / ssd
         alphas = torch.stack([alpha0, alpha1])
+
         minis = torch.min(alphas, dim=0).values
         maxis = torch.max(alphas, dim=0).values
         alphamin = torch.max(minis, dim=-1).values
