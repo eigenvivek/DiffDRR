@@ -1,0 +1,16 @@
+name: DiffDRR
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.7
+  - pytorch=1.12
+  - cudatoolkit=11.3
+  - matplotlib
+  - seaborn
+  - black
+  - flake8
+  - ipykernels
+  - pip:
+      - -e .  # Install the local package (DiffDRR)

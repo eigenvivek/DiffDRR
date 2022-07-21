@@ -1,7 +1,0 @@
-# local package
--e .
-
-# formatting requirements
-click
-black
-flake8
