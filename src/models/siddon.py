@@ -7,34 +7,36 @@ class Siddon:
     def __init__(self, spacing, isocenter, volume, device, eps=10e-10):
         self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
         self.isocenter = torch.tensor(isocenter, dtype=torch.float32, device=device)
-        self.dims = torch.tensor(volume.shape, dtype=torch.float32, device=device)
-        self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
         self.device = device
         self.eps = eps
 
+        # Reverse the rows to match the indexing scheme of the Siddon-Jacob's algorithm
+        self.volume = torch.tensor(volume, dtype=torch.float16, device=device).flip([0])
+        self.dims = torch.tensor(self.volume.shape, dtype=torch.float32, device=device)
+        self.dims += 1.0
+
     def get_alpha_minmax(self, source, target):
         ssd = target - source + self.eps
-        planes = torch.tensor([0, 0, 0], device=self.device)
+        planes = torch.zeros(3, device=self.device)
         alpha0 = (self.isocenter + planes * self.spacing - source) / ssd
-        alpha1 = (self.isocenter + self.dims * self.spacing - source) / ssd
+        planes = self.dims - 1
+        alpha1 = (self.isocenter + planes * self.spacing - source) / ssd
         alphas = torch.stack([alpha0, alpha1])
 
-        minis = torch.min(alphas, dim=0).values
-        maxis = torch.max(alphas, dim=0).values
-        alphamin = torch.max(minis, dim=-1).values
-        alphamax = torch.min(maxis, dim=-1).values
+        alphamin = alphas.min(dim=0).values.max(dim=-1).values
+        alphamax = alphas.max(dim=0).values.min(dim=-1).values
         return alphamin, alphamax
 
     def get_alphas(self, source, target):
         # Get the CT sizing and spacing parameters
-        nx, ny, nz = self.volume.shape
+        nx, ny, nz = self.dims
         dx, dy, dz = self.spacing
 
         # Get the alpha at each plane intersection
         sx, sy, sz = source
-        alphax = torch.arange(nx, dtype=torch.float32, device=self.device) * dx + sx
-        alphay = torch.arange(ny, dtype=torch.float32, device=self.device) * dy + sy
-        alphaz = torch.arange(nz, dtype=torch.float32, device=self.device) * dz + sz
+        alphax = torch.arange(nx, dtype=torch.float32, device=self.device) * dx - sx
+        alphay = torch.arange(ny, dtype=torch.float32, device=self.device) * dy - sy
+        alphaz = torch.arange(nz, dtype=torch.float32, device=self.device) * dz - sz
 
         sdd = target - source + self.eps  # source-to-detector distance
         alphax = alphax.unsqueeze(-1).unsqueeze(-1) / sdd[:, :, 0]
@@ -57,12 +59,12 @@ class Siddon:
             (source + alpha.unsqueeze(-1) * sdd - self.isocenter) / self.spacing
         ).trunc()
         idxs = (
-            idxs[:, :, :, 0]
-            + idxs[:, :, :, 1] * self.volume.shape[1]
-            + idxs[:, :, :, 2] * self.volume.shape[2]
-        ).long()
+            idxs[:, :, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
+            + idxs[:, :, :, 1] * (self.dims[2] - 1)
+            + idxs[:, :, :, 2]
+        ).long() + 1
 
-        # Conversion to long makes nan->-inf, so to replace them with 0 temporarily
+        # Conversion to long makes nan->-inf, so temporarily replace them with 0
         # This is cancelled out later by multiplication by nan step_length
         idxs[idxs < 0] = 0
         return torch.take(self.volume, idxs)
@@ -73,7 +75,7 @@ class Siddon:
         voxels = self.get_voxel(alphamid, source, target)
 
         # Step length for alphas out of range will be nan
-        # These nans cancel out voxels convereted to 0
+        # These nans cancel out voxels convereted to 0 index
         step_length = torch.diff(alphas, dim=0)
         weighted_voxels = voxels * step_length
         return torch.nansum(weighted_voxels, dim=0)
