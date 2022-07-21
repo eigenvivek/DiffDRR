@@ -59,10 +59,10 @@ class Siddon:
             (source + alpha.unsqueeze(-1) * sdd - self.isocenter) / self.spacing
         ).trunc()
         idxs = (
-            idxs[:, :, :, 0]
-            + idxs[:, :, :, 1] * (self.dims[1] - 1)
-            + idxs[:, :, :, 2] * (self.dims[2] - 1)
-        ).long()
+            idxs[:, :, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
+            + idxs[:, :, :, 1] * (self.dims[2] - 1)
+            + idxs[:, :, :, 2]
+        ).long() + 1
 
         # Conversion to long makes nan->-inf, so temporarily replace them with 0
         # This is cancelled out later by multiplication by nan step_length
