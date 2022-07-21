@@ -34,26 +34,24 @@ class Siddon:
 
     def initialize(self, source, target):
         alphamin, alphamax, minis, maxis = self.get_alpha_minmax(source, target)
-        alphamin_ = alphamin.unsqueeze(-1)
-        alphamax_ = alphamax.unsqueeze(-1)
 
         idxmin = self.get_coords(alphamin, source, target)
         idxmax = self.get_coords(alphamax, source, target)
 
         # source < target
         # get minidx
-        a = (alphamin_ == minis) * torch.ones(3, device=self.device)
-        b = (alphamin_ != minis) * (idxmin + 1).trunc()
+        a = (alphamin.unsqueeze(-1) == minis) * torch.ones(3, device=self.device)
+        b = (alphamin.unsqueeze(-1) != minis) * (idxmin + 1).trunc()
         # get maxidx
-        c = (alphamax_ == maxis) * (self.dims - 1)
-        d = (alphamax_ != maxis) * idxmax.trunc()
+        c = (alphamax.unsqueeze(-1) == maxis) * (self.dims - 2)
+        d = (alphamax.unsqueeze(-1) != maxis) * idxmax.trunc()
         # source > target
         # get minidx
-        e = (alphamax_ == maxis) * torch.ones(3, device=self.device)
-        f = (alphamax_ != maxis) * (idxmax + 1).trunc()
+        e = (alphamax.unsqueeze(-1) == maxis) * torch.ones(3, device=self.device)
+        f = (alphamax.unsqueeze(-1) != maxis) * (idxmax + 1).trunc()
         # get maxidx
-        g = (alphamin_ == minis) * (self.dims - 2)
-        h = (alphamin_ != minis) * idxmin.trunc()
+        g = (alphamin.unsqueeze(-1) == minis) * (self.dims - 2)
+        h = (alphamin.unsqueeze(-1) != minis) * idxmin.trunc()
 
         minidx = (source < target) * (a + b) + (source >= target) * (e + f)
         maxidx = (source < target) * (c + d) + (source >= target) * (g + h)
