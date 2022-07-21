@@ -67,6 +67,8 @@ class Siddon:
         # Conversion to long makes nan->-inf, so temporarily replace them with 0
         # This is cancelled out later by multiplication by nan step_length
         idxs[idxs < 0] = 0
+        maxidx = (self.dims - 1).prod().item() - 1
+        idxs[idxs > maxidx] = maxidx
         return torch.take(self.volume, idxs)
 
     def raytrace(self, source, target):
@@ -78,8 +80,8 @@ class Siddon:
         # These nans cancel out voxels convereted to 0 index
         step_length = torch.diff(alphas, dim=0)
         weighted_voxels = voxels * step_length
-        drr = torch.nansum(weighted_voxels, dim=0)
 
+        drr = torch.nansum(weighted_voxels, dim=0)
         raylength = (target - source + self.eps).norm(dim=-1)
         drr *= raylength
         return drr
