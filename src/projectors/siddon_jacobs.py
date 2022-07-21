@@ -73,11 +73,11 @@ class SiddonJacobs:
 
     def get_voxel(self, idxs):
         idxs = (
-            idxs[:, :, 0]
-            + idxs[:, :, 1] * self.volume.shape[1]
-            + idxs[:, :, 2] * self.volume.shape[2]
-        )
-        return torch.take(self.volume, idxs.long())
+            idxs[:, :, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
+            + idxs[:, :, :, 1] * (self.dims[2] - 1)
+            + idxs[:, :, :, 2]
+        ).long() + 1
+        return torch.take(self.volume, idxs)
 
     def get_update(self, alphacurr, alphamax):
         update_1 = alphacurr < alphamax
