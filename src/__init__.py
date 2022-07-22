@@ -1,4 +1,8 @@
 from .data.load import read_dicom
-from .models.siddon import Siddon
-from .models.siddon_jacobs import SiddonJacobs
+
+from .metrics.xcorr2 import xcorr2
+
+from .projectors.siddon import Siddon
+from .projectors.siddon_jacobs import SiddonJacobs
+
 from .utils.camera import Detector
