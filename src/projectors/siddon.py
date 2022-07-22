@@ -29,8 +29,9 @@ class Siddon:
 
     def get_alphas(self, source, target):
         # Get the CT sizing and spacing parameters
-        nx, ny, nz = self.dims
         dx, dy, dz = self.spacing
+        nx, ny, nz = self.dims
+        self.maxidx = ((nx - 1) * (ny - 1) * (nz - 1)).int().item() - 1
 
         # Get the alpha at each plane intersection
         sx, sy, sz = source
@@ -50,14 +51,14 @@ class Siddon:
         alphas[~good_idxs] = torch.nan
 
         # Sort the alphas by ray, putting nans at the end of the list
+        # Drop indices where alphas for all rays are nan
         alphas = torch.sort(alphas, dim=0).values
+        alphas = alphas[~alphas.isnan().all(dim=-1).all(dim=-1)]
         return alphas
 
     def get_voxel(self, alpha, source, target):
         sdd = target - source + self.eps  # source-to-detector distance
-        idxs = (
-            (source + alpha.unsqueeze(-1) * sdd - self.isocenter) / self.spacing
-        ).trunc()
+        idxs = ((source + alpha.unsqueeze(-1) * sdd - self.isocenter) / self.spacing).trunc()
         idxs = (
             idxs[:, :, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
             + idxs[:, :, :, 1] * (self.dims[2] - 1)
@@ -67,6 +68,7 @@ class Siddon:
         # Conversion to long makes nan->-inf, so temporarily replace them with 0
         # This is cancelled out later by multiplication by nan step_length
         idxs[idxs < 0] = 0
+        idxs[idxs > self.maxidx] = self.maxidx
         return torch.take(self.volume, idxs)
 
     def raytrace(self, source, target):
@@ -78,4 +80,8 @@ class Siddon:
         # These nans cancel out voxels convereted to 0 index
         step_length = torch.diff(alphas, dim=0)
         weighted_voxels = voxels * step_length
-        return torch.nansum(weighted_voxels, dim=0)
+
+        drr = torch.nansum(weighted_voxels, dim=0)
+        raylength = (target - source + self.eps).norm(dim=-1)
+        drr *= raylength
+        return drr
