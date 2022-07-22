@@ -22,6 +22,7 @@ def read_dicom(dcmdir="data/cxr"):
         ds = dcmread(dcm)
         volume[:, :, idx] = ds.pixel_array
         delZs.append(ds.ImagePositionPatient[2])
+    volume[volume == volume.min()] = 0.0
 
     delZs = np.diff(delZs)
     delZ = np.abs(np.unique(delZs)[0])
