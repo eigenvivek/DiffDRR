@@ -58,9 +58,7 @@ class Siddon:
 
     def get_voxel(self, alpha, source, target):
         sdd = target - source + self.eps  # source-to-detector distance
-        idxs = (
-            (source + alpha.unsqueeze(-1) * sdd - self.isocenter) / self.spacing
-        ).trunc()
+        idxs = ((source + alpha.unsqueeze(-1) * sdd - self.isocenter) / self.spacing).trunc()
         idxs = (
             idxs[:, :, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
             + idxs[:, :, :, 1] * (self.dims[2] - 1)
