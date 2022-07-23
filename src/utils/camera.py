@@ -45,9 +45,10 @@ def _get_basis(rho, angles, device):
     center = -source
     
     # Get the basis of the detector plane (before translation)
+    # TODO: normalizing the vectors seems to break the gradient, fix in future
     u, v = R[:, 1], R[:, 2]
-    u = u / torch.norm(u)
-    v = v / torch.norm(v)
+    # u_ = u / torch.norm(u)
+    # v_ = v / torch.norm(v)
     
     return source, center, u, v
 
@@ -59,24 +60,30 @@ def Rxyz(angles, device):
 
 
 def Rx(theta, device):
-    return torch.tensor([
-        [1, 0               ,  0],
-        [0, torch.cos(theta), -torch.sin(theta)],
-        [0, torch.sin(theta),  torch.cos(theta)]
-    ], device=device)
+    t0 = torch.zeros(1, device=device)[0]
+    t1 = torch.ones(1, device=device)[0]
+    return torch.stack([
+        t1, t0              ,  t0,
+        t0, torch.cos(theta), -torch.sin(theta),
+        t0, torch.sin(theta),  torch.cos(theta)
+    ]).reshape(3, 3)
 
 
 def Ry(theta, device):
-    return torch.tensor([
-        [ torch.cos(theta),  0, torch.sin(theta)],
-        [0                ,  1, 0],
-        [-torch.sin(theta),  0, torch.cos(theta)]
-    ], device=device)
+    t0 = torch.zeros(1, device=device)[0]
+    t1 = torch.ones(1, device=device)[0]
+    return torch.stack([
+         torch.cos(theta), t0, torch.sin(theta),
+         t0              , t1, t0              ,
+        -torch.sin(theta), t0, torch.cos(theta)
+    ]).reshape(3, 3)
 
 
 def Rz(theta, device):
-    return torch.tensor([
-        [torch.cos(theta), -torch.sin(theta), 0],
-        [torch.sin(theta),  torch.cos(theta), 0],
-        [0               ,  0               , 1]
-    ], device=device)
+    t0 = torch.zeros(1, device=device)[0]
+    t1 = torch.ones(1, device=device)[0]
+    return torch.stack([
+        torch.cos(theta), -torch.sin(theta), t0,
+        torch.sin(theta),  torch.cos(theta), t0,
+        t0              ,  t0              , t1
+    ]).reshape(3, 3)
