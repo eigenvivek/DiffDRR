@@ -73,9 +73,9 @@ class SiddonJacobs:
 
     def get_voxel(self, idxs):
         idxs = (
-            idxs[:, :, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
-            + idxs[:, :, :, 1] * (self.dims[2] - 1)
-            + idxs[:, :, :, 2]
+            idxs[:, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
+            + idxs[:, :, 1] * (self.dims[2] - 1)
+            + idxs[:, :, 2]
         ).long() + 1
         return torch.take(self.volume, idxs)
 
@@ -95,6 +95,7 @@ class SiddonJacobs:
 
         # Initialize the loop
         alphamin, alphamax, minidx, _, n_iters = self.initialize(source, target)
+        print(n_iters)
         alphamax = alphamax.clone()
         alphacurr = alphamin.clone()
 
