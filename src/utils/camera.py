@@ -23,7 +23,7 @@ class Detector:
     def make_xrays(self, height, width, delx, dely):
 
         # Get the detector plane normal vector
-        source, center, u, v = _get_basis(self.sdr, self.angles)
+        source, center, u, v = _get_basis(self.sdr, self.angles, self.device)
         source += self.translation
         center += self.translation
 
@@ -33,12 +33,12 @@ class Detector:
         coefs = torch.cartesian_prod(t, s).reshape(height, width, 2)
         rays = coefs @ torch.stack([u, v])
         rays += center
-        return source, center, rays
+        return source, rays
 
     
-def _get_basis(rho, angles):
+def _get_basis(rho, angles, device):
     # Get the rotation of 3D space
-    R = rho * Rxyz(angles)
+    R = rho * Rxyz(angles, device)
     
     # Get the detector center and X-ray source
     source = R[:, 0]
@@ -53,30 +53,30 @@ def _get_basis(rho, angles):
 
 
 # Define 3D rotation matrices
-def Rxyz(angles):
+def Rxyz(angles, device):
     theta, phi, gamma = angles
-    return Rz(theta) @ Ry(phi) @ Rx(gamma)
+    return Rz(theta, device) @ Ry(phi, device) @ Rx(gamma, device)
 
 
-def Rx(theta):
+def Rx(theta, device):
     return torch.tensor([
         [1, 0               ,  0],
         [0, torch.cos(theta), -torch.sin(theta)],
         [0, torch.sin(theta),  torch.cos(theta)]
-    ])
+    ], device=device)
 
 
-def Ry(theta):
+def Ry(theta, device):
     return torch.tensor([
         [ torch.cos(theta),  0, torch.sin(theta)],
         [0                ,  1, 0],
         [-torch.sin(theta),  0, torch.cos(theta)]
-    ])
+    ], device=device)
 
 
-def Rz(theta):
+def Rz(theta, device):
     return torch.tensor([
         [torch.cos(theta), -torch.sin(theta), 0],
         [torch.sin(theta),  torch.cos(theta), 0],
         [0               ,  0               , 1]
-    ])
+    ], device=device)
