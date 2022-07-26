@@ -1,3 +1,5 @@
+from .drr import drr
+
 from .data.load import read_dicom
 
 from .metrics.xcorr2 import xcorr2
