@@ -3,16 +3,16 @@ from .utils.backend import get_device
 from .utils.camera import Detector
 
 
-def drr(
+def make_drr(
     volume,
     spacing,
+    detector_kwargs,
     height,
     delx,
     width=None,
     dely=None,
     device="cpu",
     return_grads=False,
-    **detector_kwargs
 ):
     """
     Compute a DRR from a volume.
@@ -35,7 +35,7 @@ def drr(
         Compute devicee, either "cpu", "cuda", or "mps".
     return_grads : bool, optional
         If True, return
-    detector_kwargs : dict, optional
+    detector_kwargs : dict
         Keyword arguments for the detector:
             sdr   : float
             theta : float
@@ -59,13 +59,13 @@ def drr(
         width = height
     if dely is None:
         dely = delx
-    detector = Detector(**detector_kwargs)
+    detector = Detector(device=device, **detector_kwargs)
     source, rays = detector.make_xrays(height, width, delx, dely)
 
     # Make the DRR
-    siddon = Siddon(spacing, volume, device)
+    siddon = Siddon(volume, spacing, device)
     drr = siddon.raytrace(source, rays)
     if return_grads is False:
         return drr
     else:
-        return drr.drr.angles, drr.translation
+        return drr, detector.angles, detector.translation
