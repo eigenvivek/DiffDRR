@@ -4,9 +4,9 @@ import torch
 class Siddon:
     """A vectorized version of the Siddon ray tracing algorithm."""
 
-    def __init__(self, spacing, isocenter, volume, device, eps=10e-10):
+    def __init__(self, volume, spacing, device, eps=10e-10):
+        self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
         self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
-        self.isocenter = torch.tensor(isocenter, dtype=torch.float32, device=device)
         self.device = device
         self.eps = eps
 
@@ -18,9 +18,9 @@ class Siddon:
     def get_alpha_minmax(self, source, target):
         ssd = target - source + self.eps
         planes = torch.zeros(3, device=self.device)
-        alpha0 = (self.isocenter + planes * self.spacing - source) / ssd
+        alpha0 = (planes * self.spacing - source) / ssd
         planes = self.dims - 1
-        alpha1 = (self.isocenter + planes * self.spacing - source) / ssd
+        alpha1 = (planes * self.spacing - source) / ssd
         alphas = torch.stack([alpha0, alpha1])
 
         alphamin = alphas.min(dim=0).values.max(dim=-1).values
@@ -58,7 +58,7 @@ class Siddon:
 
     def get_voxel(self, alpha, source, target):
         sdd = target - source + self.eps  # source-to-detector distance
-        idxs = ((source + alpha.unsqueeze(-1) * sdd - self.isocenter) / self.spacing).trunc()
+        idxs = ((source + alpha.unsqueeze(-1) * sdd) / self.spacing).trunc()
         idxs = (
             idxs[:, :, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
             + idxs[:, :, :, 1] * (self.dims[2] - 1)

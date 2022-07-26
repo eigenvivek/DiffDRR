@@ -47,7 +47,7 @@ class xcorr2(nn.Module):
         return scores
 
     def match_corr(self, embed_ref, embed_srch):
-        """ Matches the two embeddings using the correlation layer. As per usual
+        """Matches the two embeddings using the correlation layer. As per usual
         it expects input tensors of the form [B, C, H, W].
         Args:
             embed_ref: (torch.Tensor) The embedding of the reference image, or
