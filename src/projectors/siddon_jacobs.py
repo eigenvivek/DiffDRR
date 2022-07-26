@@ -2,7 +2,7 @@ import torch
 
 
 class SiddonJacobs:
-    def __init__(self, spacing, volume, device, eps=10e-10):
+    def __init__(self, volume, spacing, device, eps=10e-10):
         self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
         self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
         self.dims = torch.tensor(volume.shape, dtype=torch.float32, device=device) + 1.0
