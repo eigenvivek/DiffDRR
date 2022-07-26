@@ -11,6 +11,6 @@ dependencies:
   - seaborn
   - black
   - flake8
-  - ipykernels
+  - ipykernel
   - pip:
       - -e .  # Install the local package (DiffDRR)
