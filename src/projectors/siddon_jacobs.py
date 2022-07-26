@@ -2,18 +2,15 @@ import torch
 
 
 class SiddonJacobs:
-    def __init__(self, spacing, isocenter, volume, device, eps=10e-10):
-        self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
-        self.isocenter = torch.tensor(isocenter, dtype=torch.float32, device=device)
-        self.dims = torch.tensor(volume.shape, dtype=torch.float32, device=device) + 1.0
+    def __init__(self, volume, spacing, device, eps=10e-10):
         self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
+        self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
+        self.dims = torch.tensor(volume.shape, dtype=torch.float32, device=device) + 1.0
         self.device = device
         self.eps = eps
 
     def get_alpha(self, planes, source, target):
-        return (self.isocenter + planes * self.spacing - source) / (
-            target - source + self.eps
-        )
+        return (planes * self.spacing - source) / (target - source + self.eps)
 
     def get_alpha_minmax(self, source, target):
         planes = torch.tensor([0, 0, 0], device=self.device)
@@ -30,7 +27,7 @@ class SiddonJacobs:
 
     def get_coords(self, alpha, source, target):
         pxyz = source + alpha.unsqueeze(-1) * (target - source + self.eps)
-        return (pxyz - self.isocenter) / self.spacing
+        return pxyz / self.spacing
 
     def initialize(self, source, target):
         alphamin, alphamax, minis, maxis = self.get_alpha_minmax(source, target)

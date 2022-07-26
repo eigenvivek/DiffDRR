@@ -7,10 +7,11 @@ dependencies:
   - python=3.7
   - pytorch=1.12
   - cudatoolkit=11.3
+  - pydicom
   - matplotlib
   - seaborn
   - black
   - flake8
-  - ipykernels
+  - ipykernel
   - pip:
       - -e .  # Install the local package (DiffDRR)
