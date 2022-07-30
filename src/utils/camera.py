@@ -1,5 +1,7 @@
 import torch
 
+from .backend import get_device
+
 
 class Detector:
     """
@@ -7,38 +9,53 @@ class Detector:
 
     Inputs
     ------
-        sdr        : Source-to-Detector radius (half of the Source-to-Detector distance)
-        theta      : azimuthal angle
-        phi        : polar angle
-        gamma      : rotation of detector plane
-        bx, by, bz : translation of the volume
+    height : int
+        Height of the X-ray detector (ie, DRR height)
+    width : int
+        Width of the X-ray detector (ie, DRR width)
+    delx : float
+        Pixel spacing in the X-direction of the X-ray detector
+    dely : float
+        Pixel spacing in the Y-direction of the X-ray detector
+    device : str or torch.device
+        Compute device. If str, either "cpu", "cuda", or "mps".
     """
+    def __init__(self, height, width, delx, dely, device):
+        self.height = height
+        self.width = width
+        self.delx = delx
+        self.dely = dely
+        self.device = device if isinstance(device, torch.device) else get_device(device)
 
-    def __init__(self, sdr, theta, phi, gamma, bx, by, bz, device):
-        self.sdr = torch.tensor([sdr], dtype=torch.float32, device=device)
-        self.angles = torch.tensor([theta, phi, gamma], dtype=torch.float32, device=device, requires_grad=True)
-        self.translation = torch.tensor([bx, by, bz], dtype=torch.float32, device=device, requires_grad=True)
-        self.device = device
-
-    def make_xrays(self, height, width, delx, dely):
+    def make_xrays(self, sdr, rotations, translations):
+        """
+        Inputs
+        ------
+            sdr : torch.Tensor
+                Source-to-Detector radius (half of the Source-to-Detector distance)
+            rotations : torch.Tensor
+                Vector of C-Arm rotations (theta, phi, gamma) for azimuthal, polar, and roll
+            translations : torch.Tensor
+                Vector of volume translations (bx, by, bz)
+        """
 
         # Get the detector plane normal vector
-        source, center, u, v = _get_basis(self.sdr, self.angles, self.device)
-        source += self.translation
-        center += self.translation
+        source, center, u, v = _get_basis(sdr, rotations, self.device)
+        source += translations
+        center += translations
 
         # Construt the detector plane
-        t = (torch.arange(-height // 2, height // 2, device=self.device) + 1) * delx
-        s = (torch.arange(-width // 2, width // 2, device=self.device) + 1) * dely
-        coefs = torch.cartesian_prod(t, s).reshape(height, width, 2)
+        t = (torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1) * self.delx
+        s = (torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1) * self.dely
+        coefs = torch.cartesian_prod(t, s).reshape(self.height, self.width, 2)
         rays = coefs @ torch.stack([u, v])
         rays += center
         return source, rays
 
 
-def _get_basis(rho, angles, device):
+def _get_basis(rho, rotations, device):
     # Get the rotation of 3D space
-    R = rho * Rxyz(angles, device)
+    R = rho * Rxyz(rotations, device)
 
     # Get the detector center and X-ray source
     source = R[:, 0]
@@ -54,8 +71,8 @@ def _get_basis(rho, angles, device):
 
 
 # Define 3D rotation matrices
-def Rxyz(angles, device):
-    theta, phi, gamma = angles
+def Rxyz(rotations, device):
+    theta, phi, gamma = rotations
     return Rz(theta, device) @ Ry(phi, device) @ Rx(gamma, device)
 
 

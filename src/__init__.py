@@ -1,4 +1,4 @@
-from .drr import make_drr
+from .drr import DRR
 
 from .data.load import read_dicom
 
