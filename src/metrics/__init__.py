@@ -1,1 +1,1 @@
-from .xcorr2 import xcorr2
+from .xcorr2 import XCorr2
