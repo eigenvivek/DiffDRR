@@ -1,4 +1,4 @@
-from .drr import make_drr
+from .drr import DRR
 
 from .data.load import read_dicom
 
@@ -9,3 +9,5 @@ from .projectors.siddon_jacobs import SiddonJacobs
 
 from .utils.backend import get_device
 from .utils.camera import Detector
+
+from .visualization.visualize import plot_volume, plot_camera, plot_drr
