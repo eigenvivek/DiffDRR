@@ -7,14 +7,7 @@ from .utils.camera import Detector
 
 class DRR:
     def __init__(
-        self,
-        volume,
-        spacing,
-        height,
-        delx,
-        width=None,
-        dely=None,
-        device="cpu",
+        self, volume, spacing, height, delx, width=None, dely=None, device="cpu",
     ):
         """
         Class for generating DRRs.
@@ -37,19 +30,19 @@ class DRR:
             Compute device, either "cpu", "cuda", or "mps".
         """
         self.device = get_device(device)
-        
+
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else delx
         self.detector = Detector(height, width, delx, dely, device)
-        
+
         # Initialize the Projector
         self.siddon = Siddon(volume, spacing, device)
-    
+
     def project(self, sdr, theta, phi, gamma, bx, by, bz, return_grads=False):
         """
         Generate a DRR from given spatial parameters.
-        
+
         Inputs
         ------
         Projector parameters:
@@ -63,21 +56,22 @@ class DRR:
         return_grads : bool, optional
             If True, return differentiable vectors for rotations and translations
         """
-        sdr = torch.tensor([sdr], dtype=torch.float32, device=self.device)
-        rotations = torch.tensor([theta, phi, gamma], dtype=torch.float32, device=self.device, requires_grad=True)
-        translations = torch.tensor([bx, by, bz], dtype=torch.float32, device=self.device, requires_grad=True)
+        tensor_args = {"dtype": torch.float32, "device": self.device}
+        sdr = torch.tensor([sdr], **tensor_args)
+        rotations = torch.tensor([theta, phi, gamma], requires_grad=True, **tensor_args)
+        translations = torch.tensor([bx, by, bz], requires_grad=True, **tensor_args)
         drr = self._project(sdr, rotations, translations)
         if return_grads is False:
             return drr
         else:
             return drr, sdr, rotations, translations
-        
+
     def _project(self, sdr, rotations, translations):
         """Helper function to do projection with preformed tensors."""
         source, rays = self.detector.make_xrays(sdr, rotations, translations)
         drr = self.siddon.raytrace(source, rays)
         return drr
-        
+
     def optimize(
         self,
         true_drr,
@@ -91,7 +85,7 @@ class DRR:
     ):
         """
         Gradient-based optimization loop with repeated DRR synthesis.
-        
+
         Inputs
         ------
         true_drr : torch.Tensor
@@ -112,20 +106,20 @@ class DRR:
             Parameters to initialize the detector.
             (sdr, theta, phi, gamma, bx, by, bz)
         """
-        
+
         # Generate the initial estimate and compute the loss
         est, sdr, rotations, translations = self.project(**init_detector, return_grads=True)
-        loss = loss_fn(true_drr, estimate)
+        loss = loss_fn(true_drr, est)
         loss.backward(retain_graph=True)
-            
+
         # Start the optimization loop
         for itr in range(n_iters):
             rotations -= alpha1 * rotations.grad
             translations -= alpha2 * translations.grad
             est, rotations, translations = self._project(sdr, rotations, translations)
-            loss = loss_fn(true_drr, estimate)
+            loss = loss_fn(true_drr, est)
             loss.backward(retain_graph=True)
-            
+
             # Early stopping criterion
             if loss < earlystop:
                 break
