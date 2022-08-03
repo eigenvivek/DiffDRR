@@ -42,23 +42,16 @@ class DRR(nn.Module):
         self.register_parameter("rotations", None)
         self.register_parameter("translations", None)
 
-    def forward(self, **detector_kwargs):
+    def forward(self, sdr=None, theta=None, phi=None, gamma=None, bx=None, by=None, bz=None):
         """
         Generate a DRR from a particular viewing angle.
 
         Pass projector parameters to initialize a new viewing angle. If uninitialized, model will
         not run.
         """
-        if len(detector_kwargs) != 0:
-            self.initialize_parameters(**detector_kwargs)
-
-        try:
-            source, rays = self.detector.make_xrays(self.sdr, self.rotations, self.translations)
-        except TypeError:
-            raise ValueError(
-                "Projector parameters are not initialized. Pass (sdr, theta, phi, gamma, bx, by, bz) to the forward model."
-            )
-
+        if any(arg is not None for arg in [sdr, theta, phi, gamma, bx, by, bz]):
+            self.initialize_parameters(sdr, theta, phi, gamma, bx, by, bz)
+        source, rays = self.detector.make_xrays(self.sdr, self.rotations, self.translations)
         drr = self.siddon.raytrace(source, rays)
         return drr
 
