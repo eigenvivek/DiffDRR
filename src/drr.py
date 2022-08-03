@@ -1,21 +1,13 @@
 import torch
+import torch.nn as nn
 
 from .projectors.siddon import Siddon
 from .utils.backend import get_device
 from .utils.camera import Detector
 
 
-class DRR:
-    def __init__(
-        self,
-        volume,
-        spacing,
-        height,
-        delx,
-        width=None,
-        dely=None,
-        device="cpu",
-    ):
+class DRR(nn.Module):
+    def __init__(self, volume, spacing, height, delx, width=None, dely=None, device="cpu"):
         """
         Class for generating DRRs.
 
@@ -36,20 +28,37 @@ class DRR:
         device : str
             Compute device, either "cpu", "cuda", or "mps".
         """
+        super().__init__()
         self.device = get_device(device)
-        
+
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else delx
         self.detector = Detector(height, width, delx, dely, device)
-        
-        # Initialize the Projector
+
+        # Initialize the Projector and register its parameters
         self.siddon = Siddon(volume, spacing, device)
-    
-    def project(self, sdr, theta, phi, gamma, bx, by, bz, return_grads=False):
+        self.register_parameter("sdr", None)
+        self.register_parameter("rotations", None)
+        self.register_parameter("translations", None)
+
+    def forward(self, sdr=None, theta=None, phi=None, gamma=None, bx=None, by=None, bz=None):
         """
-        Generate a DRR from given spatial parameters.
-        
+        Generate a DRR from a particular viewing angle.
+
+        Pass projector parameters to initialize a new viewing angle. If uninitialized, model will
+        not run.
+        """
+        if any(arg is not None for arg in [sdr, theta, phi, gamma, bx, by, bz]):
+            self.initialize_parameters(sdr, theta, phi, gamma, bx, by, bz)
+        source, rays = self.detector.make_xrays(self.sdr, self.rotations, self.translations)
+        drr = self.siddon.raytrace(source, rays)
+        return drr
+
+    def initialize_parameters(self, sdr, theta, phi, gamma, bx, by, bz):
+        """
+        Set the parameters for generating a DRR.
+
         Inputs
         ------
         Projector parameters:
@@ -63,73 +72,16 @@ class DRR:
         return_grads : bool, optional
             If True, return differentiable vectors for rotations and translations
         """
-        sdr = torch.tensor([sdr], dtype=torch.float32, device=self.device)
-        rotations = torch.tensor([theta, phi, gamma], dtype=torch.float32, device=self.device, requires_grad=True)
-        translations = torch.tensor([bx, by, bz], dtype=torch.float32, device=self.device, requires_grad=True)
-        drr = self._project(sdr, rotations, translations)
-        if return_grads is False:
-            return drr
-        else:
-            return drr, sdr, rotations, translations
-        
-    def _project(self, sdr, rotations, translations):
-        """Helper function to do projection with preformed tensors."""
-        source, rays = self.detector.make_xrays(sdr, rotations, translations)
-        drr = self.siddon.raytrace(source, rays)
-        return drr
-        
-    def optimize(
-        self,
-        true_drr,
-        loss_fn,
-        alpha1=7.5e1,
-        alpha2=5.3e-2,
-        n_iters=500,
-        earlystop=None,
-        verbose=False,
-        **init_detector
-    ):
-        """
-        Gradient-based optimization loop with repeated DRR synthesis.
-        
-        Inputs
-        ------
-        true_drr : torch.Tensor
-            Ground truth DRR that we are trying to converge to.
-        loss_fn : function
-            Function to compute loss between two DRRs.
-        alpha1 : float
-            Update rate for rotational parameters.
-        alpha2 : float
-            Update rate for translational parameters.
-        n_iters : int
-            Number of gradient descent steps to take.
-        earlystop : float
-            Cutoff for early stop criterion.
-        verbose : bool
-            Display intermediate loss values.
-        init_detector : dict
-            Parameters to initialize the detector.
-            (sdr, theta, phi, gamma, bx, by, bz)
-        """
-        
-        # Generate the initial estimate and compute the loss
-        est, sdr, rotations, translations = self.project(**init_detector, return_grads=True)
-        loss = loss_fn(true_drr, estimate)
-        loss.backward(retain_graph=True)
-            
-        # Start the optimization loop
-        for itr in range(n_iters):
-            rotations -= alpha1 * rotations.grad
-            translations -= alpha2 * translations.grad
-            est, rotations, translations = self._project(sdr, rotations, translations)
-            loss = loss_fn(true_drr, estimate)
-            loss.backward(retain_graph=True)
-            
-            # Early stopping criterion
-            if loss < earlystop:
-                break
-            if itr % 25 == 0 and verbose:
-                print(loss.item())
+        tensor_args = {"dtype": torch.float32, "device": self.device}
+        self.sdr = nn.Parameter(
+            torch.tensor(sdr, **tensor_args), requires_grad=False
+        )  # Assume that SDR is given for a 6DoF registration problem
+        self.rotations = nn.Parameter(torch.tensor([theta, phi, gamma], **tensor_args))
+        self.translations = nn.Parameter(torch.tensor([bx, by, bz], **tensor_args))
 
-        return rotations, translations, loss
+    def __repr__(self):
+        params = [str(param) for param in self.parameters()]
+        if len(params) == 0:
+            return "Parameters uninitialized."
+        else:
+            return "\n".join(params)

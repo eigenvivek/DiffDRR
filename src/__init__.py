@@ -2,7 +2,7 @@ from .drr import DRR
 
 from .data.load import read_dicom
 
-from .metrics.xcorr2 import xcorr2
+from .metrics.xcorr2 import XCorr2
 
 from .projectors.siddon import Siddon
 from .projectors.siddon_jacobs import SiddonJacobs
