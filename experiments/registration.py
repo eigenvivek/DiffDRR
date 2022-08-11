@@ -50,14 +50,14 @@ def run_convergence_exp(n_itrs, drr, ground_truth, true_params, filename, debug)
         # Start the training log
         writer = csv.writer(f, delimiter=",")
         writer.writerow(["itr", "time", "loss", "theta", "phi", "gamma", "bx", "by", "bz"])
-        t0 = time.time()
+        t0 = time.perf_counter()
 
         # Start the training loop
         for itr in range(n_itrs):
 
             # Forward pass: compute the predicted DRR
             estimate = drr()
-            t1 = time.time()
+            t1 = time.perf_counter()
 
             # Compute the negative ZNCC as loss
             loss = -criterion(ground_truth, estimate)
