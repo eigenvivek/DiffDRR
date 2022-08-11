@@ -94,7 +94,7 @@ def main(n_drrs, n_itrs, debug):
 
     # Estimate a random DRR and try to optimize its parameters
     for i in tqdm(range(n_drrs)):
-        filename = f"experiments/registration_results/{i}.csv"
+        filename = f"experiments/registration/tmp/{i}.csv"
         run_convergence_exp(n_itrs, drr, ground_truth, true_params, filename, debug)
 
 
