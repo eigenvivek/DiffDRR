@@ -71,7 +71,7 @@ def run_convergence_exp(n_itrs, drr, ground_truth, true_params, filename, debug)
                 if itr % 25 == 0:
                     print(itr, loss.item())
             if loss < -0.999:
-                print(f"Converged in {itr} iterations")
+                tqdm.write(f"Converged in {itr} iterations")
                 break
 
             # Backward pass: update the weights
