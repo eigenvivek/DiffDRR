@@ -70,7 +70,7 @@ def plot_camera(source, rays, ax):
     return ax
 
 
-def plot_drr(drr, title=None, ax=None):
+def plot_drr(drr, title=None, ax=None, animated=False):
     """
     Plot an DRR output by the projector module.
     
@@ -82,6 +82,8 @@ def plot_drr(drr, title=None, ax=None):
         Title for the plot
     ax : matplotlib.axes._subplots.AxesSubplot, optional
         Axis to plot image on, if None is provided, a new axis will be made
+    animated : Bool
+        Set to true if using in animation.
     
     Returns
     -------
@@ -92,7 +94,7 @@ def plot_drr(drr, title=None, ax=None):
     nx, ny = drr.shape
     if ax is None:
         fig, ax = plt.subplots()
-    ax.imshow(drr, cmap="gray")
+    ax.imshow(drr, cmap="gray", animated=animated)
     ax.xaxis.tick_top()
     ax.set(
         title=title,
