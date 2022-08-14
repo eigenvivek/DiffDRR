@@ -96,7 +96,7 @@ def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
     nx, ny = drr.shape
     if ax is None:
         fig, ax = plt.subplots()
-    ax.imshow(drr, cmap="gray", animated=animated)
+    img = ax.imshow(drr, cmap="gray", animated=animated)
     ax.xaxis.tick_top()
     ax.set(
         title=title,
@@ -105,4 +105,4 @@ def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
     )
     if ticks is False:
         ax.axis("off")
-    return ax
+    return img
