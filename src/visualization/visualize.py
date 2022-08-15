@@ -70,7 +70,7 @@ def plot_camera(source, rays, ax):
     return ax
 
 
-def plot_drr(drr, title=None, ax=None):
+def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
     """
     Plot an DRR output by the projector module.
     
@@ -80,6 +80,10 @@ def plot_drr(drr, title=None, ax=None):
         DRR image in torch tensor with shape (height, width)
     title : str, optional
         Title for the plot
+    ticks : Bool
+        Toggle ticks and ticklabels.
+    animated : Bool
+        Set to true if using in animation.
     ax : matplotlib.axes._subplots.AxesSubplot, optional
         Axis to plot image on, if None is provided, a new axis will be made
     
@@ -92,11 +96,13 @@ def plot_drr(drr, title=None, ax=None):
     nx, ny = drr.shape
     if ax is None:
         fig, ax = plt.subplots()
-    ax.imshow(drr, cmap="gray")
+    img = ax.imshow(drr, cmap="gray", animated=animated)
     ax.xaxis.tick_top()
     ax.set(
         title=title,
         xticks=[0, nx-1], xticklabels=[1, nx],
         yticks=[0, ny-1], yticklabels=[1, ny],
     )
-    return ax
+    if ticks is False:
+        ax.axis("off")
+    return img
