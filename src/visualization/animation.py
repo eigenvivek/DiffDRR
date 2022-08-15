@@ -8,10 +8,12 @@ from .visualize import plot_drr
 def _precompute_drrs(df, sdr, drr, ax):
     """Precompute the DRRs and save them to an artist."""
     imgs = []
-    for _, row in tqdm(df.iterrows(), desc="Precomputing DRRs", total=len(df)):
+    for idx, row in tqdm(df.iterrows(), desc="Precomputing DRRs", total=len(df)):
         params = row[["theta", "phi", "gamma", "bx", "by", "bz"]].values
         itr = drr(200, *params)
         img = plot_drr(itr, animated=True, ax=ax)
+        if idx == 0:
+            plot_drr(itr, ax=ax)
         imgs.append([img])
     return imgs
 
