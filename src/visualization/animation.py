@@ -21,9 +21,9 @@ def _precompute_drrs(df, sdr, drr, ax):
 def animate(df, sdr, drr, ground_truth=None):
     """Animate the optimization of a DRR."""
     if ground_truth is None:
-        fig, ax_opt = plt.subplots(dpi=300)
+        fig, ax_opt = plt.subplots()
     else:
-        fig, (ax_opt, ax_fix) = plt.subplots(ncols=2, dpi=300)
+        fig, (ax_opt, ax_fix) = plt.subplots(ncols=2)
 
     imgs = _precompute_drrs(df, sdr, drr, ax=ax_opt)
     ax_opt.set(xlabel="Moving DRR")
