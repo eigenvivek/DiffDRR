@@ -20,7 +20,7 @@ def make_dirs():
 def make_groundtruth():
     volume, spacing = read_dicom("data/cxr")
     bx, by, bz = np.array(volume.shape) * np.array(spacing) / 2
-    drr = DRR(volume, spacing, height=100, delx=5e-2, device="cpu")
+    drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
     sdr = 200.0
     ground_truth = drr(sdr, np.pi, 0, np.pi / 2, bx, by, bz)
     return drr, sdr, ground_truth
