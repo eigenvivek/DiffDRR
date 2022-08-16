@@ -10,7 +10,7 @@ def _precompute_drrs(df, sdr, drr, ax):
     imgs = []
     for idx, row in tqdm(df.iterrows(), desc="Precomputing DRRs", total=len(df)):
         params = row[["theta", "phi", "gamma", "bx", "by", "bz"]].values
-        itr = drr(200, *params)
+        itr = drr(sdr, *params)
         img = plot_drr(itr, animated=True, ax=ax)
         if idx == 0:
             plot_drr(itr, ax=ax)
@@ -18,7 +18,7 @@ def _precompute_drrs(df, sdr, drr, ax):
     return imgs
 
 
-def animate(df, sdr, drr, ground_truth=None):
+def animate(df, sdr, drr, ground_truth=None, out=None):
     """Animate the optimization of a DRR."""
     if ground_truth is None:
         fig, ax_opt = plt.subplots()
@@ -31,6 +31,9 @@ def animate(df, sdr, drr, ground_truth=None):
     if ground_truth is not None:
         plot_drr(ground_truth, ax=ax_fix)
         ax_fix.set(xlabel="Fixed DRR")
-        
+
     anim = ArtistAnimation(fig, imgs, interval=50, blit=True, repeat_delay=1000)
-    return anim.to_jshtml()
+    if out is None:
+        return anim.to_jshtml()
+    else:
+        anim.save(out, writer="ffmpeg")
