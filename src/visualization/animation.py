@@ -36,4 +36,4 @@ def animate(df, sdr, drr, ground_truth=None, out=None):
     if out is None:
         return anim.to_jshtml()
     else:
-        anim.save(out, writer="ffmpeg")
+        anim.save(out)
