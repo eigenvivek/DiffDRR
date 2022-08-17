@@ -1,5 +1,6 @@
 import csv
 import time
+from pathlib import Path
 
 import click
 import numpy as np
@@ -36,13 +37,18 @@ def get_initial_parameters(true_params):
     return sdr, theta, phi, gamma, bx, by, bz
 
 
-def run_convergence_exp(n_itrs, drr, ground_truth, true_params, filename, debug):
+def run_convergence_exp(
+    n_itrs, drr, ground_truth, true_params, filename, debug,
+    lr_rotations, lr_translations, momentum, dampening
+):
     # Initialize the DRR and optimization parameters
     sdr, theta, phi, gamma, bx, by, bz = get_initial_parameters(true_params)
     _ = drr(sdr, theta, phi, gamma, bx, by, bz)  # Initialize the DRR generator
     criterion = XCorr2(zero_mean_normalized=True)
     optimizer = torch.optim.SGD(
-        [{"params": [drr.rotations], "lr": 5.3e-2}, {"params": [drr.translations], "lr": 7.5e1}]
+        [{"params": [drr.rotations], "lr": lr_rotations}, {"params": [drr.translations], "lr": lr_translations}],
+        momentum=momentum,
+        dampening=dampening,
     )
 
     with open(filename, "w") as f:
@@ -85,7 +91,12 @@ def run_convergence_exp(n_itrs, drr, ground_truth, true_params, filename, debug)
 @click.option("-n", "--n_drrs", type=int, default=100, help="Number of DRRs to try to optimize")
 @click.option("-i", "--n_itrs", type=int, default=500, help="Number of iterations per DRR")
 @click.option("-d", "--debug", is_flag=True, default=False, help="Print debug information")
-def main(n_drrs, n_itrs, debug):
+@click.option("--lr_rotations", type=float, default=5.3e-2, help="Rotational learning rate")
+@click.option("--lr_translations", type=float, default=7.5e1, help="Translations learning rate")
+@click.option("--momentum", type=float, default=0.9, help="SGD momentum factor")
+@click.option("--dampening", type=float, default=0.2, help="SGD dampening factor for momentum")
+@click.option("--outdir", default="tmp", type=click.Path())
+def main(n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampening, outdir):
 
     # Get the ground truth DRR
     volume, spacing, true_params = get_true_drr()
@@ -93,9 +104,14 @@ def main(n_drrs, n_itrs, debug):
     ground_truth = drr(**true_params)
 
     # Estimate a random DRR and try to optimize its parameters
+    outdir = Path(f"experiments/registration/{outdir}")
+    outdir.mkdir(exist_ok=True, parents=True)
     for i in tqdm(range(n_drrs)):
-        filename = f"experiments/registration/tmp/{i}.csv"
-        run_convergence_exp(n_itrs, drr, ground_truth, true_params, filename, debug)
+        filename = f"{outdir}/{i}.csv"
+        run_convergence_exp(
+            n_itrs, drr, ground_truth, true_params, filename, debug,
+            lr_rotations, lr_translations, momentum, dampening
+        )
 
 
 if __name__ == "__main__":
