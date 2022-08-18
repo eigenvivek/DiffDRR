@@ -14,5 +14,6 @@ dependencies:
   - black
   - flake8
   - ipykernel
+  - tqdm
   - pip:
       - -e .  # Install the local package (DiffDRR)
