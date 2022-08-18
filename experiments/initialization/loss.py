@@ -11,7 +11,7 @@ class GenLoss(nn.Module):
         self.xcorr2 = XCorr2(zero_mean_normalized)
 
     def forward(self, est_params, true_params):
-        est = self.drr(self.sdr, *est_params)
-        true = self.drr(self.sdr, *true_params)
+        est = self.drr(self.sdr, *est_params.detach().cpu().tolist()[0])
+        true = self.drr(self.sdr, *true_params.detach().cpu().tolist()[0])
         loss = self.xcorr2(est, true)
         return loss
