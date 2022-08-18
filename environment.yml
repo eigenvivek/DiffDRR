@@ -5,7 +5,8 @@ channels:
   - pytorch
 dependencies:
   - python=3.7
-  - pytorch=1.12
+  - pytorch>1.12
+  - torchvision>0.5
   - cudatoolkit=11.3
   - pydicom
   - matplotlib
