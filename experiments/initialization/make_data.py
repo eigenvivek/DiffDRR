@@ -2,13 +2,11 @@ import csv
 from pathlib import Path
 
 import click
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from tqdm import tqdm
 
 from src import DRR, read_dicom
-from src.visualization import plot_drr
 
 
 def make_ground_truth():
@@ -22,9 +20,9 @@ def get_perturbation():
     del_t = np.random.uniform(-torch.pi, torch.pi)
     del_p = np.random.uniform(0, 2 * torch.pi)
     del_g = np.random.uniform(-torch.pi / 2, 3 * torch.pi / 2)
-    del_x = np.random.uniform(-5, 5)
-    del_y = np.random.uniform(-5, 5)
-    del_z = np.random.uniform(-5, 5)
+    del_x = np.random.uniform(-10, 10)
+    del_y = np.random.uniform(-10, 10)
+    del_z = np.random.uniform(-10, 10)
     return torch.tensor([del_t, del_p, del_g, del_x, del_y, del_z])
 
 
@@ -35,25 +33,33 @@ def make_image(drr, true_params):
 
 
 @click.command()
-@click.option("-n", "--n_drrs", default=100, help="Number of DRRs to generate")
+@click.option("--n_train", default=1000, help="Number of training DRRs to generate")
+@click.option("--n_test", default=100, help="Number of test DRRs to generate")
 @click.option("-o", "--outdir", default="dataset/", help="Output directory")
-def main(n_drrs, outdir):
+def main(n_train, n_test, outdir):
     volume, spacing, true_params = make_ground_truth()
     drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
 
+    # Save the datasets
     outdir = Path(f"experiments/initialization/{outdir}")
-    ptdir = outdir / "drrs"
-    ptdir.mkdir(parents=True, exist_ok=True)
-    filename = outdir / "data.csv"
-    with open(filename, "w") as f:
-        writer = csv.writer(f, delimiter=",")
-        writer.writerow(["img", "sdr", "theta", "phi", "gamma", "bx", "by", "bz"])
+    train = outdir / "train"
+    test = outdir / "test"
 
-        for i in tqdm(range(n_drrs)):
-            img_name = ptdir / f"{i}.pt"
-            perturbed_params, perturbed = make_image(drr, true_params)
-            torch.save(perturbed, img_name)
-            writer.writerow([img_name, 200.0, *perturbed_params.numpy()])
+    # Make the training set
+    for i in tqdm(range(n_train)):
+        outdir = train / str(i)
+        outdir.mkdir(parents=True, exist_ok=True)
+        perturbed_params, perturbed = make_image(drr, true_params)
+        torch.save(perturbed, outdir / "image.pt")
+        torch.save(perturbed_params, outdir / "params.pt")
+
+    # Make the test set
+    for i in tqdm(range(n_test)):
+        outdir = test / str(i)
+        outdir.mkdir(parents=True, exist_ok=True)
+        perturbed_params, perturbed = make_image(drr, true_params)
+        torch.save(perturbed, outdir / "image.pt")
+        torch.save(perturbed_params, outdir / "params.pt")
 
 
 if __name__ == "__main__":
