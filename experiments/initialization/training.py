@@ -59,3 +59,7 @@ def main(epochs, batch_size, lr):
     # Get the model and train
     model, loss_func, opt = get_model(lr)
     fit(epochs, model, loss_func, opt, train_dl, val_dl)
+
+
+if __name__ == "__main__":
+    main()
