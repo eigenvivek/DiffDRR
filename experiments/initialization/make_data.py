@@ -35,8 +35,9 @@ def make_image(drr, true_params):
 @click.command()
 @click.option("--n_train", default=1000, help="Number of training DRRs to generate")
 @click.option("--n_test", default=100, help="Number of test DRRs to generate")
+@click.option("--n_val", default=100, help="Number of validation DRRs to generate")
 @click.option("-o", "--outdir", default="dataset/", help="Output directory")
-def main(n_train, n_test, outdir):
+def main(n_train, n_test, n_val, outdir):
     volume, spacing, true_params = make_ground_truth()
     drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
 
@@ -44,6 +45,7 @@ def main(n_train, n_test, outdir):
     outdir = Path(f"experiments/initialization/{outdir}")
     train = outdir / "train"
     test = outdir / "test"
+    val = outdir / "val"
 
     # Make the training set
     for i in tqdm(range(n_train)):
@@ -56,6 +58,14 @@ def main(n_train, n_test, outdir):
     # Make the test set
     for i in tqdm(range(n_test)):
         outdir = test / str(i)
+        outdir.mkdir(parents=True, exist_ok=True)
+        perturbed_params, perturbed = make_image(drr, true_params)
+        torch.save(perturbed, outdir / "image.pt")
+        torch.save(perturbed_params, outdir / "params.pt")
+
+    # Make the validation set
+    for i in tqdm(range(n_test)):
+        outdir = val / str(i)
         outdir.mkdir(parents=True, exist_ok=True)
         perturbed_params, perturbed = make_image(drr, true_params)
         torch.save(perturbed, outdir / "image.pt")
