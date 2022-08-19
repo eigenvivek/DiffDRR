@@ -3,6 +3,7 @@ from .drr import DRR
 from .data.load import read_dicom
 
 from .metrics.xcorr2 import XCorr2
+from .metrics.ssd import SSD
 
 from .projectors.siddon import Siddon
 from .projectors.siddon_jacobs import SiddonJacobs
