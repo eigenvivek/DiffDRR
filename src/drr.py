@@ -7,7 +7,9 @@ from .utils.camera import Detector
 
 
 class DRR(nn.Module):
-    def __init__(self, volume, spacing, height, delx, width=None, dely=None, device="cpu"):
+    def __init__(
+        self, volume, spacing, height, delx, width=None, dely=None, device="cpu"
+    ):
         """
         Class for generating DRRs.
 
@@ -42,7 +44,9 @@ class DRR(nn.Module):
         self.register_parameter("rotations", None)
         self.register_parameter("translations", None)
 
-    def forward(self, sdr=None, theta=None, phi=None, gamma=None, bx=None, by=None, bz=None):
+    def forward(
+        self, sdr=None, theta=None, phi=None, gamma=None, bx=None, by=None, bz=None
+    ):
         """
         Generate a DRR from a particular viewing angle.
 
@@ -51,7 +55,9 @@ class DRR(nn.Module):
         """
         if any(arg is not None for arg in [sdr, theta, phi, gamma, bx, by, bz]):
             self.initialize_parameters(sdr, theta, phi, gamma, bx, by, bz)
-        source, rays = self.detector.make_xrays(self.sdr, self.rotations, self.translations)
+        source, rays = self.detector.make_xrays(
+            self.sdr, self.rotations, self.translations
+        )
         drr = self.siddon.raytrace(source, rays)
         return drr
 

@@ -21,6 +21,6 @@ class Model(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
-    
+
     def num_flat_features(self, x):
         return torch.tensor(x.shape[1:]).prod().item()
