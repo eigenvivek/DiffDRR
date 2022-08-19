@@ -3,7 +3,7 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader
 
-from src import DRR, read_dicom
+from src import DRR, load_example_ct
 
 from dataloader import ParamDataset
 from loss import GenLoss
@@ -11,7 +11,7 @@ from model import Model
 
 
 def get_projector():
-    volume, spacing = read_dicom("data/cxr/")
+    volume, spacing = load_example_ct()
     return DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
 
 
