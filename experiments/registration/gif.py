@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from src import read_dicom, DRR
+from src import DRR, load_example_ct
 from src.visualization import animate
 
 
@@ -20,7 +20,7 @@ def make_dirs(outdir):
 
 
 def make_groundtruth():
-    volume, spacing = read_dicom("data/cxr")
+    volume, spacing = load_example_ct()
     bx, by, bz = np.array(volume.shape) * np.array(spacing) / 2
     drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
     sdr = 200.0
