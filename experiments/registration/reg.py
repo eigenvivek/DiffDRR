@@ -104,10 +104,10 @@ def main(n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampeni
     ground_truth = drr(**true_params)
 
     # Estimate a random DRR and try to optimize its parameters
-    outdir = Path(f"experiments/registration/results/{outdir}")
+    outdir = Path(f"experiments/registration/results/{outdir}/runs")
     outdir.mkdir(exist_ok=True, parents=True)
     for i in tqdm(range(n_drrs)):
-        filename = f"{outdir}/{i}.csv"
+        filename = outdir / f"{i}.csv"
         run_convergence_exp(
             n_itrs, drr, ground_truth, true_params, filename, debug,
             lr_rotations, lr_translations, momentum, dampening

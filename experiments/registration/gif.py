@@ -11,10 +11,10 @@ from src.visualization import animate
 
 def make_dirs(outdir):
     currdir = Path(__file__).parent
-    csvfiles = (currdir / "results" / outdir).glob("*.csv")
-    converged = currdir / f"results/{outdir}/gif/converged/"
+    csvfiles = (currdir / "results" / outdir / "runs").glob("*.csv")
+    converged = currdir / f"results/{outdir}/gifs/converged/"
     converged.mkdir(parents=True, exist_ok=True)
-    not_converged = currdir / f"results/{outdir}/gif/not_converged/"
+    not_converged = currdir / f"results/{outdir}/gifs/not_converged/"
     not_converged.mkdir(parents=True, exist_ok=True)
     return csvfiles, converged, not_converged
 
