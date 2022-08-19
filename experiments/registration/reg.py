@@ -95,7 +95,7 @@ def run_convergence_exp(
 @click.option("--lr_translations", type=float, default=7.5e1, help="Translations learning rate")
 @click.option("--momentum", type=float, default=0.9, help="SGD momentum factor")
 @click.option("--dampening", type=float, default=0.2, help="SGD dampening factor for momentum")
-@click.option("--outdir", default="tmp", type=click.Path())
+@click.option("--outdir", default="base", type=click.Path())
 def main(n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampening, outdir):
 
     # Get the ground truth DRR
@@ -104,7 +104,7 @@ def main(n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampeni
     ground_truth = drr(**true_params)
 
     # Estimate a random DRR and try to optimize its parameters
-    outdir = Path(f"experiments/registration/{outdir}")
+    outdir = Path(f"experiments/registration/results/{outdir}")
     outdir.mkdir(exist_ok=True, parents=True)
     for i in tqdm(range(n_drrs)):
         filename = f"{outdir}/{i}.csv"
