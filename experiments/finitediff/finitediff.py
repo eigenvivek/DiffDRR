@@ -30,17 +30,17 @@ def get_ground_truth():
 
 def perturb(true_params, param, drr):
     if param == "theta":
-        perturbation = np.random.uniform(-np.pi / 4, np.pi / 4)
+        perturbation = np.random.uniform(-np.pi / 3, np.pi / 3)
     elif param == "phi":
         perturbation = np.random.uniform(-np.pi / 3, np.pi / 3)
     elif param == "gamma":
-        perturbation = np.random.uniform(-np.pi / 4, np.pi / 4)
+        perturbation = np.random.uniform(-np.pi / 3, np.pi / 3)
     elif param == "bx":
-        perturbation = np.random.uniform(-30.0, 31.0)
+        perturbation = np.random.uniform(-100.0, 101.0)
     elif param == "by":
-        perturbation = np.random.uniform(-30.0, 31.0)
+        perturbation = np.random.uniform(-100.0, 101.0)
     elif param == "bz":
-        perturbation = np.random.uniform(-30.0, 31.0)
+        perturbation = np.random.uniform(-100.0, 101.0)
     else:
         raise ValueError(f"Unknown parameter: {param}")
     perturbed_params = true_params.copy()
@@ -109,7 +109,7 @@ def main(n_runs, outfile):
         for param in params:
             for _ in tqdm(range(n_runs), desc=param):
                 exp_result = run(true_params, param, drr, ground_truth)
-                writer.writerow(exp_result)
+                writer.writerow([param, *exp_result])
 
 
 if __name__ == "__main__":
