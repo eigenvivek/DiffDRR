@@ -24,11 +24,11 @@ The following minimal example specifies the geometry of the projectional radiogr
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src import read_dicom, DRR
+from src import DRR, load_example_ct
 from src.visualization import plot_drr
 
 # Read in the volume
-volume, spacing = read_dicom("../data/cxr/")
+volume, spacing = reaload_example_ct()
 
 # Get parameters for the detector
 bx, by, bz = np.array(volume.shape) * np.array(spacing) / 2
@@ -52,9 +52,9 @@ plt.show()
 
 which produces the following image
 
-![example_drr.png](../figures/example_drr.png)
+![example_drr](figures/example_drr.png)
 
-The full example is available at [`notebooks/example_drrs.ipynb`](https://github.com/v715/DiffDRR/notebooks/example_drrs.ipynb).
+The full example is available at [`notebooks/example_drrs.ipynb`](notebooks/example_drrs.ipynb).
 
 ## Application: 6-DoF Slice-to-Volume Registration
 
@@ -67,9 +67,9 @@ Here, we generate two DRRs:
 To solve the registration problem, we use gradient descent to minimize an image loss similarity metric between the two DRRs.
 This produces optimizations like this
 
-![]()
+![](https://github.com/v715/DiffDRR/blob/main/experiments/registration/results/momentum/gifs/converged/123.gif)
 
-The full example is available at [`experiments/registration`](https://github.com/v715/DiffDRR/experiments/registration).
+The full example is available at [`experiments/registration`](experiments/registration).
 
 ## How does DiffDRR work?
 
