@@ -108,5 +108,10 @@ def main(n_runs, outfile):
         )
         for param in params:
             for _ in tqdm(range(n_runs), desc=param):
-                exp_resutl = run(true_params, param, drr, ground_truth)
-                writer.writerow(*exp_resutl)
+                exp_result = run(true_params, param, drr, ground_truth)
+                writer.writerow(exp_result)
+
+
+if __name__ == "__main__":
+    main()
+
