@@ -7,12 +7,12 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from src import read_dicom, DRR
+from src import load_example_ct, DRR
 
 
 def get_ground_truth():
     # Make the ground truth DRR
-    volume, spacing = read_dicom("data/cxr/")
+    volume, spacing = load_example_ct()
     drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
     bx, by, bz = np.array(volume.shape) * np.array(spacing) / 2
     true_params = {
