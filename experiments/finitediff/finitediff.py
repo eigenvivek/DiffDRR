@@ -16,13 +16,13 @@ def get_ground_truth():
     drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
     bx, by, bz = np.array(volume.shape) * np.array(spacing) / 2
     true_params = {
-        "sdr"   : 200.0,
-        "theta" : torch.pi,
-        "phi"   : 0,
-        "gamma" : torch.pi / 2,
-        "bx"    : bx,
-        "by"    : by,
-        "bz"    : bz,
+        "sdr": 200.0,
+        "theta": torch.pi,
+        "phi": 0,
+        "gamma": torch.pi / 2,
+        "bx": bx,
+        "by": by,
+        "bz": bz,
     }
     ground_truth = drr(**true_params)
     return ground_truth, true_params, drr
@@ -95,8 +95,18 @@ def main(n_runs, outfile):
     outfile = currdir / f"{outfile}.csv"
     with open(outfile, "w") as f:
         writer = csv.writer(f, delimiter=",")
-        writer.writerow(["param", "true_param", "perturbed_param", "finite_diff", "finite_diff_time", "auto_diff", "auto_diff_time"])
+        writer.writerow(
+            [
+                "param",
+                "true_param",
+                "perturbed_param",
+                "finite_diff",
+                "finite_diff_time",
+                "auto_diff",
+                "auto_diff_time",
+            ]
+        )
         for param in params:
-            for _ in tqdm(range(n_runs)):
+            for _ in tqdm(range(n_runs), desc=param):
                 exp_resutl = run(true_params, param, drr, ground_truth)
                 writer.writerow(*exp_resutl)
