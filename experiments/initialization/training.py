@@ -40,7 +40,9 @@ def fit(epochs, model, loss_func, opt, train_dl, val_dl):
 
         model.eval()
         with torch.no_grad():
-            loss, nums = zip(*[loss_batch(model, loss_func, xb, yb) for xb, yb in val_dl])
+            loss, nums = zip(
+                *[loss_batch(model, loss_func, xb, yb) for xb, yb in val_dl]
+            )
         val_loss = sum(loss) / sum(nums)
         print(f"Epoch {epoch}: val_loss {val_loss:.4f}")
 

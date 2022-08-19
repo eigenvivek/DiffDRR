@@ -114,4 +114,3 @@ def main(n_runs, outfile):
 
 if __name__ == "__main__":
     main()
-

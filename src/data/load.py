@@ -12,7 +12,7 @@ def read_dicom(dcmdir="data/cxr", correct_zero=True):
         Path to a DICOM directory
     correct_zero : bool
         Make 0 the minimum value the CT
-        
+
     Returns
     -------
     volume : ndarray
@@ -37,7 +37,7 @@ def read_dicom(dcmdir="data/cxr", correct_zero=True):
         ds = dcmread(dcm)
         volume[:, :, idx] = ds.pixel_array
         delZs.append(ds.ImagePositionPatient[2])
-    
+
     if correct_zero:
         volume[volume == volume.min()] = 0.0
 

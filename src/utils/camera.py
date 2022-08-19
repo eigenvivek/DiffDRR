@@ -20,6 +20,7 @@ class Detector:
     device : str or torch.device
         Compute device. If str, either "cpu", "cuda", or "mps".
     """
+
     def __init__(self, height, width, delx, dely, device):
         self.height = height
         self.width = width
@@ -45,8 +46,12 @@ class Detector:
         center += translations
 
         # Construt the detector plane
-        t = (torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1) * self.delx
-        s = (torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1) * self.dely
+        t = (
+            torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1
+        ) * self.delx
+        s = (
+            torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1
+        ) * self.dely
         coefs = torch.cartesian_prod(t, s).reshape(self.height, self.width, 2)
         rays = coefs @ torch.stack([u, v])
         rays += center

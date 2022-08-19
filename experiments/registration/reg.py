@@ -38,15 +38,26 @@ def get_initial_parameters(true_params):
 
 
 def run_convergence_exp(
-    n_itrs, drr, ground_truth, true_params, filename, debug,
-    lr_rotations, lr_translations, momentum, dampening
+    n_itrs,
+    drr,
+    ground_truth,
+    true_params,
+    filename,
+    debug,
+    lr_rotations,
+    lr_translations,
+    momentum,
+    dampening,
 ):
     # Initialize the DRR and optimization parameters
     sdr, theta, phi, gamma, bx, by, bz = get_initial_parameters(true_params)
     _ = drr(sdr, theta, phi, gamma, bx, by, bz)  # Initialize the DRR generator
     criterion = XCorr2(zero_mean_normalized=True)
     optimizer = torch.optim.SGD(
-        [{"params": [drr.rotations], "lr": lr_rotations}, {"params": [drr.translations], "lr": lr_translations}],
+        [
+            {"params": [drr.rotations], "lr": lr_rotations},
+            {"params": [drr.translations], "lr": lr_translations},
+        ],
         momentum=momentum,
         dampening=dampening,
     )
@@ -55,7 +66,9 @@ def run_convergence_exp(
 
         # Start the training log
         writer = csv.writer(f, delimiter=",")
-        writer.writerow(["itr", "time", "loss", "theta", "phi", "gamma", "bx", "by", "bz"])
+        writer.writerow(
+            ["itr", "time", "loss", "theta", "phi", "gamma", "bx", "by", "bz"]
+        )
         t0 = time.perf_counter()
 
         # Start the training loop
@@ -70,7 +83,8 @@ def run_convergence_exp(
             theta, phi, gamma = drr.rotations
             bx, by, bz = drr.translations
             writer.writerow(
-                [itr, t1 - t0] + [i.item() for i in [loss, theta, phi, gamma, bx, by, bz]]
+                [itr, t1 - t0]
+                + [i.item() for i in [loss, theta, phi, gamma, bx, by, bz]]
             )
 
             if debug:
@@ -88,15 +102,29 @@ def run_convergence_exp(
 
 
 @click.command()
-@click.option("-n", "--n_drrs", type=int, default=100, help="Number of DRRs to try to optimize")
-@click.option("-i", "--n_itrs", type=int, default=500, help="Number of iterations per DRR")
-@click.option("-d", "--debug", is_flag=True, default=False, help="Print debug information")
-@click.option("--lr_rotations", type=float, default=5.3e-2, help="Rotational learning rate")
-@click.option("--lr_translations", type=float, default=7.5e1, help="Translations learning rate")
+@click.option(
+    "-n", "--n_drrs", type=int, default=100, help="Number of DRRs to try to optimize"
+)
+@click.option(
+    "-i", "--n_itrs", type=int, default=500, help="Number of iterations per DRR"
+)
+@click.option(
+    "-d", "--debug", is_flag=True, default=False, help="Print debug information"
+)
+@click.option(
+    "--lr_rotations", type=float, default=5.3e-2, help="Rotational learning rate"
+)
+@click.option(
+    "--lr_translations", type=float, default=7.5e1, help="Translations learning rate"
+)
 @click.option("--momentum", type=float, default=0.9, help="SGD momentum factor")
-@click.option("--dampening", type=float, default=0.2, help="SGD dampening factor for momentum")
+@click.option(
+    "--dampening", type=float, default=0.2, help="SGD dampening factor for momentum"
+)
 @click.option("--outdir", default="base", type=click.Path())
-def main(n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampening, outdir):
+def main(
+    n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampening, outdir
+):
 
     # Get the ground truth DRR
     volume, spacing, true_params = get_true_drr()
@@ -109,8 +137,16 @@ def main(n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampeni
     for i in tqdm(range(n_drrs)):
         filename = outdir / f"{i}.csv"
         run_convergence_exp(
-            n_itrs, drr, ground_truth, true_params, filename, debug,
-            lr_rotations, lr_translations, momentum, dampening
+            n_itrs,
+            drr,
+            ground_truth,
+            true_params,
+            filename,
+            debug,
+            lr_rotations,
+            lr_translations,
+            momentum,
+            dampening,
         )
 
 
