@@ -7,12 +7,12 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from src import read_dicom, DRR
+from src import DRR, load_example_ct
 from src.metrics import XCorr2
 
 
 def get_true_drr():
-    volume, spacing = read_dicom("data/cxr")
+    volume, spacing = load_example_ct()
     bx, by, bz = np.array(volume.shape) * np.array(spacing) / 2
     true_params = {
         "sdr": 200.0,
