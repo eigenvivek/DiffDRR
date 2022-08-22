@@ -92,7 +92,6 @@ class SiddonJacobs:
 
         # Initialize the loop
         alphamin, alphamax, minidx, _, n_iters = self.initialize(source, target)
-        print(n_iters)
         alphamax = alphamax.clone()
         alphacurr = alphamin.clone()
 
