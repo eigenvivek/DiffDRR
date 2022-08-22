@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from .projectors.siddon import Siddon
+from .projectors.siddon_jacobs import SiddonJacobs
 from .utils.backend import get_device
 from .utils.camera import Detector
 from .visualization import plot_camera, plot_volume
@@ -18,6 +19,7 @@ class DRR(nn.Module):
         delx,
         width=None,
         dely=None,
+        projector="siddon",
         device="cpu",
     ):
         """
@@ -37,6 +39,8 @@ class DRR(nn.Module):
             The x-axis pixel size.
         dely : float, optional
             The y-axis pixel size. If not provided, it is set to `delx`.
+        projector : str, optional
+            The type of projector, either "siddon" or "siddon_jacobs".
         device : str
             Compute device, either "cpu", "cuda", or "mps".
         """
@@ -49,7 +53,12 @@ class DRR(nn.Module):
         self.detector = Detector(height, width, delx, dely, device)
 
         # Initialize the Projector and register its parameters
-        self.siddon = Siddon(volume, spacing, device)
+        if projector == "siddon":
+            self.siddon = Siddon(volume, spacing, device)
+        elif projector == "siddon_jacobs":
+            self.siddon = SiddonJacobs(volume, spacing, device)
+        else:
+            raise ValueError("Invalid projector type.")
         self.register_parameter("sdr", None)
         self.register_parameter("rotations", None)
         self.register_parameter("translations", None)
