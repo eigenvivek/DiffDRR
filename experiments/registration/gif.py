@@ -29,8 +29,8 @@ def make_groundtruth():
 
 
 @click.command()
-@click.command("-n", "--n_gifs", type=int, default=10, help="Number of gifs to make.")
-@click.option("--outdir", type=str, help="Directory with optimization runs.")
+@click.option("-n", "--n_gifs", type=int, default=10, help="Number of gifs to make.")
+@click.option("-o", "--outdir", type=str, help="Directory with optimization runs.")
 def main(n_gifs, outdir):
     csvfiles, converged, not_converged = make_dirs(outdir)
     csvfiles = list(csvfiles)
