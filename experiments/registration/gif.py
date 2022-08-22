@@ -54,24 +54,24 @@ def main(outdir, n_gifs, max_n_frames):
         if is_converged(df):
             if n_conv >= n_gifs:
                 continue
-            converged_runs.append([df, fps])
+            converged_runs.append([csvfile.stem, df, fps])
             n_conv += 1
         else:
             if n_not_conv >= n_gifs:
                 continue
-            not_converged_runs.append([df, fps])
+            not_converged_runs.append([csvfile.stem, df, fps])
             n_not_conv += 1
     csvfiles = converged_runs + not_converged_runs
 
     # Make gifs
-    for df, fps in tqdm(csvfiles):
+    for filename, df, fps in tqdm(csvfiles):
         if len(df) > max_n_frames:
             df = df.iloc[:max_n_frames]
         if is_converged(df):
             outdir = converged
         else:
             outdir = not_converged
-        outdir = outdir / f"{csvfile.stem}.gif"
+        outdir = outdir / f"{filename}.gif"
         animate(df, sdr, drr, ground_truth, verbose=False, out=outdir, fps=fps)
 
 
