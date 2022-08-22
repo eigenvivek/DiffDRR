@@ -73,7 +73,8 @@ The full example is available at [`experiments/registration`](experiments/regist
 
 ## How does DiffDRR work?
 
-DiffDRR reformulates Siddon's method,[^fn] the canonical algorithm for calculating the radiologic path of an X-ray through a volume, as a series of vectorized tensor operations.
+DiffDRR reformulates Siddon's method[^fn], the canonical algorithm for calculating the radiologic path of an X-ray through a volume, as a series of vectorized tensor operations.
 This version of the algorithm is easily implemented in tensor algebra libraries like PyTorch to achieve a fast auto-differentiable DRR generator.
 
-[^fn]: [Fast calculation of the exact radiological path for a three-dimensional CT array, Robert L. Siddon, 1985](https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.595715)
+[^fn]: [Siddon RL. Fast calculation of the exact radiological path for a three-dimensional ct array.
+Medical Physics, 2(12):252–5, 1985.](https://doi.org/10.1118/1.595715)
