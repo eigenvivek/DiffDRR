@@ -50,6 +50,8 @@ def main(outdir, n_gifs, max_n_frames):
     converged_runs, not_converged_runs = [], []
     for csvfile in csvfiles:
         df = pd.read_csv(csvfile)
+        if len(df) > max_n_frames:
+            df = df.iloc[:max_n_frames]
         fps = get_fps(df)
         if is_converged(df):
             if n_conv >= n_gifs:
@@ -65,8 +67,6 @@ def main(outdir, n_gifs, max_n_frames):
 
     # Make gifs
     for filename, df, fps in tqdm(csvfiles):
-        if len(df) > max_n_frames:
-            df = df.iloc[:max_n_frames]
         if is_converged(df):
             outdir = converged
         else:
