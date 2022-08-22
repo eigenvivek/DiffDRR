@@ -1,14 +1,26 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
 
 from .projectors.siddon import Siddon
+from .projectors.siddon_jacobs import SiddonJacobs
 from .utils.backend import get_device
 from .utils.camera import Detector
+from .visualization import plot_camera, plot_volume
 
 
 class DRR(nn.Module):
     def __init__(
-        self, volume, spacing, height, delx, width=None, dely=None, device="cpu"
+        self,
+        volume,
+        spacing,
+        height,
+        delx,
+        width=None,
+        dely=None,
+        projector="siddon",
+        device="cpu",
     ):
         """
         Class for generating DRRs.
@@ -27,6 +39,8 @@ class DRR(nn.Module):
             The x-axis pixel size.
         dely : float, optional
             The y-axis pixel size. If not provided, it is set to `delx`.
+        projector : str, optional
+            The type of projector, either "siddon" or "siddon_jacobs".
         device : str
             Compute device, either "cpu", "cuda", or "mps".
         """
@@ -39,31 +53,46 @@ class DRR(nn.Module):
         self.detector = Detector(height, width, delx, dely, device)
 
         # Initialize the Projector and register its parameters
-        self.siddon = Siddon(volume, spacing, device)
+        if projector == "siddon":
+            self.siddon = Siddon(volume, spacing, device)
+        elif projector == "siddon_jacobs":
+            self.siddon = SiddonJacobs(volume, spacing, device)
+        else:
+            raise ValueError("Invalid projector type.")
         self.register_parameter("sdr", None)
         self.register_parameter("rotations", None)
         self.register_parameter("translations", None)
 
     def forward(
-        self, sdr=None, theta=None, phi=None, gamma=None, bx=None, by=None, bz=None
+        self,
+        sdr=None,
+        theta=None,
+        phi=None,
+        gamma=None,
+        bx=None,
+        by=None,
+        bz=None,
     ):
         """
         Generate a DRR from a particular viewing angle.
 
-        Pass projector parameters to initialize a new viewing angle. If uninitialized, model will
-        not run.
+        Pass projector parameters to initialize a new viewing angle.
+        If uninitialized, the model will not run.
         """
-        if any(arg is not None for arg in [sdr, theta, phi, gamma, bx, by, bz]):
-            self.initialize_parameters(sdr, theta, phi, gamma, bx, by, bz)
+        params = [sdr, theta, phi, gamma, bx, by, bz]
+        if any(arg is not None for arg in params):
+            self.initialize_parameters(*params)
         source, rays = self.detector.make_xrays(
-            self.sdr, self.rotations, self.translations
+            self.sdr,
+            self.rotations,
+            self.translations,
         )
         drr = self.siddon.raytrace(source, rays)
         return drr
 
     def initialize_parameters(self, sdr, theta, phi, gamma, bx, by, bz):
         """
-        Set the parameters for generating a DRR.
+        Set the initial parameters for generating a DRR.
 
         Inputs
         ------
@@ -84,6 +113,26 @@ class DRR(nn.Module):
         )  # Assume that SDR is given for a 6DoF registration problem
         self.rotations = nn.Parameter(torch.tensor([theta, phi, gamma], **tensor_args))
         self.translations = nn.Parameter(torch.tensor([bx, by, bz], **tensor_args))
+
+    def plot_geometry(self, ax=None):
+        """Visualize the geometry of the detector."""
+        if len(list(self.parameters())) == 0:
+            raise ValueError("Parameters uninitialized.")
+        source, rays = self.detector.make_xrays(
+            self.sdr,
+            self.rotations,
+            self.translations,
+        )
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(projection="3d")
+        ax = plot_camera(source, rays, ax)
+        ax = plot_volume(
+            np.array(self.siddon.volume.detach().cpu()),
+            np.array(self.siddon.spacing.detach().cpu()),
+            *self.translations.detach().cpu().numpy(),
+            ax=ax,
+        )
 
     def __repr__(self):
         params = [str(param) for param in self.parameters()]

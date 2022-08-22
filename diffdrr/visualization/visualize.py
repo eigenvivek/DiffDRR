@@ -3,7 +3,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 
 
-def plot_volume(volume, spacing, ax):
+def plot_volume(volume, spacing, bx, by, bz, ax):
 
     # Get the dimensions of the volume
     Nx, Ny, Nz = np.array(volume.shape) * np.array(spacing)
@@ -62,13 +62,18 @@ def plot_camera(source, rays, ax):
     verts = [[pts[0], pts[1], pts[3], pts[2]]]
     ax.add_collection3d(
         Poly3DCollection(
-            verts, facecolors="cyan", linewidths=1, edgecolors="r", alpha=0.2
+            verts,
+            facecolors="cyan",
+            linewidths=1,
+            edgecolors="r",
+            alpha=0.2,
         )
     )
 
     # Plot the rays
-    for i in range(0, 201, 200):
-        for j in range(0, 201, 200):
+    nx, ny = rays.shape[:2]
+    for i in range(0, nx, nx - 1):
+        for j in range(0, ny, ny - 1):
             pt = rays[i, j, :].detach().cpu()
             ax.plot3D(
                 [pt[0], source[0]],
@@ -106,7 +111,7 @@ def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
     drr = drr.detach().cpu()
     nx, ny = drr.shape
     if ax is None:
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
     img = ax.imshow(drr, cmap="gray", animated=animated)
     ax.xaxis.tick_top()
     ax.set(
