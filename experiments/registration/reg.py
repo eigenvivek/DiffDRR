@@ -7,8 +7,8 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from src import DRR, load_example_ct
-from src.metrics import XCorr2
+from diffdrr import DRR, load_example_ct
+from diffdrr.metrics import XCorr2
 
 
 def get_true_drr():
