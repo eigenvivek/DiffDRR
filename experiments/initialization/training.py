@@ -3,7 +3,7 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader
 
-from src import DRR, load_example_ct
+from diffdrr import DRR, load_example_ct
 
 from dataloader import ParamDataset
 from loss import GenLoss

@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from src.metrics import XCorr2
+from diffdrr.metrics import XCorr2
 
 
 class GenLoss(nn.Module):

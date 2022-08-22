@@ -24,8 +24,8 @@ The following minimal example specifies the geometry of the projectional radiogr
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src import DRR, load_example_ct
-from src.visualization import plot_drr
+from diffdrr import DRR, load_example_ct
+from diffdrr.visualization import plot_drr
 
 # Read in the volume
 volume, spacing = load_example_ct()
