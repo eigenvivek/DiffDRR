@@ -22,7 +22,7 @@ def _precompute_drrs(df, sdr, drr, verbose, ax):
     return imgs
 
 
-def animate(df, sdr, drr, ground_truth=None, verbose=True, out=None):
+def animate(df, sdr, drr, ground_truth=None, verbose=True, out=None, **save_kwargs):
     """Animate the optimization of a DRR."""
     if ground_truth is None:
         fig, ax_opt = plt.subplots()
@@ -40,4 +40,4 @@ def animate(df, sdr, drr, ground_truth=None, verbose=True, out=None):
     if out is None:
         return anim.to_jshtml()
     else:
-        anim.save(out)
+        anim.save(out, **save_kwargs)
