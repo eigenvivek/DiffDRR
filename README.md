@@ -50,7 +50,7 @@ ax = plot_drr(img)
 plt.show()
 ```
 
-which produces the following image
+which produces the following image (in `69.5 ms ± 24.1 µs`):
 
 ![example_drr](figures/example_drr.png)
 
@@ -65,7 +65,7 @@ Here, we generate two DRRs:
 2. A moving DRR from randomly initialized parameters
 
 To solve the registration problem, we use gradient descent to minimize an image loss similarity metric between the two DRRs.
-This produces optimization runs like this
+This produces optimization runs like this:
 
 ![](https://github.com/v715/DiffDRR/blob/main/experiments/registration/results/momentum/gifs/converged/6.gif)
 
