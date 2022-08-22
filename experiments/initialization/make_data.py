@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from src import DRR, read_dicom
+from diffdrr import DRR, read_dicom
 
 
 def make_ground_truth():
