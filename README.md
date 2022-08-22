@@ -50,7 +50,7 @@ ax = plot_drr(img)
 plt.show()
 ```
 
-which produces the following image (in `69.5 ms ± 24.1 µs`):
+which produces the following image (in `69.5 ms ± 24.1 µs` on a single NVIDIA RTX 2080 Ti GPU):
 
 ![example_drr](figures/example_drr.png)
 
