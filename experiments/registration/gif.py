@@ -29,16 +29,21 @@ def make_groundtruth():
 
 
 @click.command()
-@click.option("-n", "--n_gifs", type=int, default=10, help="Number of gifs to make.")
 @click.option("-o", "--outdir", type=str, help="Directory with optimization runs.")
-def main(n_gifs, outdir):
+@click.option("-n", "--n_gifs", type=int, default=10, help="Number of gifs to make.")
+@click.option("--max_n_frames", type=int, default=250, help="Maximum number of frames to use.")
+def main(outdir, n_gifs, max_n_frames):
     csvfiles, converged, not_converged = make_dirs(outdir)
     drr, sdr, ground_truth = make_groundtruth()
 
     n_conv = 0
     n_not_conv = 0
+
     for csvfile in tqdm(csvfiles, total=2 * n_gifs):
         df = pd.read_csv(csvfile)
+        if len(df) > max_n_frames:
+            df = df.iloc[:max_n_frames]
+
         if df["loss"].iloc[-1] <= -0.999:
             if n_conv >= n_gifs:
                 continue
@@ -49,6 +54,7 @@ def main(n_gifs, outdir):
                 continue
             outdir = not_converged
             n_not_conv += 1
+        
         outdir = outdir / f"{csvfile.stem}.gif"
         animate(df, sdr, drr, ground_truth, verbose=False, out=outdir)
 
