@@ -33,12 +33,11 @@ def make_groundtruth():
 @click.option("-o", "--outdir", type=str, help="Directory with optimization runs.")
 def main(n_gifs, outdir):
     csvfiles, converged, not_converged = make_dirs(outdir)
-    csvfiles = list(csvfiles)
     drr, sdr, ground_truth = make_groundtruth()
 
     n_conv = 0
     n_not_conv = 0
-    for csvfile in tqdm(csvfiles):
+    for csvfile in tqdm(csvfiles, total=2 * n_gifs):
         df = pd.read_csv(csvfile)
         if df["loss"].iloc[-1] <= -0.999:
             if n_conv >= n_gifs:
