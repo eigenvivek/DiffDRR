@@ -41,7 +41,7 @@ def main(outdir):
         else:
             outdir = not_converged
         outdir = outdir / f"{csvfile.stem}.gif"
-        animate(df[::10], sdr, drr, ground_truth, verbose=False, out=outdir)
+        animate(df, sdr, drr, ground_truth, verbose=False, out=outdir)
 
 
 if __name__ == "__main__":
