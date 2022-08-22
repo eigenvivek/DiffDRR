@@ -116,7 +116,7 @@ class DRR(nn.Module):
         )
         if ax is None:
             fig = plt.figure()
-            ax = fig.add_subplot(111, projection="3d")
+            ax = fig.add_subplot(projection="3d")
         ax = plot_camera(source, rays, ax)
         ax = plot_volume(
             np.array(self.siddon.volume.detach().cpu()),
