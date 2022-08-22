@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from src import DRR, load_example_ct
-from src.visualization import animate
+from diffdrr import DRR, load_example_ct
+from diffdrr.visualization import animate
 
 
 def make_dirs(outdir):

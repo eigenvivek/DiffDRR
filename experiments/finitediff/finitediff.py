@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from src import load_example_ct, DRR
+from diffdrr import load_example_ct, DRR
 
 
 def get_ground_truth():
