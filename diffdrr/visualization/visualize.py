@@ -122,5 +122,6 @@ def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
         yticklabels=[1, ny],
     )
     if ticks is False:
-        ax.axis("off")
+        ax.set_xticks([])
+        ax.set_yticks([])
     return img
