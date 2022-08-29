@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/Code%20style-black-black.svg)](https://github.com/psf/black)
 
-## `DiffDRR` is a package for DRR synthesis and optimization
+## `DiffDRR` is a package for differentiable DRR synthesis and optimization
 
 - [Overview](#overview)
 - [Installation Guide](#installation-guide)
