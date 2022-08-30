@@ -29,10 +29,7 @@ conda env create -f environment.yaml
 conda activate DiffDRR
 ```
 
-To install `DiffDRR` from PyPI:
-```
-COMING SOON!
-```
+To install `DiffDRR` from PyPI ([coming soon](https://github.com/v715/DiffDRR/milestone/1)!):
 
 ## Usage
 
