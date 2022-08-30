@@ -31,6 +31,8 @@ conda activate DiffDRR
 
 To install `DiffDRR` from PyPI ([coming soon](https://github.com/v715/DiffDRR/milestone/1)!):
 
+Install `pytest` to run tests.
+
 ## Usage
 
 The following minimal example specifies the geometry of the projectional radiograph imaging system and traces rays through a CT volume:
