@@ -1,4 +1,4 @@
-# DiffDRR 🩻
+# DiffDRR🩻
 [![Paper shield](https://img.shields.io/badge/Paper-arxiv.2208.12737-red)](https://arxiv.org/abs/2208.12737)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Build Status](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml?query=branch%3Amain)
