@@ -102,12 +102,12 @@ Medical Physics, 2(12):252–5, 1985.](https://doi.org/10.1118/1.595715)
 If you find `DiffDRR` useful in your work, please cite our [paper](https://arxiv.org/abs/2208.12737):
 ```
 @inproceedings{DiffDRR2022,
-    author      = {Gopalakrishnan, Vivek and Golland, Polina},
-    title       = {Fast Auto-Differentiable Digitally Reconstructed Radiographs for Solving Inverse Problems in Intraoperative Imaging},
-    year        = {2022},
-    booktitle   = {Clinical Image-based Procedures: 11th International Workshop, CLIP 2022, Held in Conjunction with MICCAI 2022, Singapore, Proceedings},
-    series.     = {Lecture Notes in Computer Science},
-    publisher   = {Springer},
-    doi         = {https://doi.org/10.48550/arXiv.2208.12737},
+    author    = {Gopalakrishnan, Vivek and Golland, Polina},
+    title     = {Fast Auto-Differentiable Digitally Reconstructed Radiographs for Solving Inverse Problems in Intraoperative Imaging},
+    year      = {2022},
+    booktitle = {Clinical Image-based Procedures: 11th International Workshop, CLIP 2022, Held in Conjunction with MICCAI 2022, Singapore, Proceedings},
+    series    = {Lecture Notes in Computer Science},
+    publisher = {Springer},
+    doi       = {https://doi.org/10.48550/arXiv.2208.12737},
 }
 ```
