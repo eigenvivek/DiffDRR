@@ -24,19 +24,32 @@ def _precompute_drrs(df, sdr, drr, verbose, ax):
 
 def animate(df, sdr, drr, ground_truth=None, verbose=True, out=None, **save_kwargs):
     """Animate the optimization of a DRR."""
+    # Make the axes
     if ground_truth is None:
-        fig, ax_opt = plt.subplots()
+        fig, ax_opt = plt.subplots(
+            figsize=(3, 3),
+            constrained_layout=True,
+        )
     else:
-        fig, (ax_opt, ax_fix) = plt.subplots(ncols=2)
+        fig, (ax_fix, ax_opt) = plt.subplots(
+            ncols=2,
+            figsize=(6, 3),
+            constrained_layout=True,
+        )
 
+    # Precompute the DRRs
     imgs = _precompute_drrs(df, sdr, drr, verbose, ax=ax_opt)
     ax_opt.set(xlabel="Moving DRR")
 
+    # Plot the fixed DRR
     if ground_truth is not None:
         plot_drr(ground_truth, ax=ax_fix)
         ax_fix.set(xlabel="Fixed DRR")
 
+    # Make the animation
     anim = ArtistAnimation(fig, imgs, interval=50, blit=True, repeat_delay=1000)
+    plt.close()
+
     if out is None:
         return anim.to_jshtml()
     else:
