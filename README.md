@@ -1,7 +1,7 @@
-# DiffDRR 🩻
+# DiffDRR🩻
 [![Paper shield](https://img.shields.io/badge/Paper-arxiv.2208.12737-red)](https://arxiv.org/abs/2208.12737)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
-[![Build Status](https://github.com/v715/DiffDRR/actions/workflows/python-package-conda.yml/badge.svg?branch=main)](https://github.com/v715/DiffDRR/actions/workflows/python-package-conda.yml?query=branch%3Amain)
+[![Build Status](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml?query=branch%3Amain)
 [![Code style: black](https://img.shields.io/badge/Code%20style-black-black.svg)](https://github.com/psf/black)
 
 ## `DiffDRR` is a package for differentiable DRR synthesis and optimization
