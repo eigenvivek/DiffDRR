@@ -4,8 +4,8 @@ from pathlib import Path
 
 import click
 import numpy as np
-import scipy
 import torch
+from scipy.optimize import minimize
 from tqdm import tqdm
 
 from diffdrr import DRR, load_example_ct
@@ -63,12 +63,10 @@ def run_convergence_exp(
 
         # Start the training log
         writer = csv.writer(f, delimiter=",")
-        writer.writerow(
-            ["itr", "time", "loss", "theta", "phi", "gamma", "bx", "by", "bz"]
-        )
+        writer.writerow(["time", "loss", "theta", "phi", "gamma", "bx", "by", "bz"])
         t0 = time.perf_counter()
 
-        result = scipy.optimize.minimize(
+        result = minimize(
             objective_function,
             x0=[theta, phi, gamma, bx, by, bz],
             args=[drr, criterion, ground_truth, sdr],
