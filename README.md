@@ -25,12 +25,12 @@
 ## Installation Guide
 To build `DiffDRR` from source:
 ```zsh
-git clone https://github.com/v715/DiffDRR
+git clone https://github.com/eigenvivek/DiffDRR
 conda env create -f environment.yaml
 conda activate DiffDRR
 ```
 
-To install `DiffDRR` from PyPI ([coming soon](https://github.com/v715/DiffDRR/milestone/1)!):
+To install `DiffDRR` from PyPI ([coming soon](https://github.com/eigenvivek/DiffDRR/milestone/1)!):
 
 Install `pytest` to run tests.
 
@@ -85,7 +85,7 @@ Here, we generate two DRRs:
 To solve the registration problem, we use gradient descent to minimize an image loss similarity metric between the two DRRs.
 This produces optimization runs like this:
 
-![convergence](https://github.com/v715/DiffDRR/blob/main/experiments/registration/results/momentum_dampen/gifs/converged/649.gif)
+![convergence](https://github.com/eigenvivek/DiffDRR/blob/main/experiments/registration/results/momentum_dampen/gifs/converged/649.gif)
 
 The full example is available at [`experiments/registration`](experiments/registration).
 
