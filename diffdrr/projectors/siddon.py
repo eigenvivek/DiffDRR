@@ -16,11 +16,11 @@ class Siddon:
         self.dims += 1.0
 
     def get_alpha_minmax(self, source, target):
-        ssd = target - source + self.eps
+        ssd = target - source.unsqueeze(1).unsqueeze(1) + self.eps
         planes = torch.zeros(3, device=self.device)
-        alpha0 = (planes * self.spacing - source) / ssd
+        alpha0 = (planes * self.spacing - source).unsqueeze(1).unsqueeze(1) / ssd
         planes = self.dims - 1
-        alpha1 = (planes * self.spacing - source) / ssd
+        alpha1 = (planes * self.spacing - source).unsqueeze(1).unsqueeze(1) / ssd
         alphas = torch.stack([alpha0, alpha1])
 
         alphamin = alphas.min(dim=0).values.max(dim=-1).values
