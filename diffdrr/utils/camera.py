@@ -77,59 +77,63 @@ def _get_basis(rho, rotations, device):
 
 # Define 3D rotation matrices
 def Rxyz(rotations, device):
-    theta, phi, gamma = rotations
-    return Rz(theta, device) @ Ry(phi, device) @ Rx(gamma, device)
+    theta, phi, gamma = rotations[:, 0], rotations[:, 1], rotations[:, 2]
+    batch_size = len(rotations)
+    R_z = Rz(theta, batch_size, device)
+    R_y = Ry(phi, batch_size, device)
+    R_x = Rx(gamma, batch_size, device)
+    return torch.einsum("bij,bjk,bkl->bil", R_z, R_y, R_x)
 
 
-def Rx(theta, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
+def Rx(gamma, batch_size, device):
+    t0 = torch.zeros(batch_size, 1, device=device)
+    t1 = torch.ones(batch_size, 1, device=device)
     return torch.stack(
         [
             t1,
             t0,
             t0,
             t0,
-            torch.cos(theta),
-            -torch.sin(theta),
+            torch.cos(gamma.unsqueeze(1)),
+            -torch.sin(gamma.unsqueeze(1)),
             t0,
-            torch.sin(theta),
-            torch.cos(theta),
-        ]
-    ).reshape(3, 3)
+            torch.sin(gamma.unsqueeze(1)),
+            torch.cos(gamma.unsqueeze(1)),
+        ], dim=1
+    ).reshape(batch_size, 3, 3)
 
 
-def Ry(phi, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
+def Ry(phi, batch_size, device):
+    t0 = torch.zeros(batch_size, 1, device=device)
+    t1 = torch.ones(batch_size, 1, device=device)
     return torch.stack(
         [
-            torch.cos(phi),
+            torch.cos(phi.unsqueeze(1)),
             t0,
-            torch.sin(phi),
+            torch.sin(phi.unsqueeze(1)),
             t0,
             t1,
             t0,
-            -torch.sin(phi),
+            -torch.sin(phi.unsqueeze(1)),
             t0,
-            torch.cos(phi),
+            torch.cos(phi.unsqueeze(1)),
         ]
-    ).reshape(3, 3)
+    ).reshape(batch_size, 3, 3)
 
 
-def Rz(gamma, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
+def Rz(theta, batch_size, device):
+    t0 = torch.zeros(batch_size, 1, device=device)
+    t1 = torch.ones(batch_size, 1, device=device)
     return torch.stack(
         [
-            torch.cos(gamma),
-            -torch.sin(gamma),
+            torch.cos(theta.unsqueeze(1)),
+            -torch.sin(theta.unsqueeze(1)),
             t0,
-            torch.sin(gamma),
-            torch.cos(gamma),
+            torch.sin(theta.unsqueeze(1)),
+            torch.cos(theta.unsqueeze(1)),
             t0,
             t0,
             t0,
             t1,
         ]
-    ).reshape(3, 3)
+    ).reshape(batch_size, 3, 3)
