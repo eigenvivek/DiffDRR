@@ -99,34 +99,34 @@ def Rx(theta, device):
     ).reshape(3, 3)
 
 
-def Ry(theta, device):
+def Ry(phi, device):
     t0 = torch.zeros(1, device=device)[0]
     t1 = torch.ones(1, device=device)[0]
     return torch.stack(
         [
-            torch.cos(theta),
+            torch.cos(phi),
             t0,
-            torch.sin(theta),
+            torch.sin(phi),
             t0,
             t1,
             t0,
-            -torch.sin(theta),
+            -torch.sin(phi),
             t0,
-            torch.cos(theta),
+            torch.cos(phi),
         ]
     ).reshape(3, 3)
 
 
-def Rz(theta, device):
+def Rz(gamma, device):
     t0 = torch.zeros(1, device=device)[0]
     t1 = torch.ones(1, device=device)[0]
     return torch.stack(
         [
-            torch.cos(theta),
-            -torch.sin(theta),
+            torch.cos(gamma),
+            -torch.sin(gamma),
             t0,
-            torch.sin(theta),
-            torch.cos(theta),
+            torch.sin(gamma),
+            torch.cos(gamma),
             t0,
             t0,
             t0,
