@@ -63,12 +63,12 @@ def _get_basis(rho, rotations, device):
     R = rho * Rxyz(rotations, device)
 
     # Get the detector center and X-ray source
-    source = R[:, 0]
+    source = R[:, :, 0]
     center = -source
 
     # Get the basis of the detector plane (before translation)
     # TODO: normalizing the vectors seems to break the gradient, fix in future
-    u, v = R[:, 1], R[:, 2]
+    u, v = R[:, :, 1], R[:, :, 2]
     # u_ = u / torch.norm(u)
     # v_ = v / torch.norm(v)
 
