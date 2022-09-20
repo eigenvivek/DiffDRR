@@ -10,4 +10,6 @@ def test_Detector():
     sdr = torch.tensor([200.0])
     rotations = torch.rand(4, 3)
     translations = torch.rand(4, 3)
-    source, rays = detector.make_xrays(sdr, rotations, translations)
+    source, target = detector.make_xrays(sdr, rotations, translations)
+    assert source.shape == (4, 3)
+    assert target.shape == (4, 100, 100, 3)
