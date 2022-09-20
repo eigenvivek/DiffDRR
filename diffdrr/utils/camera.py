@@ -49,9 +49,9 @@ class Detector:
         t = (torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1) * self.delx
         s = (torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1) * self.dely
         coefs = torch.cartesian_prod(t, s).reshape(self.height, self.width, 2)
-        rays = torch.einsum("hwd,dbc->bhwc", coefs, torch.stack([u, v]))
-        rays += center.unsqueeze(1).unsqueeze(1)
-        return source, rays
+        target = torch.einsum("hwd,dbc->bhwc", coefs, torch.stack([u, v]))
+        target += center.unsqueeze(1).unsqueeze(1)
+        return source, target
 
 
 def _get_basis(rho, rotations, device):
