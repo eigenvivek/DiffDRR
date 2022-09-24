@@ -23,8 +23,8 @@ class Siddon:
         alpha1 = (planes * self.spacing - source).unsqueeze(1).unsqueeze(1) / sdd
         alphas = torch.stack([alpha0, alpha1])
 
-        alphamin = alphas.min(dim=0).values.max(dim=-1).values
-        alphamax = alphas.max(dim=0).values.min(dim=-1).values
+        alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(1)
+        alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(1)
         return alphamin, alphamax
 
     def get_alphas(self, source, target):
