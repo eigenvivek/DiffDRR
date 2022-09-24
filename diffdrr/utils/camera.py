@@ -46,16 +46,12 @@ class Detector:
         center += translations
 
         # Construt the detector plane
-        t = (
-            torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1
-        ) * self.delx
-        s = (
-            torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1
-        ) * self.dely
+        t = (torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1) * self.delx
+        s = (torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1) * self.dely
         coefs = torch.cartesian_prod(t, s).reshape(self.height, self.width, 2)
-        rays = coefs @ torch.stack([u, v])
-        rays += center
-        return source, rays
+        target = torch.einsum("hwd,dbc->bhwc", coefs, torch.stack([u, v]))
+        target += center.unsqueeze(1).unsqueeze(1)
+        return source, target
 
 
 def _get_basis(rho, rotations, device):
@@ -63,12 +59,12 @@ def _get_basis(rho, rotations, device):
     R = rho * Rxyz(rotations, device)
 
     # Get the detector center and X-ray source
-    source = R[:, 0]
+    source = R[:, :, 0]
     center = -source
 
     # Get the basis of the detector plane (before translation)
     # TODO: normalizing the vectors seems to break the gradient, fix in future
-    u, v = R[:, 1], R[:, 2]
+    u, v = R[:, :, 1], R[:, :, 2]
     # u_ = u / torch.norm(u)
     # v_ = v / torch.norm(v)
 
@@ -77,59 +73,63 @@ def _get_basis(rho, rotations, device):
 
 # Define 3D rotation matrices
 def Rxyz(rotations, device):
-    theta, phi, gamma = rotations
-    return Rz(theta, device) @ Ry(phi, device) @ Rx(gamma, device)
+    theta, phi, gamma = rotations[:, 0], rotations[:, 1], rotations[:, 2]
+    batch_size = len(rotations)
+    R_z = Rz(theta, batch_size, device)
+    R_y = Ry(phi, batch_size, device)
+    R_x = Rx(gamma, batch_size, device)
+    return torch.einsum("bij,bjk,bkl->bil", R_z, R_y, R_x)
 
 
-def Rx(theta, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
+def Rx(gamma, batch_size, device):
+    t0 = torch.zeros(batch_size, 1, device=device)
+    t1 = torch.ones(batch_size, 1, device=device)
     return torch.stack(
         [
             t1,
             t0,
             t0,
             t0,
-            torch.cos(theta),
-            -torch.sin(theta),
+            torch.cos(gamma.unsqueeze(1)),
+            -torch.sin(gamma.unsqueeze(1)),
             t0,
-            torch.sin(theta),
-            torch.cos(theta),
-        ]
-    ).reshape(3, 3)
+            torch.sin(gamma.unsqueeze(1)),
+            torch.cos(gamma.unsqueeze(1)),
+        ], dim=1
+    ).reshape(batch_size, 3, 3)
 
 
-def Ry(theta, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
+def Ry(phi, batch_size, device):
+    t0 = torch.zeros(batch_size, 1, device=device)
+    t1 = torch.ones(batch_size, 1, device=device)
     return torch.stack(
         [
-            torch.cos(theta),
+            torch.cos(phi.unsqueeze(1)),
             t0,
-            torch.sin(theta),
+            torch.sin(phi.unsqueeze(1)),
             t0,
             t1,
             t0,
-            -torch.sin(theta),
+            -torch.sin(phi.unsqueeze(1)),
             t0,
-            torch.cos(theta),
+            torch.cos(phi.unsqueeze(1)),
         ]
-    ).reshape(3, 3)
+    ).reshape(batch_size, 3, 3)
 
 
-def Rz(theta, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
+def Rz(theta, batch_size, device):
+    t0 = torch.zeros(batch_size, 1, device=device)
+    t1 = torch.ones(batch_size, 1, device=device)
     return torch.stack(
         [
-            torch.cos(theta),
-            -torch.sin(theta),
+            torch.cos(theta.unsqueeze(1)),
+            -torch.sin(theta.unsqueeze(1)),
             t0,
-            torch.sin(theta),
-            torch.cos(theta),
+            torch.sin(theta.unsqueeze(1)),
+            torch.cos(theta.unsqueeze(1)),
             t0,
             t0,
             t0,
             t1,
         ]
-    ).reshape(3, 3)
+    ).reshape(batch_size, 3, 3)
