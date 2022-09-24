@@ -56,7 +56,7 @@ class Siddon:
         # Sort the alphas by ray, putting nans at the end of the list
         # Drop indices where alphas for all rays are nan
         alphas = torch.sort(alphas, dim=1).values
-        alphas = alphas[~alphas.isnan().all(dim=-1).all(dim=-1)]
+        alphas = alphas[:, ~alphas.isnan().all(dim=-1).all(dim=-1).all(dim=0), ...]
         return alphas
 
     def get_voxel(self, alpha, source, target):
