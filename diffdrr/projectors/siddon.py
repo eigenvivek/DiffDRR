@@ -80,7 +80,7 @@ class Siddon:
 
     def raytrace(self, source, target):
         alphas = self.get_alphas(source, target)
-        alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
+        alphamid = (alphas[:, 0:-1] + alphas[:, 1:]) / 2
         voxels = self.get_voxel(alphamid, source, target)
 
         # Step length for alphas out of range will be nan
@@ -88,7 +88,7 @@ class Siddon:
         step_length = torch.diff(alphas, dim=1)
         weighted_voxels = voxels * step_length
 
-        drr = torch.nansum(weighted_voxels, dim=0)
+        drr = torch.nansum(weighted_voxels, dim=1)
         raylength = (target - source.unsqueeze(1).unsqueeze(1) + self.eps).norm(dim=-1)
         drr *= raylength
         return drr
