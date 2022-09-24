@@ -60,12 +60,16 @@ class Siddon:
         return alphas
 
     def get_voxel(self, alpha, source, target):
-        sdd = target - source + self.eps  # source-to-detector distance
-        idxs = ((source + alpha.unsqueeze(-1) * sdd) / self.spacing).trunc()
+        source = source.unsqueeze(1).unsqueeze(1)
+        sdd = target - source + self.eps
         idxs = (
-            idxs[:, :, :, 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
-            + idxs[:, :, :, 1] * (self.dims[2] - 1)
-            + idxs[:, :, :, 2]
+            (source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(1))
+            / self.spacing
+        ).trunc()
+        idxs = (
+            idxs[..., 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
+            + idxs[..., 1] * (self.dims[2] - 1)
+            + idxs[..., 2]
         ).long() + 1
 
         # Conversion to long makes nan->-inf, so temporarily replace them with 0
@@ -76,7 +80,7 @@ class Siddon:
 
     def raytrace(self, source, target):
         alphas = self.get_alphas(source, target)
-        alphamid = (alphas[0:-1] + alphas[1:]) / 2
+        alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
         voxels = self.get_voxel(alphamid, source, target)
 
         # Step length for alphas out of range will be nan
