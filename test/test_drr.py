@@ -20,4 +20,4 @@ def test_DRR():
     except ValueError:
         drr = DRR(volume, spacing, height=200, delx=1.4e-2, device="cpu")
     img = drr(**detector_kwargs)
-    assert img.shape == (200, 200)
+    assert img.shape == (1, 200, 200)
