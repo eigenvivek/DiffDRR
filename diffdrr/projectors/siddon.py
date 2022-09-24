@@ -4,7 +4,7 @@ import torch
 class Siddon:
     """A vectorized version of the Siddon ray tracing algorithm."""
 
-    def __init__(self, volume, spacing, device, eps=10e-10):
+    def __init__(self, volume, spacing, device, eps=1e-9):
         self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
         self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
         self.device = device
@@ -34,16 +34,19 @@ class Siddon:
         self.maxidx = ((nx - 1) * (ny - 1) * (nz - 1)).int().item() - 1
 
         # Get the alpha at each plane intersection
-        sx, sy, sz = source
-        alphax = torch.arange(nx, dtype=torch.float32, device=self.device) * dx - sx
-        alphay = torch.arange(ny, dtype=torch.float32, device=self.device) * dy - sy
-        alphaz = torch.arange(nz, dtype=torch.float32, device=self.device) * dz - sz
+        sx, sy, sz = source[:, 0], source[:, 1], source[:, 2]
+        alphax = torch.arange(nx, dtype=torch.float32, device=self.device) * dx
+        alphay = torch.arange(ny, dtype=torch.float32, device=self.device) * dy
+        alphaz = torch.arange(nz, dtype=torch.float32, device=self.device) * dz
+        alphax = alphax.expand(len(source), -1) - sx.unsqueeze(-1)
+        alphay = alphay.expand(len(source), -1) - sy.unsqueeze(-1)
+        alphaz = alphaz.expand(len(source), -1) - sz.unsqueeze(-1)
 
-        sdd = target - source + self.eps  # source-to-detector distance
-        alphax = alphax.unsqueeze(-1).unsqueeze(-1) / sdd[:, :, 0]
-        alphay = alphay.unsqueeze(-1).unsqueeze(-1) / sdd[:, :, 1]
-        alphaz = alphaz.unsqueeze(-1).unsqueeze(-1) / sdd[:, :, 2]
-        alphas = torch.vstack([alphax, alphay, alphaz])
+        sdd = target - source.unsqueeze(1).unsqueeze(1) + self.eps
+        alphax = alphax.unsqueeze(-1).unsqueeze(-1) / sdd[..., 0].unsqueeze(1)
+        alphay = alphay.unsqueeze(-1).unsqueeze(-1) / sdd[..., 1].unsqueeze(1)
+        alphaz = alphaz.unsqueeze(-1).unsqueeze(-1) / sdd[..., 2].unsqueeze(1)
+        alphas = torch.cat([alphax, alphay, alphaz], dim=1)
 
         # Get the alphas within the range [alphamin, alphamax]
         alphamin, alphamax = self.get_alpha_minmax(source, target)
@@ -52,7 +55,7 @@ class Siddon:
 
         # Sort the alphas by ray, putting nans at the end of the list
         # Drop indices where alphas for all rays are nan
-        alphas = torch.sort(alphas, dim=0).values
+        alphas = torch.sort(alphas, dim=1).values
         alphas = alphas[~alphas.isnan().all(dim=-1).all(dim=-1)]
         return alphas
 
