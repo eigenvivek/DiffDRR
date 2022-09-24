@@ -85,10 +85,10 @@ class Siddon:
 
         # Step length for alphas out of range will be nan
         # These nans cancel out voxels convereted to 0 index
-        step_length = torch.diff(alphas, dim=0)
+        step_length = torch.diff(alphas, dim=1)
         weighted_voxels = voxels * step_length
 
         drr = torch.nansum(weighted_voxels, dim=0)
-        raylength = (target - source + self.eps).norm(dim=-1)
+        raylength = (target - source.unsqueeze(1).unsqueeze(1) + self.eps).norm(dim=-1)
         drr *= raylength
         return drr
