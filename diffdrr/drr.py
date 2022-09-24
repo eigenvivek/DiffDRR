@@ -82,12 +82,12 @@ class DRR(nn.Module):
         params = [sdr, theta, phi, gamma, bx, by, bz]
         if any(arg is not None for arg in params):
             self.initialize_parameters(*params)
-        source, rays = self.detector.make_xrays(
+        source, target = self.detector.make_xrays(
             self.sdr,
             self.rotations,
             self.translations,
         )
-        drr = self.siddon.raytrace(source, rays)
+        drr = self.siddon.raytrace(source, target)
         return drr
 
     def initialize_parameters(self, sdr, theta, phi, gamma, bx, by, bz):
@@ -108,17 +108,18 @@ class DRR(nn.Module):
             If True, return differentiable vectors for rotations and translations
         """
         tensor_args = {"dtype": torch.float32, "device": self.device}
-        self.sdr = nn.Parameter(
-            torch.tensor(sdr, **tensor_args), requires_grad=False
-        )  # Assume that SDR is given for a 6DoF registration problem
-        self.rotations = nn.Parameter(torch.tensor([theta, phi, gamma], **tensor_args))
-        self.translations = nn.Parameter(torch.tensor([bx, by, bz], **tensor_args))
+        # Assume that SDR is given for a 6DoF registration problem
+        self.sdr = nn.Parameter(torch.tensor([sdr], **tensor_args), requires_grad=False)
+        self.rotations = nn.Parameter(
+            torch.tensor([[theta, phi, gamma]], **tensor_args)
+        )
+        self.translations = nn.Parameter(torch.tensor([[bx, by, bz]], **tensor_args))
 
     def plot_geometry(self, ax=None):
         """Visualize the geometry of the detector."""
         if len(list(self.parameters())) == 0:
             raise ValueError("Parameters uninitialized.")
-        source, rays = self.detector.make_xrays(
+        source, target = self.detector.make_xrays(
             self.sdr,
             self.rotations,
             self.translations,
@@ -126,7 +127,7 @@ class DRR(nn.Module):
         if ax is None:
             fig = plt.figure()
             ax = fig.add_subplot(projection="3d")
-        ax = plot_camera(source, rays, ax)
+        ax = plot_camera(source, target, ax)
         ax = plot_volume(
             np.array(self.siddon.volume.detach().cpu()),
             np.array(self.siddon.spacing.detach().cpu()),
