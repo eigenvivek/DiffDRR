@@ -1,7 +1,8 @@
 # DiffDRR🩻
-[![Paper shield](https://img.shields.io/badge/Paper-arxiv.2208.12737-red)](https://arxiv.org/abs/2208.12737)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Build Status](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml?query=branch%3Amain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-macOS%20|%20linux%20-blue)
+[![Paper shield](https://img.shields.io/badge/Paper-arxiv.2208.12737-red)](https://arxiv.org/abs/2208.12737)
 [![Code style: black](https://img.shields.io/badge/Code%20style-black-black.svg)](https://github.com/psf/black)
 
 ## `DiffDRR` is a package for differentiable DRR synthesis and optimization
