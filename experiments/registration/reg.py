@@ -80,8 +80,8 @@ def run_convergence_exp(
 
             # Compute the negative ZNCC as loss
             loss = -criterion(ground_truth, estimate)
-            theta, phi, gamma = drr.rotations
-            bx, by, bz = drr.translations
+            theta, phi, gamma = drr.rotations.squeeze()
+            bx, by, bz = drr.translations.squeeze()
             writer.writerow(
                 [itr, t1 - t0]
                 + [i.item() for i in [loss, theta, phi, gamma, bx, by, bz]]
