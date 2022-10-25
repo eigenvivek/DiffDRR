@@ -10,8 +10,6 @@ from tqdm import tqdm
 from diffdrr import DRR, load_example_ct
 from diffdrr.metrics import XCorr2
 
-torch.autograd.set_detect_anomaly(True)
-
 
 def get_true_drr():
     volume, spacing = load_example_ct()
@@ -52,7 +50,7 @@ def run_convergence_exp(
     sdr, theta, phi, gamma, bx, by, bz = get_initial_parameters(true_params)
     _ = drr(sdr, theta, phi, gamma, bx, by, bz)  # Initialize the DRR generator
     criterion = XCorr2(zero_mean_normalized=True)
-    optimizer = torch.optim.LBFGS([drr.rotations, drr.translations], lr=lr)
+    optimizer = torch.optim.LBFGS([drr.rotations, drr.translations], line_search_fn="strong_wolfe")
 
     with open(filename, "w") as f:
 
@@ -61,48 +59,45 @@ def run_convergence_exp(
         writer.writerow(
             ["itr", "time", "loss", "theta", "phi", "gamma", "bx", "by", "bz"]
         )
-        t0 = time.perf_counter()
 
         # Start the training loop
         for itr in range(n_itrs):
-            t1 = time.perf_counter()
-
-            def closure():
-                # Compute the negative ZNCC as loss
-                estimate = drr()
+            def closure(drr=drr, ground_truth=ground_truth):
                 optimizer.zero_grad()
+                estimate = drr()
                 loss = -criterion(ground_truth, estimate)
                 loss.backward(retain_graph=True)
-
-                theta, phi, gamma = drr.rotations.squeeze()
-                bx, by, bz = drr.translations.squeeze()
-                writer.writerow(
-                    [itr, t1 - t0]
-                    + [i.item() for i in [loss, theta, phi, gamma, bx, by, bz]]
-                )
-                if debug:
-                    if itr % 25 == 0:
-                        print(itr, loss.item())
                 if loss < -0.999:
-                    tqdm.write(f"Converged in {itr} iterations")
                     raise StopIteration
-
                 return loss
 
+            # Time optimization
+            t0 = time.perf_counter()
             try:
                 optimizer.step(closure)
             except StopIteration:
                 break
+            t1 = time.perf_counter()
 
-            t0 = t1
-
+            # Write iteration step
+            estimate = drr()
+            loss = -criterion(ground_truth, estimate)
+            theta, phi, gamma = drr.rotations.squeeze()
+            bx, by, bz = drr.translations.squeeze()
+            writer.writerow(
+                [itr, t1 - t0]
+                + [i.item() for i in [loss, theta, phi, gamma, bx, by, bz]]
+            )
+            if debug:
+                if itr % 25 == 0:
+                    print(itr, loss.item())
 
 @click.command()
 @click.option(
-    "-n", "--n_drrs", type=int, default=100, help="Number of DRRs to try to optimize"
+    "-n", "--n_drrs", type=int, default=1000, help="Number of DRRs to try to optimize"
 )
 @click.option(
-    "-i", "--n_itrs", type=int, default=500, help="Number of iterations per DRR"
+    "-i", "--n_itrs", type=int, default=100, help="Number of iterations per DRR"
 )
 @click.option(
     "-d", "--debug", is_flag=True, default=False, help="Print debug information"
