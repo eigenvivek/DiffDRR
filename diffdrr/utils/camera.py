@@ -42,16 +42,15 @@ class Detector:
 
         # Get the detector plane normal vector
         assert len(rotations) == len(translations)
-        batch_size = len(rotations)
         source, center, basis = _get_basis(sdr, rotations, self.device)
-        source += translations
-        center += translations
+        source += translations.unsqueeze(1)
+        center += translations.unsqueeze(1)
 
         # Construt the detector plane
         t = (torch.arange(-self.height // 2, self.height // 2) + 1) * self.delx
         s = (torch.arange(-self.width // 2, self.width // 2) + 1) * self.dely
-        coefs = torch.cartesian_prod(t, s).reshape(batch_size, -1, 2).to(self.device)
-        target = torch.einsum("bnc,bcd->bnd", coefs, basis)
+        coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(self.device)
+        target = torch.einsum("nc,bcd->bnd", coefs, basis)
         target += center
         return source, target
 
