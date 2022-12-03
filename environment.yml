@@ -16,6 +16,7 @@ dependencies:
   - black
   - flake8
   - ipykernel
+  - ipywidgets
   - tqdm
   - pytest
   - pip:
