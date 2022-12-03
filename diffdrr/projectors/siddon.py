@@ -61,7 +61,7 @@ class Siddon:
 
     def get_voxel(self, alpha, source, target):
         sdd = target - source + self.eps
-        idxs = (source + alpha.unsqueeze(-1) * sdd.unsqueeze(2)) / sid.spacing
+        idxs = (source + alpha.unsqueeze(-1) * sdd.unsqueeze(2)) / self.spacing
         idxs = idxs.trunc()
         idxs = (
             idxs[..., 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
