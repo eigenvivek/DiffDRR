@@ -32,25 +32,26 @@ class Detector:
         """
         Inputs
         ------
-            sdr : torch.Tensor
-                Source-to-Detector radius (half of the Source-to-Detector distance)
-            rotations : torch.Tensor
-                Vector of C-Arm rotations (theta, phi, gamma) for azimuthal, polar, and roll
-            translations : torch.Tensor
-                Vector of volume translations (bx, by, bz)
+        sdr : torch.Tensor
+            Source-to-Detector radius (half of the Source-to-Detector distance)
+        rotations : torch.Tensor
+            Vector of C-Arm rotations (theta, phi, gamma) for azimuthal, polar, and roll
+        translations : torch.Tensor
+            Vector of volume translations (bx, by, bz)
         """
 
         # Get the detector plane normal vector
-        source, center, u, v = _get_basis(sdr, rotations, self.device)
-        source += translations
-        center += translations
+        assert len(rotations) == len(translations)
+        source, center, basis = _get_basis(sdr, rotations, self.device)
+        source += translations.unsqueeze(1)
+        center += translations.unsqueeze(1)
 
         # Construt the detector plane
-        t = (torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1) * self.delx
-        s = (torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1) * self.dely
-        coefs = torch.cartesian_prod(t, s).reshape(self.height, self.width, 2)
-        target = torch.einsum("hwd,dbc->bhwc", coefs, torch.stack([u, v]))
-        target += center.unsqueeze(1).unsqueeze(1)
+        t = (torch.arange(-self.height // 2, self.height // 2) + 1) * self.delx
+        s = (torch.arange(-self.width // 2, self.width // 2) + 1) * self.dely
+        coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(self.device)
+        target = torch.einsum("nc,bcd->bnd", coefs, basis)
+        target += center
         return source, target
 
 
@@ -59,16 +60,17 @@ def _get_basis(rho, rotations, device):
     R = rho * Rxyz(rotations, device)
 
     # Get the detector center and X-ray source
-    source = R[:, :, 0]
+    source = R[..., 0].unsqueeze(1)
     center = -source
 
     # Get the basis of the detector plane (before translation)
     # TODO: normalizing the vectors seems to break the gradient, fix in future
-    u, v = R[:, :, 1], R[:, :, 2]
+    u, v = R[..., 1], R[..., 2]
+    basis = torch.stack([u, v], dim=1)
     # u_ = u / torch.norm(u)
     # v_ = v / torch.norm(v)
 
-    return source, center, u, v
+    return source, center, basis
 
 
 # Define 3D rotation matrices
@@ -95,7 +97,8 @@ def Rx(gamma, batch_size, device):
             t0,
             torch.sin(gamma.unsqueeze(1)),
             torch.cos(gamma.unsqueeze(1)),
-        ], dim=1
+        ],
+        dim=1,
     ).reshape(batch_size, 3, 3)
 
 

@@ -2,19 +2,22 @@ name: DiffDRR
 channels:
   - defaults
   - pytorch
+  - nvidia
   - conda-forge
 dependencies:
-  - python=3.7
+  - python=3.8
   - pip
-  - pytorch>1.12
-  - torchvision>0.5
-  - cudatoolkit=11.3
+  - pytorch>=1.13
+  - torchvision
+  - pytorch-cuda=11.7
   - pydicom
   - matplotlib
   - seaborn
   - black
   - flake8
   - ipykernel
+  - ipywidgets
   - tqdm
+  - pytest
   - pip:
       - -e .  # Install the local package (DiffDRR)
