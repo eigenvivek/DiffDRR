@@ -16,15 +16,15 @@ class Siddon:
         self.dims += 1.0
 
     def get_alpha_minmax(self, source, target):
-        sdd = target - source.unsqueeze(1).unsqueeze(1) + self.eps
+        sdd = target - source + self.eps
         planes = torch.zeros(3, device=self.device)
-        alpha0 = (planes * self.spacing - source).unsqueeze(1).unsqueeze(1) / sdd
+        alpha0 = (planes * self.spacing - source) / sdd
         planes = self.dims - 1
-        alpha1 = (planes * self.spacing - source).unsqueeze(1).unsqueeze(1) / sdd
+        alpha1 = (planes * self.spacing - source) / sdd
         alphas = torch.stack([alpha0, alpha1])
 
-        alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(1)
-        alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(1)
+        alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
+        alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(-1)
         return alphamin, alphamax
 
     def get_alphas(self, source, target):
@@ -34,7 +34,7 @@ class Siddon:
         self.maxidx = ((nx - 1) * (ny - 1) * (nz - 1)).int().item() - 1
 
         # Get the alpha at each plane intersection
-        sx, sy, sz = source[:, 0], source[:, 1], source[:, 2]
+        sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
         alphax = torch.arange(nx, dtype=torch.float32, device=self.device) * dx
         alphay = torch.arange(ny, dtype=torch.float32, device=self.device) * dy
         alphaz = torch.arange(nz, dtype=torch.float32, device=self.device) * dz
@@ -42,11 +42,11 @@ class Siddon:
         alphay = alphay.expand(len(source), -1) - sy.unsqueeze(-1)
         alphaz = alphaz.expand(len(source), -1) - sz.unsqueeze(-1)
 
-        sdd = target - source.unsqueeze(1).unsqueeze(1) + self.eps
-        alphax = alphax.unsqueeze(-1).unsqueeze(-1) / sdd[..., 0].unsqueeze(1)
-        alphay = alphay.unsqueeze(-1).unsqueeze(-1) / sdd[..., 1].unsqueeze(1)
-        alphaz = alphaz.unsqueeze(-1).unsqueeze(-1) / sdd[..., 2].unsqueeze(1)
-        alphas = torch.cat([alphax, alphay, alphaz], dim=1)
+        sdd = target - source + self.eps
+        alphax = alphax / sdd[..., 0].unsqueeze(-1)
+        alphay = alphay / sdd[..., 1].unsqueeze(-1)
+        alphaz = alphaz / sdd[..., 2].unsqueeze(-1)
+        alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
         # Get the alphas within the range [alphamin, alphamax]
         alphamin, alphamax = self.get_alpha_minmax(source, target)
@@ -55,17 +55,14 @@ class Siddon:
 
         # Sort the alphas by ray, putting nans at the end of the list
         # Drop indices where alphas for all rays are nan
-        alphas = torch.sort(alphas, dim=1).values
-        alphas = alphas[:, ~alphas.isnan().all(dim=-1).all(dim=-1).all(dim=0), ...]
+        alphas = torch.sort(alphas, dim=-1).values
+        alphas = alphas[..., ~alphas.isnan().all(dim=0).all(dim=0)]
         return alphas
 
     def get_voxel(self, alpha, source, target):
-        source = source.unsqueeze(1).unsqueeze(1)
         sdd = target - source + self.eps
-        idxs = (
-            (source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(1))
-            / self.spacing
-        ).trunc()
+        idxs = (source + alpha.unsqueeze(-1) * sdd.unsqueeze(2)) / sid.spacing
+        idxs = idxs.trunc()
         idxs = (
             idxs[..., 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
             + idxs[..., 1] * (self.dims[2] - 1)
@@ -80,15 +77,15 @@ class Siddon:
 
     def raytrace(self, source, target):
         alphas = self.get_alphas(source, target)
-        alphamid = (alphas[:, 0:-1] + alphas[:, 1:]) / 2
+        alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
         voxels = self.get_voxel(alphamid, source, target)
 
         # Step length for alphas out of range will be nan
         # These nans cancel out voxels convereted to 0 index
-        step_length = torch.diff(alphas, dim=1)
+        step_length = torch.diff(alphas, dim=-1)
         weighted_voxels = voxels * step_length
 
-        drr = torch.nansum(weighted_voxels, dim=1)
-        raylength = (target - source.unsqueeze(1).unsqueeze(1) + self.eps).norm(dim=-1)
+        drr = torch.nansum(weighted_voxels, dim=-1)
+        raylength = (target - source + self.eps).norm(dim=-1)
         drr *= raylength
         return drr
