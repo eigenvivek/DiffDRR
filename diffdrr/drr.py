@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 
 from .projectors.siddon import Siddon
-from .projectors.siddon_jacobs import SiddonJacobs
 from .utils.backend import get_device
 from .utils.camera import Detector
 from .visualization import plot_camera, plot_volume
@@ -56,7 +55,9 @@ class DRR(nn.Module):
         if projector == "siddon":
             self.siddon = Siddon(volume, spacing, device)
         elif projector == "siddon_jacobs":
-            self.siddon = SiddonJacobs(volume, spacing, device)
+            raise DeprecationWarning(
+                "Siddon-Jacobs projector is deprecated and does not work in this version."
+            )
         else:
             raise ValueError("Invalid projector type.")
         self.register_parameter("sdr", None)
