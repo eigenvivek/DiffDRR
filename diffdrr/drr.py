@@ -89,6 +89,7 @@ class DRR(nn.Module):
             self.translations,
         )
         drr = self.siddon.raytrace(source, target)
+        drr = drr.view(-1, self.detector.height, self.detector.width)
         return drr
 
     def initialize_parameters(self, sdr, theta, phi, gamma, bx, by, bz):
