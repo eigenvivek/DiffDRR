@@ -41,7 +41,7 @@ The following minimal example specifies the geometry of the projectional radiogr
 
 ```Python
 import matplotlib.pyplot as plt
-import numpy as np
+import torch
 
 from diffdrr import DRR, load_example_ct
 from diffdrr.visualization import plot_drr
@@ -50,12 +50,12 @@ from diffdrr.visualization import plot_drr
 volume, spacing = load_example_ct()
 
 # Get parameters for the detector
-bx, by, bz = np.array(volume.shape) * np.array(spacing) / 2
+bx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2
 detector_kwargs = {
     "sdr"   : 300.0,
-    "theta" : np.pi,
+    "theta" : torch.pi,
     "phi"   : 0,
-    "gamma" : np.pi / 2,
+    "gamma" : torch.pi / 2,
     "bx"    : bx,
     "by"    : by,
     "bz"    : bz,
@@ -69,7 +69,7 @@ ax = plot_drr(img)
 plt.show()
 ```
 
-which produces the following image (in `69.5 ms ± 24.1 µs` on a single NVIDIA RTX 2080 Ti GPU):
+which produces the following image (in `48.3 ms ± 33 µs` on a single NVIDIA RTX 2080 Ti GPU):
 
 ![example_drr](figures/example_drr.png)
 
