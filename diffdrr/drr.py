@@ -45,7 +45,7 @@ class DRR(nn.Module):
         subsample : int, optional
             Number of target points to randomly sample
         reshape : bool, optional
-            If True, return DRR as (b, n1, n2, 1) tensor. If False, return as (b, n, 1) tensor.
+            If True, return DRR as (b, n1, n2) tensor. If False, return as (b, n) tensor.
         device : str
             Compute device, either "cpu", "cuda", or "mps".
         """
