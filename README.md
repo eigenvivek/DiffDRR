@@ -62,14 +62,14 @@ detector_kwargs = {
 }
 
 # Make the DRR
-drr = DRR(volume, spacing, height=200, delx=1.4e-2, device="cuda")
+drr = DRR(volume, spacing, height=200, delx=4.0, device="cuda")
 img = drr(**detector_kwargs)
 
 ax = plot_drr(img)
 plt.show()
 ```
 
-which produces the following image (in `48.3 ms ± 33 µs` on a single NVIDIA RTX 2080 Ti GPU):
+which produces the following image (in `48.8 ms ± 52.2 µs` on a single NVIDIA RTX 2080 Ti GPU):
 
 ![example_drr](figures/example_drr.png)
 
