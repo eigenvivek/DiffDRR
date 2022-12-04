@@ -8,8 +8,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install Conda environment from environment.yml
+    - name: Install Conda environment with Micromamba
       uses: mamba-org/provision-with-micromamba@main
+      with:
+        environment-file: environment.yml
+        channels: pytorch,nvidia
 
     - name: Test with pytest
       run: |
