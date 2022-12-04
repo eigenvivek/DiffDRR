@@ -12,8 +12,9 @@ jobs:
       uses: mamba-org/provision-with-micromamba@main
       with:
         environment-file: environment.yml
+        cache-downloads: true
+        cache-env: true
 
     - name: Test with pytest
       run: |
-        mamba install pytest
         python -m pytest
