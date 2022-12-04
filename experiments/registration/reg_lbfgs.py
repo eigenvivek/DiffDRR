@@ -50,7 +50,9 @@ def run_convergence_exp(
     sdr, theta, phi, gamma, bx, by, bz = get_initial_parameters(true_params)
     _ = drr(sdr, theta, phi, gamma, bx, by, bz)  # Initialize the DRR generator
     criterion = XCorr2(zero_mean_normalized=True)
-    optimizer = torch.optim.LBFGS([drr.rotations, drr.translations], line_search_fn="strong_wolfe")
+    optimizer = torch.optim.LBFGS(
+        [drr.rotations, drr.translations], line_search_fn="strong_wolfe"
+    )
 
     with open(filename, "w") as f:
 
@@ -62,6 +64,7 @@ def run_convergence_exp(
 
         # Start the training loop
         for itr in range(n_itrs):
+
             def closure(drr=drr, ground_truth=ground_truth):
                 optimizer.zero_grad()
                 estimate = drr()
@@ -92,6 +95,7 @@ def run_convergence_exp(
                 if itr % 25 == 0:
                     print(itr, loss.item())
 
+
 @click.command()
 @click.option(
     "-n", "--n_drrs", type=int, default=1000, help="Number of DRRs to try to optimize"
@@ -108,7 +112,7 @@ def main(n_drrs, n_itrs, debug, lr, outdir):
 
     # Get the ground truth DRR
     volume, spacing, true_params = get_true_drr()
-    drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
+    drr = DRR(volume, spacing, height=100, delx=10.0, device="cuda")
     ground_truth = drr(**true_params)
 
     # Estimate a random DRR and try to optimize its parameters

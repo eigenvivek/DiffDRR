@@ -39,7 +39,7 @@ def make_image(drr, true_params):
 @click.option("-o", "--outdir", default="dataset/", help="Output directory")
 def main(n_train, n_test, n_val, outdir):
     volume, spacing, true_params = make_ground_truth()
-    drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
+    drr = DRR(volume, spacing, height=100, delx=10.0, device="cuda")
 
     # Save the datasets
     outdir = Path(f"experiments/initialization/{outdir}")
