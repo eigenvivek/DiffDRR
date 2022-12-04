@@ -12,8 +12,6 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install Conda environment from environment.yml
       uses: mamba-org/provision-with-micromamba@main
-      with:
-        cache-env: true
 
     - name: Test with pytest
       run: |
