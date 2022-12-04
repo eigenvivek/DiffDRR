@@ -128,7 +128,7 @@ def main(
 
     # Get the ground truth DRR
     volume, spacing, true_params = get_true_drr()
-    drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
+    drr = DRR(volume, spacing, height=100, delx=10.0, device="cuda")
     ground_truth = drr(**true_params)
 
     # Estimate a random DRR and try to optimize its parameters

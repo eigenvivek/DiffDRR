@@ -22,7 +22,7 @@ def make_dirs(outdir):
 def make_groundtruth():
     volume, spacing = load_example_ct()
     bx, by, bz = np.array(volume.shape) * np.array(spacing) / 2
-    drr = DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
+    drr = DRR(volume, spacing, height=100, delx=10.0, device="cuda")
     sdr = 200.0
     ground_truth = drr(sdr, np.pi, 0, np.pi / 2, bx, by, bz)
     return drr, sdr, ground_truth
