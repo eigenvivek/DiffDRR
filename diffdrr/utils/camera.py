@@ -1,4 +1,5 @@
 import torch
+from torch.nn.functional import normalize
 
 from .backend import get_device
 
@@ -64,11 +65,9 @@ def _get_basis(rho, rotations, device):
     center = -source
 
     # Get the basis of the detector plane (before translation)
-    # TODO: normalizing the vectors seems to break the gradient, fix in future
-    u, v = R[..., 1], R[..., 2]
+    R_ = normalize(R.clone(), dim=-1)
+    u, v = R_[..., 1], R_[..., 2]
     basis = torch.stack([u, v], dim=1)
-    # u_ = u / torch.norm(u)
-    # v_ = v / torch.norm(v)
 
     return source, center, basis
 
