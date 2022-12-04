@@ -20,6 +20,7 @@ class DRR(nn.Module):
         dely=None,
         projector="siddon",
         device="cpu",
+        reshape=True,
     ):
         """
         Class for generating DRRs.
@@ -42,6 +43,8 @@ class DRR(nn.Module):
             The type of projector, either "siddon" or "siddon_jacobs".
         device : str
             Compute device, either "cpu", "cuda", or "mps".
+        reshape : bool, optional
+            If True, return DRR as (b, n1, n2, 1) tensor. If False, return as (b, n, 1) tensor.
         """
         super().__init__()
         self.device = get_device(device)
@@ -63,6 +66,8 @@ class DRR(nn.Module):
         self.register_parameter("sdr", None)
         self.register_parameter("rotations", None)
         self.register_parameter("translations", None)
+
+        self.reshape = reshape
 
     def forward(
         self,
@@ -89,7 +94,8 @@ class DRR(nn.Module):
             self.translations,
         )
         drr = self.siddon.raytrace(source, target)
-        drr = drr.view(-1, self.detector.height, self.detector.width)
+        if self.reshape:
+            drr = drr.view(-1, self.detector.height, self.detector.width)
         return drr
 
     def initialize_parameters(self, sdr, theta, phi, gamma, bx, by, bz):
