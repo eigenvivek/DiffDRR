@@ -18,16 +18,25 @@ class Detector:
         Pixel spacing in the X-direction of the X-ray detector
     dely : float
         Pixel spacing in the Y-direction of the X-ray detector
+    subsample : int
+        Number of target points to randomly sample
     device : str or torch.device
         Compute device. If str, either "cpu", "cuda", or "mps".
     """
 
-    def __init__(self, height, width, delx, dely, device):
+    def __init__(self, height, width, delx, dely, subsample, device):
         self.height = height
         self.width = width
         self.delx = delx
         self.dely = dely
         self.device = device if isinstance(device, torch.device) else get_device(device)
+
+        if subsample is not None:
+            self.subsample = torch.randint(0, height * width, (subsample,)).to(
+                self.device
+            )
+        else:
+            self.subsample = None
 
     def make_xrays(self, sdr, rotations, translations):
         """
@@ -47,12 +56,14 @@ class Detector:
         source += translations.unsqueeze(1)
         center += translations.unsqueeze(1)
 
-        # Construt the detector plane
+        # Construct the detector plane
         t = (torch.arange(-self.height // 2, self.height // 2) + 1) * self.delx
         s = (torch.arange(-self.width // 2, self.width // 2) + 1) * self.dely
         coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(self.device)
         target = torch.einsum("nc,bcd->bnd", coefs, basis)
         target += center
+        if self.subsample is not None:
+            target = target[:, self.subsample, :]
         return source, target
 
 

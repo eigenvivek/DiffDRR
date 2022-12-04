@@ -19,8 +19,9 @@ class DRR(nn.Module):
         width=None,
         dely=None,
         projector="siddon",
-        device="cpu",
+        subsample=None,
         reshape=True,
+        device="cpu",
     ):
         """
         Class for generating DRRs.
@@ -41,10 +42,12 @@ class DRR(nn.Module):
             The y-axis pixel size. If not provided, it is set to `delx`.
         projector : str, optional
             The type of projector, either "siddon" or "siddon_jacobs".
-        device : str
-            Compute device, either "cpu", "cuda", or "mps".
+        subsample : int, optional
+            Number of target points to randomly sample
         reshape : bool, optional
             If True, return DRR as (b, n1, n2, 1) tensor. If False, return as (b, n, 1) tensor.
+        device : str
+            Compute device, either "cpu", "cuda", or "mps".
         """
         super().__init__()
         self.device = get_device(device)
@@ -52,7 +55,7 @@ class DRR(nn.Module):
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else dely
-        self.detector = Detector(height, width, delx, dely, device)
+        self.detector = Detector(height, width, delx, dely, subsample, device)
 
         # Initialize the Projector and register its parameters
         if projector == "siddon":
@@ -67,6 +70,8 @@ class DRR(nn.Module):
         self.register_parameter("rotations", None)
         self.register_parameter("translations", None)
 
+        if subsample is not None and reshape:
+            raise ValueError("Cannot reshape DRRs with subsampling.")
         self.reshape = reshape
 
     def forward(
