@@ -3,13 +3,11 @@ name: CI
 on: [push]
 
 jobs:
-  build-linux:
+  test:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 5
-
     steps:
     - uses: actions/checkout@v3
+
     - name: Install Conda environment from environment.yml
       uses: mamba-org/provision-with-micromamba@main
 
