@@ -12,7 +12,6 @@ jobs:
       uses: mamba-org/provision-with-micromamba@main
       with:
         environment-file: environment.yml
-        channels: pytorch,nvidia
 
     - name: Test with pytest
       run: |
