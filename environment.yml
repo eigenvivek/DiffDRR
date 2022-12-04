@@ -1,6 +1,5 @@
 name: DiffDRR
 channels:
-  - defaults
   - pytorch
   - nvidia
   - conda-forge
