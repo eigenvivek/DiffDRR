@@ -10,7 +10,7 @@
 - [Overview](#overview)
 - [Installation Guide](#installation-guide)
 - [Usage](#usage)
-- [Example: Registration](application-6-dof-slice-to-volume-registration)
+- [Example: Registration](#application-6-dof-slice-to-volume-registration)
 - [How does `DiffDRR` work?](#how-does-diffdrr-work)
 - [Citing `DiffDRR`](#citing-diffdrr)
 
