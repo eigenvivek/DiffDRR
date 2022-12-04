@@ -12,7 +12,7 @@ from model import Model
 
 def get_projector():
     volume, spacing = load_example_ct()
-    return DRR(volume, spacing, height=100, delx=5e-2, device="cuda")
+    return DRR(volume, spacing, height=100, delx=10.0, device="cuda")
 
 
 def get_model(lr):
