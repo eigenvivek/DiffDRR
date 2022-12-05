@@ -32,9 +32,11 @@ class Detector:
         self.device = device if isinstance(device, torch.device) else get_device(device)
 
         if subsample is not None:
-            self.subsample = torch.randint(0, height * width, (subsample,)).to(
-                self.device
-            )
+            if isinstance(subsample, int) or isinstance(subsample, float):
+                subsample = torch.randperm(height * width)[: int(subsample)]
+                self.subsample = subsample.to(self.device)
+            else:
+                self.subsample = subsample.to(self.device)
         else:
             self.subsample = None
 
@@ -60,7 +62,7 @@ class Detector:
         t = (torch.arange(-self.height // 2, self.height // 2) + 1) * self.delx
         s = (torch.arange(-self.width // 2, self.width // 2) + 1) * self.dely
         coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(self.device)
-        target = torch.einsum("nc,bcd->bnd", coefs, basis)
+        target = torch.einsum("bcd,nc->bnd", basis, coefs)
         target += center
         if self.subsample is not None:
             target = target[:, self.subsample, :]
