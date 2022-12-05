@@ -103,32 +103,76 @@ def run_convergence_exp(
 
 @click.command()
 @click.option(
-    "-n", "--n_drrs", type=int, default=100, help="Number of DRRs to try to optimize"
+    "-n",
+    "--n_drrs",
+    type=int,
+    default=100,
+    help="Number of DRRs to try to optimize",
 )
 @click.option(
-    "-i", "--n_itrs", type=int, default=500, help="Number of iterations per DRR"
+    "-i",
+    "--n_itrs",
+    type=int,
+    default=500,
+    help="Number of iterations per DRR",
 )
 @click.option(
-    "-d", "--debug", is_flag=True, default=False, help="Print debug information"
+    "-d",
+    "--debug",
+    is_flag=True,
+    default=False,
+    help="Print debug information",
 )
 @click.option(
-    "--lr_rotations", type=float, default=5.3e-2, help="Rotational learning rate"
+    "--lr_rotations",
+    type=float,
+    default=5.3e-2,
+    help="Rotational learning rate",
 )
 @click.option(
-    "--lr_translations", type=float, default=7.5e1, help="Translations learning rate"
+    "--lr_translations",
+    type=float,
+    default=7.5e1,
+    help="Translations learning rate",
 )
-@click.option("--momentum", type=float, default=0.9, help="SGD momentum factor")
 @click.option(
-    "--dampening", type=float, default=0.2, help="SGD dampening factor for momentum"
+    "--momentum",
+    type=float,
+    default=0.9,
+    help="SGD momentum factor",
 )
-@click.option("--outdir", default="base", type=click.Path())
+@click.option(
+    "--dampening",
+    type=float,
+    default=0.2,
+    help="SGD dampening factor for momentum",
+)
+@click.option(
+    "--device",
+    default="cuda",
+    type=str,
+    help="PyTorch device to use",
+)
+@click.option(
+    "--outdir",
+    default="base",
+    type=click.Path(),
+)
 def main(
-    n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampening, outdir
+    n_drrs,
+    n_itrs,
+    debug,
+    lr_rotations,
+    lr_translations,
+    momentum,
+    dampening,
+    device,
+    outdir,
 ):
 
     # Get the ground truth DRR
     volume, spacing, true_params = get_true_drr()
-    drr = DRR(volume, spacing, height=100, delx=10.0, device="cuda")
+    drr = DRR(volume, spacing, height=100, delx=10.0, device=device)
     ground_truth = drr(**true_params)
 
     # Estimate a random DRR and try to optimize its parameters

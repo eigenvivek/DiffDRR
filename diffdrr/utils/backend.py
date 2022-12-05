@@ -6,9 +6,9 @@ def get_device(device):
     devices = ["cpu", "cuda", "mps"]
     if device == "cpu":
         return torch.device("cpu")
-    elif device == "cuda":
+    elif "cuda" in device:
         if torch.cuda.is_available():
-            return torch.device("cuda")
+            return torch.device(device)
         else:
             raise ValueError("cuda is not available")
     elif device == "mps":
