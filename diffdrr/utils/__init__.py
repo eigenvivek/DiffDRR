@@ -1,1 +1,1 @@
-from .util import reshape_subsampled_drr
+from .utils import reshape_subsampled_drr
