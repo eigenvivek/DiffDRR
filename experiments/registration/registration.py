@@ -197,7 +197,6 @@ def run_convergence_exp(
     help="Optimizer to use",
 )
 @click.option(
-    "-r",
     "--reg_error_cutoff",
     type=float,
     default=1.0,
