@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from .projectors.siddon import Siddon
+from .utils import reshape_subsampled_drr
 from .utils.backend import get_device
 from .utils.camera import Detector
 from .visualization import plot_camera, plot_volume
@@ -70,8 +71,6 @@ class DRR(nn.Module):
         self.register_parameter("rotations", None)
         self.register_parameter("translations", None)
 
-        if subsample is not None and reshape:
-            raise ValueError("Cannot reshape DRRs with subsampling.")
         self.reshape = reshape
 
     def forward(
@@ -98,10 +97,13 @@ class DRR(nn.Module):
             self.rotations,
             self.translations,
         )
-        drr = self.siddon.raytrace(source, target)
+        img = self.siddon.raytrace(source, target)
         if self.reshape:
-            drr = drr.view(-1, self.detector.height, self.detector.width)
-        return drr
+            if self.detector.subsample is None:
+                img = img.view(-1, self.detector.height, self.detector.width)
+            else:
+                img = reshape_subsampled_drr(img, self.detector, len(target))
+        return img
 
     def initialize_parameters(self, sdr, theta, phi, gamma, bx, by, bz):
         """
