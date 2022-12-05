@@ -4,7 +4,7 @@ from torch.nn.functional import normalize
 from ..utils.camera import Rxyz
 
 
-def geodesic(drr1, drr2):
+def geodesic(drr1, drr2, return_components=False):
     """Calculate the geodesic distance between two 6DoF projectors."""
     assert drr1.sdr == drr2.sdr
     assert drr1.device == drr2.device
@@ -19,4 +19,7 @@ def geodesic(drr1, drr2):
     rotated = (R1 @ ones) @ (R2 @ ones) / drr1.sdr.pow(2)
     d_rotation = drr1.sdr * torch.arccos(rotated)
 
-    return d_translation, d_rotation
+    if return_components:
+        return d_translation, d_rotation
+    else:
+        return d_translation + d_rotation
