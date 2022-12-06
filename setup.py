@@ -9,7 +9,6 @@ setup(
     name="diffdrr",
     version=__version__,
     packages=find_packages(),
-    version="0.1.0",
     description="Auto-differentiable digitally reconstructed radiographs in PyTorch.",
     author="Vivek Gopalakrishnan",
     license="MIT",
