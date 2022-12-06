@@ -12,4 +12,10 @@ setup(
     description="Auto-differentiable digitally reconstructed radiographs in PyTorch.",
     author="Vivek Gopalakrishnan",
     license="MIT",
+    install_requires=[
+        "pytorch",
+        "pydicom",
+        "matplotlib",
+        "seaborn",
+    ],
 )
