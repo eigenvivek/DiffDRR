@@ -8,14 +8,6 @@
 
 ## `DiffDRR` is a package for differentiable DRR synthesis and optimization
 
-- [Overview](#overview)
-- [Installation Guide](#installation-guide)
-- [Usage](#usage)
-- [Example: Registration](#application-6-dof-slice-to-volume-registration)
-- [How does `DiffDRR` work?](#how-does-diffdrr-work)
-- [Citing `DiffDRR`](#citing-diffdrr)
-
-## Overview
 `DiffDRR` is a PyTorch-based DRR generator that provides
 
 1. Auto-differentiable DRR syntheisis
@@ -23,6 +15,12 @@
 3. A pure Python implementation
 
 `DiffDRR` implements DRR synthesis as a PyTorch module, making it interoperable in deep learning pipelines.
+
+- [Installation Guide](#installation-guide)
+- [Usage](#usage)
+- [Example: Registration](#application-6-dof-slice-to-volume-registration)
+- [How does `DiffDRR` work?](#how-does-diffdrr-work)
+- [Citing `DiffDRR`](#citing-diffdrr)
 
 ## Installation Guide
 To install `DiffDRR` with conda (recommended):
