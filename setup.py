@@ -13,9 +13,10 @@ setup(
     author="Vivek Gopalakrishnan",
     license="MIT",
     install_requires=[
-        "pytorch",
+        "torch",
         "pydicom",
         "matplotlib",
         "seaborn",
+        "tqdm",
     ],
 )
