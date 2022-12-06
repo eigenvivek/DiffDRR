@@ -1,6 +1,6 @@
 # DiffDRR🩻
-[![Paper shield](https://img.shields.io/badge/Paper-arxiv.2208.12737-red)](https://arxiv.org/abs/2208.12737)
 [![Build Status](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml?query=branch%3Amain)
+[![Paper shield](https://img.shields.io/badge/arXiv-2208.12737-red)](https://arxiv.org/abs/2208.12737)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS%20|%20linux%20-blue)
 [![Docs](https://img.shields.io/badge/docs-passing-brightgreen)](https://vivekg.dev/DiffDRR/)
