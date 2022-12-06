@@ -93,7 +93,7 @@ def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
     Inputs
     ------
     drr : torch.Tensor
-        DRR image in torch tensor with shape (..., height, width)
+        DRR image in torch tensor with shape (batch, height, width)
     title : str, optional
         Title for the plot
     ticks : Bool
@@ -108,7 +108,7 @@ def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
     ax : matplotlib.axes._subplots.AxesSubplot
         Axis with plotted image
     """
-    drr = drr[0].detach().cpu()
+    drr = drr[0, :, :].detach().cpu()
     nx, ny = drr.shape
     if ax is None:
         _, ax = plt.subplots()

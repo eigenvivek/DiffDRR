@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from .projectors.siddon import Siddon
+from .utils import reshape_subsampled_drr
 from .utils.backend import get_device
 from .utils.camera import Detector
 from .visualization import plot_camera, plot_volume
@@ -19,6 +20,8 @@ class DRR(nn.Module):
         width=None,
         dely=None,
         projector="siddon",
+        subsample=None,
+        reshape=True,
         device="cpu",
     ):
         """
@@ -40,6 +43,10 @@ class DRR(nn.Module):
             The y-axis pixel size. If not provided, it is set to `delx`.
         projector : str, optional
             The type of projector, either "siddon" or "siddon_jacobs".
+        subsample : int, optional
+            Number of target points to randomly sample
+        reshape : bool, optional
+            If True, return DRR as (b, n1, n2) tensor. If False, return as (b, n) tensor.
         device : str
             Compute device, either "cpu", "cuda", or "mps".
         """
@@ -49,7 +56,7 @@ class DRR(nn.Module):
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else dely
-        self.detector = Detector(height, width, delx, dely, device)
+        self.detector = Detector(height, width, delx, dely, subsample, self.device)
 
         # Initialize the Projector and register its parameters
         if projector == "siddon":
@@ -63,6 +70,8 @@ class DRR(nn.Module):
         self.register_parameter("sdr", None)
         self.register_parameter("rotations", None)
         self.register_parameter("translations", None)
+
+        self.reshape = reshape
 
     def forward(
         self,
@@ -88,9 +97,13 @@ class DRR(nn.Module):
             self.rotations,
             self.translations,
         )
-        drr = self.siddon.raytrace(source, target)
-        drr = drr.view(-1, self.detector.height, self.detector.width)
-        return drr
+        img = self.siddon.raytrace(source, target)
+        if self.reshape:
+            if self.detector.subsample is None:
+                img = img.view(-1, self.detector.height, self.detector.width)
+            else:
+                img = reshape_subsampled_drr(img, self.detector, len(target))
+        return img
 
     def initialize_parameters(self, sdr, theta, phi, gamma, bx, by, bz):
         """
