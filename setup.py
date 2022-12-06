@@ -17,5 +17,6 @@ setup(
         "pydicom",
         "matplotlib",
         "seaborn",
+        "tqdm",
     ],
 )
