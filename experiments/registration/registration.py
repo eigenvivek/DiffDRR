@@ -45,8 +45,7 @@ def parse_criterion(criterion):
     if criterion == "mse":
         return MSELoss()
     elif criterion == "xcorr2":
-        xcorr = XCorr2(zero_mean_normalized=True)
-        return lambda x, y: -xcorr(x, y)
+        return XCorr2(zero_mean_normalized=True)
     else:
         raise ValueError(f"Unknown criterion: {criterion}")
 
@@ -65,7 +64,8 @@ def parse_optimizer(optimizer, drr_moving):
             [
                 {"params": [drr_moving.rotations], "lr": 5.3e-2},
                 {"params": [drr_moving.translations], "lr": 7.5e1},
-            ]
+            ],
+            maximize=True,
         )
     elif optimizer == "momentum":
         return torch.optim.SGD(
@@ -74,6 +74,7 @@ def parse_optimizer(optimizer, drr_moving):
                 {"params": [drr_moving.translations], "lr": 7.5e1},
             ],
             momentum=0.9,
+            maximize=True,
         )
     elif optimizer == "momentumdampen":
         return torch.optim.SGD(
@@ -83,6 +84,7 @@ def parse_optimizer(optimizer, drr_moving):
             ],
             momentum=0.9,
             dampening=0.2,
+            maximize=True,
         )
     elif optimizer == "lbfgs":
         return torch.optim.LBFGS(
@@ -94,7 +96,7 @@ def parse_optimizer(optimizer, drr_moving):
 
 
 def run_convergence_exp(
-    drr_fixed,
+    drr_target,
     drr_moving,
     criterion,
     optimizer,
@@ -104,7 +106,7 @@ def run_convergence_exp(
     reg_error_cutoff,
 ):
     # Get the fixed (ground truth) DRR
-    ground_truth = drr_fixed()
+    ground_truth = drr_target()
 
     # Get the loss function and optimizer
     criterion = parse_criterion(criterion)
@@ -137,7 +139,7 @@ def run_convergence_exp(
 
             # Compute the loss
             loss = criterion(estimate, ground_truth)
-            d_geo = geodesic(drr_moving, drr_fixed)
+            d_geo = geodesic(drr_moving, drr_target)
             if d_geo < reg_error_cutoff:
                 tqdm.write(f"Converged in {itr} iterations")
                 break
@@ -241,7 +243,7 @@ def main(
 
     # Initialize the fixed (ground truth) DRR
     volume, spacing, true_params = get_true_drr()
-    drr_fixed = DRR(
+    drr_target = DRR(
         volume,
         spacing,
         height=100,
@@ -250,7 +252,7 @@ def main(
         reshape=reshape,
         device=device,
     )
-    _ = drr_fixed(**true_params)
+    _ = drr_target(**true_params)
 
     # Initialize the moving DRR
     drr_moving = DRR(
@@ -258,7 +260,7 @@ def main(
         spacing,
         height=100,
         delx=10.0,
-        subsample=drr_fixed.detector.subsample,
+        subsample=drr_target.detector.subsample,
         reshape=reshape,
         device=device,
     )
@@ -274,7 +276,7 @@ def main(
         # Run the optimization
         filename = outdir / f"{i}.csv"
         run_convergence_exp(
-            drr_fixed,
+            drr_target,
             drr_moving,
             criterion,
             optimizer,
