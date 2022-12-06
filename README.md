@@ -23,11 +23,13 @@
 - [Citing `DiffDRR`](#citing-diffdrr)
 
 ## Installation Guide
+<!--- 
 To install `DiffDRR` with conda (recommended):
 ```zsh
 conda install -c conda-forge diffdrr
 conda install -c nvidia pytorch-cuda=11.7  # Optional for GPU support
-```
+``` 
+--->
 
 To install `DiffDRR` from PyPI:
 ```zsh
