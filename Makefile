@@ -17,8 +17,16 @@ pypi: dists
 	python -m twine upload --repository pypi dist/* --verbose
 
 
+conda:
+	grayskull pypi --strict-conda-forge diffdrr
+
+
 environment:
 	mamba env create -f environment.yml
+
+
+dev: environment
+	mamba install build twine grayskull -n DiffDRR -y
 
 
 clean:
