@@ -25,16 +25,22 @@
 `DiffDRR` implements DRR synthesis as a PyTorch module, making it interoperable in deep learning pipelines.
 
 ## Installation Guide
+To install `DiffDRR` with conda (recommended):
+```zsh
+conda install -c conda-forge diffdrr
+```
+
+To install `DiffDRR` from PyPI:
+```zsh
+pip install diffdrr
+```
+
 To build `DiffDRR` from source:
 ```zsh
 git clone https://github.com/eigenvivek/DiffDRR
 conda env create -f environment.yaml
 conda activate DiffDRR
 ```
-
-To install `DiffDRR` from PyPI ([coming soon](https://github.com/eigenvivek/DiffDRR/milestone/1)!):
-
-Install `pytest` to run tests.
 
 ## Usage
 
