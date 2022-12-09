@@ -24,13 +24,16 @@ class Detector:
         Compute device. If str, either "cpu", "cuda", or "mps".
     """
 
-    def __init__(self, height, width, delx, dely, n_subsample, device):
+    def __init__(
+        self, height, width, delx, dely, n_subsample, return_subsample, device
+    ):
         self.height = height
         self.width = width
         self.delx = delx
         self.dely = dely
         self.device = device if isinstance(device, torch.device) else get_device(device)
         self.n_subsample = n_subsample
+        self.return_subsample = return_subsample
 
     def make_xrays(self, sdr, rotations, translations):
         """
@@ -65,7 +68,10 @@ class Detector:
         Randomly sample n_subsample of the target points.
         """
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
-        return target[:, sample, :]
+        target = target[:, sample, :]
+        if self.return_subsample:
+            return target, sample
+        return target
 
 
 def _get_basis(rho, rotations, device):

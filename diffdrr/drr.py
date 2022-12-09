@@ -21,6 +21,7 @@ class DRR(nn.Module):
         dely=None,
         projector="siddon",
         n_subsample=None,
+        return_subsample=False,
         reshape=True,
         device="cpu",
     ):
@@ -56,7 +57,15 @@ class DRR(nn.Module):
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else dely
-        self.detector = Detector(height, width, delx, dely, n_subsample, self.device)
+        self.detector = Detector(
+            height,
+            width,
+            delx,
+            dely,
+            n_subsample,
+            return_subsample,
+            self.device,
+        )
 
         # Initialize the Projector and register its parameters
         if projector == "siddon":
