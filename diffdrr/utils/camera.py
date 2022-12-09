@@ -25,7 +25,7 @@ class Detector:
     """
 
     def __init__(
-        self, height, width, delx, dely, n_subsample, return_subsample, device
+        self, height, width, delx, dely, n_subsample, store_subsamples, device
     ):
         self.height = height
         self.width = width
@@ -33,7 +33,11 @@ class Detector:
         self.dely = dely
         self.device = device if isinstance(device, torch.device) else get_device(device)
         self.n_subsample = n_subsample
-        self.return_subsample = return_subsample
+        if store_subsamples:
+            assert n_subsample is not None
+            self.subsamples = []
+        else:
+            self.subsamples = None
 
     def make_xrays(self, sdr, rotations, translations):
         """
@@ -69,8 +73,8 @@ class Detector:
         """
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
         target = target[:, sample, :]
-        if self.return_subsample:
-            return target, sample
+        if self.store_subsamples:
+            self.subsamples.append(sample.tolist())
         return target
 
 
