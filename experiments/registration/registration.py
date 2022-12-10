@@ -4,12 +4,13 @@ from pathlib import Path
 
 import click
 import numpy as np
+import pandas as pd
 import torch
 from torch.nn import MSELoss
 from tqdm import tqdm
 
 from diffdrr import DRR, load_example_ct
-from diffdrr.metrics import geodesic, XCorr2
+from diffdrr.metrics import XCorr2, geodesic
 
 
 def get_true_drr():
@@ -21,9 +22,9 @@ def get_true_drr():
         "theta": torch.pi,
         "phi": 0,
         "gamma": torch.pi / 2,
-        "bx": bx,
-        "by": by,
-        "bz": bz,
+        "bx": bx.item(),
+        "by": by.item(),
+        "bz": bz.item(),
     }
     return volume, spacing, true_params
 
@@ -40,12 +41,33 @@ def get_initial_parameters(true_params):
     return sdr, theta, phi, gamma, bx, by, bz
 
 
+def write_initial_parameters(true_params, n_drrs=10000):
+    print("Writing initializations...")
+    with open("experiments/registration/results/initializations.csv", "w") as f:
+        writer = csv.writer(f, delimiter=",")
+        writer.writerow(
+            [
+                "sdr",
+                "theta",
+                "phi",
+                "gamma",
+                "bx",
+                "by",
+                "bz",
+            ]
+        )
+        for _ in range(n_drrs):
+            sdr, theta, phi, gamma, bx, by, bz = get_initial_parameters(true_params)
+            writer.writerow([sdr, theta, phi, gamma, bx, by, bz])
+
+
 def parse_criterion(criterion):
     """Get the loss function."""
     if criterion == "mse":
         return MSELoss()
     elif criterion == "xcorr2":
-        return XCorr2(zero_mean_normalized=True)
+        xcorr2 = XCorr2(zero_mean_normalized=True)
+        return lambda x, y: 1 - xcorr2(x, y)
     else:
         raise ValueError(f"Unknown criterion: {criterion}")
 
@@ -138,7 +160,16 @@ def run_convergence_exp(
             estimate = drr_moving()
 
             # Compute the loss
-            loss = criterion(estimate, ground_truth)
+            if drr_moving.detector.n_subsample is not None:
+                loss = criterion(
+                    estimate,
+                    ground_truth[:, drr_moving.detector.subsamples[-1]],
+                )
+            else:
+                loss = criterion(
+                    estimate,
+                    ground_truth,
+                )
             d_geo = geodesic(drr_moving, drr_target)
             if d_geo < reg_error_cutoff:
                 tqdm.write(f"Converged in {itr} iterations")
@@ -205,10 +236,11 @@ def run_convergence_exp(
     help="Registration error cutoff (mm)",
 )
 @click.option(
-    "-s",
-    "--subsample",
-    type=int,
+    "-p",
+    "--p_subsample",
+    type=float,
     default=None,
+    help="Proportion of pixels to subsample during each forward pass",
 )
 @click.option(
     "-r",
@@ -234,12 +266,12 @@ def main(
     criterion,
     optimizer,
     reg_error_cutoff,
-    subsample,
+    p_subsample,
     reshape,
     device,
     outdir,
 ):
-    print(f"Running {criterion} with {optimizer}")
+    print(f"Optimizing {criterion} with {optimizer}...")
 
     # Initialize the fixed (ground truth) DRR
     volume, spacing, true_params = get_true_drr()
@@ -248,19 +280,24 @@ def main(
         spacing,
         height=100,
         delx=10.0,
-        subsample=subsample,
         reshape=reshape,
         device=device,
     )
     _ = drr_target(**true_params)
 
     # Initialize the moving DRR
+    try:
+        inits = pd.read_csv("experiments/registration/results/initializations.csv")
+    except FileNotFoundError:
+        write_initial_parameters(true_params)
+        inits = pd.read_csv("experiments/registration/results/initializations.csv")
+
     drr_moving = DRR(
         volume,
         spacing,
         height=100,
         delx=10.0,
-        subsample=drr_target.detector.subsample,
+        p_subsample=p_subsample,
         reshape=reshape,
         device=device,
     )
@@ -270,7 +307,7 @@ def main(
     outdir.mkdir(exist_ok=True, parents=True)
     for i in tqdm(range(n_drrs)):
         # Initialize the moving DRR
-        sdr, theta, phi, gamma, bx, by, bz = get_initial_parameters(true_params)
+        sdr, theta, phi, gamma, bx, by, bz = inits.iloc[i].values
         _ = drr_moving(sdr, theta, phi, gamma, bx, by, bz)
 
         # Run the optimization
