@@ -61,7 +61,6 @@ class Detector:
         if self.n_subsample is not None:
             sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
             target = target[:, sample, :]
-            target = self.subsample(target, sample)
             self.subsamples.append(sample.tolist())
         return source, target
 
