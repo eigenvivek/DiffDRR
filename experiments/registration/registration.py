@@ -66,8 +66,7 @@ def parse_criterion(criterion):
     if criterion == "mse":
         return MSELoss()
     elif criterion == "xcorr2":
-        xcorr2 = XCorr2(zero_mean_normalized=True)
-        return lambda x, y: 1 - xcorr2(x, y)
+        return XCorr2(zero_mean_normalized=True)
     else:
         raise ValueError(f"Unknown criterion: {criterion}")
 
