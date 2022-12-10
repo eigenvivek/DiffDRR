@@ -20,7 +20,7 @@ class DRR(nn.Module):
         width=None,
         dely=None,
         projector="siddon",
-        n_subsample=None,
+        p_subsample=None,
         reshape=True,
         device="cpu",
     ):
@@ -43,8 +43,8 @@ class DRR(nn.Module):
             The y-axis pixel size. If not provided, it is set to `delx`.
         projector : str, optional
             The type of projector, either "siddon" or "siddon_jacobs".
-        n_subsample : int, optional
-            Number of target points to randomly sample for each forward pass
+        p_subsample : int, optional
+            Proportion of target points to randomly sample for each forward pass
         reshape : bool, optional
             If True, return DRR as (b, n1, n2) tensor. If False, return as (b, n) tensor.
         device : str
@@ -56,6 +56,9 @@ class DRR(nn.Module):
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else dely
+        n_subsample = (
+            int(height * width * p_subsample) if p_subsample is not None else None
+        )
         self.detector = Detector(
             height,
             width,
