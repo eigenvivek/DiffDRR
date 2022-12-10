@@ -21,7 +21,6 @@ class DRR(nn.Module):
         dely=None,
         projector="siddon",
         n_subsample=None,
-        store_subsamples=False,
         reshape=True,
         device="cpu",
     ):
@@ -46,8 +45,6 @@ class DRR(nn.Module):
             The type of projector, either "siddon" or "siddon_jacobs".
         n_subsample : int, optional
             Number of target points to randomly sample for each forward pass
-        store_subsamples : bool, optional
-            If True, store the subsampled points for each forward pass
         reshape : bool, optional
             If True, return DRR as (b, n1, n2) tensor. If False, return as (b, n) tensor.
         device : str
@@ -65,7 +62,6 @@ class DRR(nn.Module):
             delx,
             dely,
             n_subsample,
-            store_subsamples,
             self.device,
         )
 
