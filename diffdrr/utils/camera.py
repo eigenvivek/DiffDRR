@@ -24,20 +24,15 @@ class Detector:
         Compute device. If str, either "cpu", "cuda", or "mps".
     """
 
-    def __init__(
-        self, height, width, delx, dely, n_subsample, store_subsamples, device
-    ):
+    def __init__(self, height, width, delx, dely, n_subsample, device):
         self.height = height
         self.width = width
         self.delx = delx
         self.dely = dely
         self.device = device if isinstance(device, torch.device) else get_device(device)
         self.n_subsample = n_subsample
-        if store_subsamples:
-            assert n_subsample is not None
+        if self.n_subsample is not None:
             self.subsamples = []
-        else:
-            self.subsamples = None
 
     def make_xrays(self, sdr, rotations, translations):
         """
@@ -64,18 +59,11 @@ class Detector:
         target = torch.einsum("bcd,nc->bnd", basis, coefs)
         target += center
         if self.n_subsample is not None:
-            target = self.subsample(target)
-        return source, target
-
-    def subsample(self, target):
-        """
-        Randomly sample n_subsample of the target points.
-        """
-        sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
-        target = target[:, sample, :]
-        if self.store_subsamples:
+            sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
+            target = target[:, sample, :]
+            target = self.subsample(target, sample)
             self.subsamples.append(sample.tolist())
-        return target
+        return source, target
 
 
 def _get_basis(rho, rotations, device):
