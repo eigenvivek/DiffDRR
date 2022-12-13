@@ -9,6 +9,7 @@ dependencies:
   - pytorch>=1.13
   - torchvision
   - pytorch-cuda=11.7
+  - libcufile>=1.4,<1.5
   - pydicom
   - matplotlib
   - seaborn
