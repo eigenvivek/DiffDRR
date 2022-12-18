@@ -20,7 +20,7 @@ class DRR(nn.Module):
         width=None,
         dely=None,
         projector="siddon",
-        subsample=None,
+        p_subsample=None,
         reshape=True,
         device="cpu",
     ):
@@ -43,8 +43,8 @@ class DRR(nn.Module):
             The y-axis pixel size. If not provided, it is set to `delx`.
         projector : str, optional
             The type of projector, either "siddon" or "siddon_jacobs".
-        subsample : int, optional
-            Number of target points to randomly sample
+        p_subsample : int, optional
+            Proportion of target points to randomly sample for each forward pass
         reshape : bool, optional
             If True, return DRR as (b, n1, n2) tensor. If False, return as (b, n) tensor.
         device : str
@@ -56,7 +56,17 @@ class DRR(nn.Module):
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else dely
-        self.detector = Detector(height, width, delx, dely, subsample, self.device)
+        n_subsample = (
+            int(height * width * p_subsample) if p_subsample is not None else None
+        )
+        self.detector = Detector(
+            height,
+            width,
+            delx,
+            dely,
+            n_subsample,
+            self.device,
+        )
 
         # Initialize the Projector and register its parameters
         if projector == "siddon":
@@ -99,7 +109,7 @@ class DRR(nn.Module):
         )
         img = self.siddon.raytrace(source, target)
         if self.reshape:
-            if self.detector.subsample is None:
+            if self.detector.n_subsample is None:
                 img = img.view(-1, self.detector.height, self.detector.width)
             else:
                 img = reshape_subsampled_drr(img, self.detector, len(target))
@@ -119,8 +129,6 @@ class DRR(nn.Module):
             bx    : X-dir translation
             by    : Y-dir translation
             bz    : Z-dir translation
-        return_grads : bool, optional
-            If True, return differentiable vectors for rotations and translations
         """
         tensor_args = {"dtype": torch.float32, "device": self.device}
         # Assume that SDR is given for a 6DoF registration problem
