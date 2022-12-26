@@ -19,5 +19,6 @@ dependencies:
   - ipywidgets
   - tqdm
   - pytest
+  - imageio
   - pip:
       - -e .  # Install the local package (DiffDRR)
