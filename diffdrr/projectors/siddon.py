@@ -59,20 +59,23 @@ class Siddon:
         alphas = alphas[..., ~alphas.isnan().all(dim=0).all(dim=0)]
         return alphas
 
-    def get_voxel(self, alpha, source, target):
+    def get_index(self, alpha, source, target):
         sdd = target - source + self.eps
         idxs = (source + alpha.unsqueeze(-1) * sdd.unsqueeze(2)) / self.spacing
         idxs = idxs.trunc()
+        # Conversion to long makes nan->-inf, so temporarily replace them with 0
+        # This is cancelled out later by multiplication by nan step_length
         idxs = (
             idxs[..., 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
             + idxs[..., 1] * (self.dims[2] - 1)
             + idxs[..., 2]
         ).long() + 1
-
-        # Conversion to long makes nan->-inf, so temporarily replace them with 0
-        # This is cancelled out later by multiplication by nan step_length
         idxs[idxs < 0] = 0
         idxs[idxs > self.maxidx] = self.maxidx
+        return idxs
+
+    def get_voxel(self, alpha, source, target):
+        idxs = self.get_index(alpha, source, target)
         return torch.take(self.volume, idxs)
 
     def raytrace(self, source, target):
