@@ -22,6 +22,7 @@ class DRR(nn.Module):
         projector="siddon",
         p_subsample=None,
         reshape=True,
+        dtype=torch.float32,
         device="cpu",
     ):
         """
@@ -47,10 +48,13 @@ class DRR(nn.Module):
             Proportion of target points to randomly sample for each forward pass
         reshape : bool, optional
             If True, return DRR as (b, n1, n2) tensor. If False, return as (b, n) tensor.
+        dtype : torch.dtype, optional
+            The data type of the DRR, default=torch.float32
         device : str
             Compute device, either "cpu", "cuda", or "mps".
         """
         super().__init__()
+        self.dtype = dtype
         self.device = get_device(device)
 
         # Initialize the X-ray detector
@@ -70,7 +74,7 @@ class DRR(nn.Module):
 
         # Initialize the Projector and register its parameters
         if projector == "siddon":
-            self.siddon = Siddon(volume, spacing, device)
+            self.siddon = Siddon(volume, spacing, self.dtype, self.device)
         elif projector == "siddon_jacobs":
             raise DeprecationWarning(
                 "Siddon-Jacobs projector is deprecated and does not work in this version."
@@ -130,7 +134,7 @@ class DRR(nn.Module):
             by    : Y-dir translation
             bz    : Z-dir translation
         """
-        tensor_args = {"dtype": torch.float32, "device": self.device}
+        tensor_args = {"dtype": self.dtype, "device": self.device}
         # Assume that SDR is given for a 6DoF registration problem
         self.sdr = nn.Parameter(torch.tensor([sdr], **tensor_args), requires_grad=False)
         self.rotations = nn.Parameter(
