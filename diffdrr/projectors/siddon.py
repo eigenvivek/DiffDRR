@@ -4,15 +4,15 @@ import torch
 class Siddon:
     """A vectorized version of the Siddon ray tracing algorithm."""
 
-    def __init__(self, volume, spacing, device, eps=1e-9):
-        self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
-        self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
+    def __init__(self, volume, spacing, dtype, device, eps=1e-9):
+        self.spacing = torch.tensor(spacing, dtype=dtype, device=device)
+        self.dtype = dtype
         self.device = device
         self.eps = eps
 
         # Reverse the rows to match the indexing scheme of the Siddon-Jacob's algorithm
-        self.volume = torch.tensor(volume, dtype=torch.float16, device=device).flip([0])
-        self.dims = torch.tensor(self.volume.shape, dtype=torch.float32, device=device)
+        self.volume = torch.tensor(volume, dtype=self.dtype, device=self.device).flip([0])
+        self.dims = torch.tensor(self.volume.shape, dtype=self.dtype, device=self.device)
         self.dims += 1.0
 
     def get_alpha_minmax(self, source, target):
@@ -35,9 +35,9 @@ class Siddon:
 
         # Get the alpha at each plane intersection
         sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
-        alphax = torch.arange(nx, dtype=torch.float32, device=self.device) * dx
-        alphay = torch.arange(ny, dtype=torch.float32, device=self.device) * dy
-        alphaz = torch.arange(nz, dtype=torch.float32, device=self.device) * dz
+        alphax = torch.arange(nx, dtype=self.dtype, device=self.device) * dx
+        alphay = torch.arange(ny, dtype=self.dtype, device=self.device) * dy
+        alphaz = torch.arange(nz, dtype=self.dtype, device=self.device) * dz
         alphax = alphax.expand(len(source), -1) - sx.unsqueeze(-1)
         alphay = alphay.expand(len(source), -1) - sy.unsqueeze(-1)
         alphaz = alphaz.expand(len(source), -1) - sz.unsqueeze(-1)
