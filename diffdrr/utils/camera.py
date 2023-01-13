@@ -24,11 +24,12 @@ class Detector:
         Compute device. If str, either "cpu", "cuda", or "mps".
     """
 
-    def __init__(self, height, width, delx, dely, n_subsample, device):
+    def __init__(self, height, width, delx, dely, n_subsample, dtype, device):
         self.height = height
         self.width = width
         self.delx = delx
         self.dely = dely
+        self.dtype = dtype
         self.device = device if isinstance(device, torch.device) else get_device(device)
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
@@ -55,7 +56,7 @@ class Detector:
         # Construct the detector plane
         t = (torch.arange(-self.height // 2, self.height // 2) + 1) * self.delx
         s = (torch.arange(-self.width // 2, self.width // 2) + 1) * self.dely
-        coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(self.device)
+        coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(self.device).to(self.dtype)
         target = torch.einsum("bcd,nc->bnd", basis, coefs)
         target += center
         if self.n_subsample is not None:

@@ -69,6 +69,7 @@ class DRR(nn.Module):
             delx,
             dely,
             n_subsample,
+            self.dtype,
             self.device,
         )
 
