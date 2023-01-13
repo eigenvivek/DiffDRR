@@ -4,15 +4,15 @@ import torch
 class Siddon:
     """A vectorized version of the Siddon ray tracing algorithm."""
 
-    def __init__(self, volume, spacing, device, eps=1e-9):
-        self.volume = torch.tensor(volume, dtype=torch.float16, device=device)
-        self.spacing = torch.tensor(spacing, dtype=torch.float32, device=device)
+    def __init__(self, volume, spacing, dtype, device, eps=1e-9):
+        self.spacing = torch.tensor(spacing, dtype=dtype, device=device)
+        self.dtype = dtype
         self.device = device
         self.eps = eps
 
         # Reverse the rows to match the indexing scheme of the Siddon-Jacob's algorithm
-        self.volume = torch.tensor(volume, dtype=torch.float16, device=device).flip([0])
-        self.dims = torch.tensor(self.volume.shape, dtype=torch.float32, device=device)
+        self.volume = torch.tensor(volume, dtype=self.dtype, device=self.device).flip([0])
+        self.dims = torch.tensor(self.volume.shape, dtype=self.dtype, device=self.device)
         self.dims += 1.0
 
     def get_alpha_minmax(self, source, target):
@@ -35,9 +35,9 @@ class Siddon:
 
         # Get the alpha at each plane intersection
         sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
-        alphax = torch.arange(nx, dtype=torch.float32, device=self.device) * dx
-        alphay = torch.arange(ny, dtype=torch.float32, device=self.device) * dy
-        alphaz = torch.arange(nz, dtype=torch.float32, device=self.device) * dz
+        alphax = torch.arange(nx, dtype=self.dtype, device=self.device) * dx
+        alphay = torch.arange(ny, dtype=self.dtype, device=self.device) * dy
+        alphaz = torch.arange(nz, dtype=self.dtype, device=self.device) * dz
         alphax = alphax.expand(len(source), -1) - sx.unsqueeze(-1)
         alphay = alphay.expand(len(source), -1) - sy.unsqueeze(-1)
         alphaz = alphaz.expand(len(source), -1) - sz.unsqueeze(-1)
@@ -59,20 +59,23 @@ class Siddon:
         alphas = alphas[..., ~alphas.isnan().all(dim=0).all(dim=0)]
         return alphas
 
-    def get_voxel(self, alpha, source, target):
+    def get_index(self, alpha, source, target):
         sdd = target - source + self.eps
         idxs = (source + alpha.unsqueeze(-1) * sdd.unsqueeze(2)) / self.spacing
         idxs = idxs.trunc()
+        # Conversion to long makes nan->-inf, so temporarily replace them with 0
+        # This is cancelled out later by multiplication by nan step_length
         idxs = (
             idxs[..., 0] * (self.dims[1] - 1) * (self.dims[2] - 1)
             + idxs[..., 1] * (self.dims[2] - 1)
             + idxs[..., 2]
         ).long() + 1
-
-        # Conversion to long makes nan->-inf, so temporarily replace them with 0
-        # This is cancelled out later by multiplication by nan step_length
         idxs[idxs < 0] = 0
         idxs[idxs > self.maxidx] = self.maxidx
+        return idxs
+
+    def get_voxel(self, alpha, source, target):
+        idxs = self.get_index(alpha, source, target)
         return torch.take(self.volume, idxs)
 
     def raytrace(self, source, target):
