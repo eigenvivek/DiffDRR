@@ -54,8 +54,11 @@ class Detector:
         center += translations.unsqueeze(1)
 
         # Construct the detector plane
-        t = (torch.arange(-self.height // 2, self.height // 2) + 1) * self.delx
-        s = (torch.arange(-self.width // 2, self.width // 2) + 1) * self.dely
+        h_off = 1.0 if self.height % 2 else 0.5  # Different offsets for even or odd heights
+        w_off = 1.0 if self.width % 2 else 0.5
+        t = (torch.arange(-self.height // 2, self.height // 2) + h_off) * self.delx
+        s = (torch.arange(-self.width // 2, self.width // 2) + w_off) * self.dely
+
         coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(self.device).to(self.dtype)
         target = torch.einsum("bcd,nc->bnd", basis, coefs)
         target += center
