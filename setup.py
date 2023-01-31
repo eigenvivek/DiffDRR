@@ -13,6 +13,7 @@ setup(
     author="Vivek Gopalakrishnan",
     license="MIT",
     install_requires=[
+        "imageio",
         "torch",
         "pydicom",
         "matplotlib",
