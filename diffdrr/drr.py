@@ -109,7 +109,7 @@ class DRR(nn.Module):
             sdr = batch[..., 0].unsqueeze(-1).unsqueeze(-1)
             translations = batch[..., 1:4]
             rotations = batch[..., 4:]
-            source, target = self.make_xrays(sdr, translations, rotations)
+            source, target = self.detector.make_xrays(sdr, translations, rotations)
         else:
             params = [sdr, theta, phi, gamma, bx, by, bz]
             if any(arg is not None for arg in params):
