@@ -16,5 +16,7 @@ def get_device(device):
             return torch.device("mps")
         else:
             raise ValueError("mps is not available")
+    elif isinstance(device, torch.device):
+        return device
     else:
         raise ValueError(f"device must be one of {devices}")
