@@ -3,8 +3,9 @@ import torch
 
 def get_device(device):
     """Select a backend from CPU, CUDA, or MPS."""
-    devices = ["cpu", "cuda", "mps"]
-    if device == "cpu":
+    if isinstance(device, torch.device):
+        return device
+    elif device == "cpu":
         return torch.device("cpu")
     elif "cuda" in device:
         if torch.cuda.is_available():
@@ -16,7 +17,5 @@ def get_device(device):
             return torch.device("mps")
         else:
             raise ValueError("mps is not available")
-    elif isinstance(device, torch.device):
-        return device
     else:
-        raise ValueError(f"device must be one of {devices}")
+        raise ValueError(f"device must be one of {["cpu", "cuda", "mps"]}")
