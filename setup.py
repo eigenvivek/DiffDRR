@@ -1,5 +1,6 @@
-from setuptools import find_packages, setup
+from glob import glob
 
+from setuptools import find_packages, setup
 
 # Get the version number from the version.py file
 with open("diffdrr/version.py") as f:
@@ -9,6 +10,7 @@ setup(
     name="diffdrr",
     version=__version__,
     packages=find_packages(),
+    data_files=[("diffdrr/data/cxr/", glob("diffdrr/data/cxr/*.dcm"))],
     description="Auto-differentiable digitally reconstructed radiographs in PyTorch.",
     author="Vivek Gopalakrishnan",
     license="MIT",
