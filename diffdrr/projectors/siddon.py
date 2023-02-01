@@ -38,9 +38,9 @@ class Siddon:
         alphax = torch.arange(nx, dtype=self.dtype, device=self.device) * dx
         alphay = torch.arange(ny, dtype=self.dtype, device=self.device) * dy
         alphaz = torch.arange(nz, dtype=self.dtype, device=self.device) * dz
-        alphax = alphax.expand(len(source), -1) - sx.unsqueeze(-1)
-        alphay = alphay.expand(len(source), -1) - sy.unsqueeze(-1)
-        alphaz = alphaz.expand(len(source), -1) - sz.unsqueeze(-1)
+        alphax = alphax.expand(len(source), 1, -1) - sx.unsqueeze(-1)
+        alphay = alphay.expand(len(source), 1, -1) - sy.unsqueeze(-1)
+        alphaz = alphaz.expand(len(source), 1, -1) - sz.unsqueeze(-1)
 
         sdd = target - source + self.eps
         alphax = alphax / sdd[..., 0].unsqueeze(-1)
@@ -48,20 +48,20 @@ class Siddon:
         alphaz = alphaz / sdd[..., 2].unsqueeze(-1)
         alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
-        # Get the alphas within the range [alphamin, alphamax]
+        # # Get the alphas within the range [alphamin, alphamax]
         alphamin, alphamax = self.get_alpha_minmax(source, target)
         good_idxs = torch.logical_and(alphas >= alphamin, alphas <= alphamax)
         alphas[~good_idxs] = torch.nan
 
-        # Sort the alphas by ray, putting nans at the end of the list
-        # Drop indices where alphas for all rays are nan
+        # # Sort the alphas by ray, putting nans at the end of the list
+        # # Drop indices where alphas for all rays are nan
         alphas = torch.sort(alphas, dim=-1).values
         alphas = alphas[..., ~alphas.isnan().all(dim=0).all(dim=0)]
         return alphas
 
     def get_index(self, alpha, source, target):
         sdd = target - source + self.eps
-        idxs = (source + alpha.unsqueeze(-1) * sdd.unsqueeze(2)) / self.spacing
+        idxs = (source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)) / self.spacing
         idxs = idxs.trunc()
         # Conversion to long makes nan->-inf, so temporarily replace them with 0
         # This is cancelled out later by multiplication by nan step_length
