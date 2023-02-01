@@ -97,6 +97,7 @@ class DRR(nn.Module):
         bx=None,
         by=None,
         bz=None,
+        batch=None,
     ):
         """
         Generate a DRR from a particular viewing angle.
@@ -104,14 +105,20 @@ class DRR(nn.Module):
         Pass projector parameters to initialize a new viewing angle.
         If uninitialized, the model will not run.
         """
-        params = [sdr, theta, phi, gamma, bx, by, bz]
-        if any(arg is not None for arg in params):
-            self.initialize_parameters(*params)
-        source, target = self.detector.make_xrays(
-            self.sdr,
-            self.rotations,
-            self.translations,
-        )
+        if batch is not None:
+            sdr = batch[..., 0].unsqueeze(-1).unsqueeze(-1)
+            translations = batch[..., 1:4]
+            rotations = batch[..., 4:]
+            source, target = self.detector.make_xrays(sdr, translations, rotations)
+        else:
+            params = [sdr, theta, phi, gamma, bx, by, bz]
+            if any(arg is not None for arg in params):
+                self.initialize_parameters(*params)
+            source, target = self.detector.make_xrays(
+                self.sdr,
+                self.rotations,
+                self.translations,
+            )
         img = self.siddon.raytrace(source, target)
         if self.reshape:
             if self.detector.n_subsample is None:
