@@ -18,4 +18,5 @@ def get_device(device):
         else:
             raise ValueError("mps is not available")
     else:
-        raise ValueError(f"device must be one of {["cpu", "cuda", "mps"]}")
+        devices = ["cpu", "cuda", "mps"]
+        raise ValueError(f"device must be one of {devices}")
