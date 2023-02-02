@@ -128,7 +128,8 @@ def Ry(phi, batch_size, device):
             -torch.sin(phi.unsqueeze(1)),
             t0,
             torch.cos(phi.unsqueeze(1)),
-        ]
+        ],
+        dim=1,
     ).reshape(batch_size, 3, 3)
 
 
@@ -146,5 +147,6 @@ def Rz(theta, batch_size, device):
             t0,
             t0,
             t1,
-        ]
+        ],
+        dim=1,
     ).reshape(batch_size, 3, 3)
