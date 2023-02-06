@@ -16,10 +16,11 @@ class XCorr2(nn.Module):
 
     def forward(self, x1, x2):
         assert x1.shape == x2.shape
-        _, h, w = x1.shape
+        _, c, h, w = x1.shape
+        assert c == 1, "Output DRRs should be grayscale."
         if self.zero_mean_normalized:
-            x1 = self.InstanceNorm(x1.expand(1, -1, -1))
-            x2 = self.InstanceNorm(x2.expand(1, -1, -1))
+            x1 = self.InstanceNorm(x1)
+            x2 = self.InstanceNorm(x2)
         score = torch.einsum("b...,b...->b", x1, x2)
-        score /= h * w
+        score /= h * w * c
         return score

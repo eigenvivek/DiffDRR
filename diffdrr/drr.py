@@ -146,7 +146,7 @@ class DRR(nn.Module):
 
         if self.reshape:
             if self.detector.n_subsample is None:
-                img = img.view(-1, self.detector.height, self.detector.width)
+                img = img.view(-1, 1, self.detector.height, self.detector.width)
             else:
                 img = reshape_subsampled_drr(img, self.detector, len(target))
         return img

@@ -21,7 +21,7 @@ def test_DRR():
     except ValueError:
         drr = DRR(volume, spacing, height=200, delx=1.4e-2).to("cpu")
     img = drr(**detector_kwargs)
-    assert img.shape == (1, 200, 200)
+    assert img.shape == (1, 1, 200, 200)
 
 
 def test_DRR_batch():
@@ -33,4 +33,4 @@ def test_DRR_batch():
         drr = DRR(volume, spacing, height=200, delx=1.4e-2, params=batch).to("cpu")
 
     img = drr()
-    assert img.shape == (3, 200, 200)
+    assert img.shape == (3, 1, 200, 200)
