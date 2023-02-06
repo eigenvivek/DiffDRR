@@ -86,42 +86,39 @@ def plot_camera(source, rays, ax):
     return ax
 
 
-def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
+def plot_drr(drr, title=None, ticks=True):
     """
     Plot an DRR output by the projector module.
 
     Inputs
     ------
     drr : torch.Tensor
-        DRR image in torch tensor with shape (batch, height, width)
+        DRR image in torch tensor with shape (batch, channel, height, width)
     title : str, optional
         Title for the plot
     ticks : Bool
         Toggle ticks and ticklabels.
-    animated : Bool
-        Set to true if using in animation.
-    ax : matplotlib.axes._subplots.AxesSubplot, optional
-        Axis to plot image on, if None is provided, a new axis will be made
 
     Returns
     -------
-    ax : matplotlib.axes._subplots.AxesSubplot
+    fig : matplotlib.figure.Figure
+        Figure with plotted image
+    axs : matplotlib.axes._subplots.AxesSubplot
         Axis with plotted image
     """
-    drr = drr[0, :, :].detach().cpu()
-    nx, ny = drr.shape
-    if ax is None:
-        _, ax = plt.subplots()
-    img = ax.imshow(drr, cmap="gray", animated=animated)
-    ax.xaxis.tick_top()
-    ax.set(
-        title=title,
-        xticks=[0, nx - 1],
-        xticklabels=[1, nx],
-        yticks=[0, ny - 1],
-        yticklabels=[1, ny],
-    )
-    if ticks is False:
-        ax.set_xticks([])
-        ax.set_yticks([])
-    return img
+    fig, axs = plt.subplots(ncols=len(drr), figsize=(10, 5))
+    for img, ax in zip(drr, axs):
+        ax.imshow(img.squeeze().cpu().detach(), cmap="gray")
+        _, nx, ny = img.shape
+        ax.xaxis.tick_top()
+        ax.set(
+            title=title,
+            xticks=[0, nx - 1],
+            xticklabels=[1, nx],
+            yticks=[0, ny - 1],
+            yticklabels=[1, ny],
+        )
+        if ticks is False:
+            ax.set_xticks([])
+            ax.set_yticks([])
+    return fig, axs
