@@ -127,9 +127,9 @@ class DRR(nn.Module):
             by    : Y-dir translation
             bz    : Z-dir translation
         """
-        params = [sdr, theta, phi, gamma, bx, by, bz]
+        paramlist = [sdr, theta, phi, gamma, bx, by, bz]
         if not self.optimization_mode:
-            if any(arg is not None for arg in params):
+            if any(arg is not None for arg in paramlist):
                 self.sdr = torch.tensor([[sdr]]).to(self.dummy)
                 self.rotations = torch.tensor([[theta, phi, gamma]]).to(self.dummy)
                 self.translations = torch.tensor([[bx, by, bz]]).to(self.dummy)
@@ -140,7 +140,7 @@ class DRR(nn.Module):
             else:
                 raise ValueError("Must provide viewing angle parameters.")
         else:
-            if any(arg is not None for arg in params):
+            if any(arg is not None for arg in paramlist):
                 raise ValueError("Cannot provide parameters in optimization mode.")
 
         source, target = self.detector.make_xrays(
