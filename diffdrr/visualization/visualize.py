@@ -107,6 +107,8 @@ def plot_drr(drr, title=None, ticks=True):
         Axis with plotted image
     """
     fig, axs = plt.subplots(ncols=len(drr), figsize=(10, 5))
+    if len(drr) == 1:
+        axs = [axs]
     for img, ax in zip(drr, axs):
         ax.imshow(img.squeeze().cpu().detach(), cmap="gray")
         _, nx, ny = img.shape
