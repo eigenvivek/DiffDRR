@@ -70,7 +70,7 @@ detector_kwargs = {
 }
 
 # Make the DRR
-drr = DRR(volume, spacing, height=200, delx=4.0, device="cuda")
+drr = DRR(volume, spacing, height=200, delx=4.0).to("cuda", torch.float32)
 img = drr(**detector_kwargs)
 
 ax = plot_drr(img)
