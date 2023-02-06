@@ -155,6 +155,12 @@ class DRR(nn.Module):
                 img = reshape_subsampled_drr(img, self.detector, len(target))
         return img
 
+    def update_params(self, params):
+        state_dict = self.state_dict()
+        state_dict["sdr"].copy_(params[..., 0:1])
+        state_dict["rotations"].copy_(params[..., 1:4])
+        state_dict["translations"].copy_(params[..., 4:7])
+
     def plot_geometry(self, ax=None):
         """Visualize the geometry of the detector."""
         if len(list(self.parameters())) == 0:
