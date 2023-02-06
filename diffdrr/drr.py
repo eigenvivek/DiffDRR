@@ -18,12 +18,12 @@ class DRR(nn.Module):
         delx,
         width=None,
         dely=None,
-        projector="siddon",
         p_subsample=None,
         reshape=True,
+        params=None,
         dtype=None,
         device=None,
-        params=None,
+        projector=None,
     ):
         """
         Class for generating DRRs.
@@ -42,8 +42,6 @@ class DRR(nn.Module):
             The x-axis pixel size.
         dely : float, optional
             The y-axis pixel size. If not provided, it is set to `delx`.
-        projector : str, optional
-            The type of projector, either "siddon" or "siddon_jacobs".
         p_subsample : int, optional
             Proportion of target points to randomly sample for each forward pass
         reshape : bool, optional
@@ -83,11 +81,7 @@ class DRR(nn.Module):
         # Initialize the Projector and register its parameters
         self.register_buffer("spacing", torch.tensor(spacing))
         self.register_buffer("volume", torch.tensor(volume).flip([0]))
-        assert projector != "siddon_jacobs", "Siddon-Jacobs projector is deprecated."
-        if projector == "siddon":
-            self.raytrace = siddon_raycast
-        else:
-            raise ValueError("Invalid projector type.")
+        self.raytrace = siddon_raycast
         self.reshape = reshape
 
         # Dummy tensor for device and dtype
@@ -98,6 +92,10 @@ class DRR(nn.Module):
                 dtype and device are deprecated.
                 Instead, use .to(dtype) or .to(device) to update the DRR module.
                 """
+            )
+        if projector is not None:
+            raise DeprecationWarning(
+                "projector is deprecated, Siddon is always used for raytracing"
             )
 
     def forward(
