@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .projectors.siddon import Siddon
+from .projectors.siddon import siddon_raycast
 from .utils import reshape_subsampled_drr
 from .utils.camera import Detector
 from .visualization import plot_camera, plot_volume
@@ -18,12 +18,12 @@ class DRR(nn.Module):
         delx,
         width=None,
         dely=None,
-        projector="siddon",
         p_subsample=None,
         reshape=True,
+        params=None,
         dtype=None,
         device=None,
-        params=None,
+        projector=None,
     ):
         """
         Class for generating DRRs.
@@ -42,8 +42,6 @@ class DRR(nn.Module):
             The x-axis pixel size.
         dely : float, optional
             The y-axis pixel size. If not provided, it is set to `delx`.
-        projector : str, optional
-            The type of projector, either "siddon" or "siddon_jacobs".
         p_subsample : int, optional
             Proportion of target points to randomly sample for each forward pass
         reshape : bool, optional
@@ -81,26 +79,23 @@ class DRR(nn.Module):
         )
 
         # Initialize the Projector and register its parameters
-        self.spacing = nn.Parameter(torch.tensor(spacing), requires_grad=False)
-        self.volume = nn.Parameter(torch.tensor(volume).flip([0]), requires_grad=False)
-        assert projector != "siddon_jacobs", "Siddon-Jacobs projector is deprecated."
-        if projector == "siddon":
-            self.siddon = Siddon(self.volume, self.spacing)
-        else:
-            raise ValueError("Invalid projector type.")
+        self.register_buffer("spacing", torch.tensor(spacing))
+        self.register_buffer("volume", torch.tensor(volume).flip([0]))
+        self.raytrace = siddon_raycast
         self.reshape = reshape
 
         # Dummy tensor for device and dtype
-        self.dummy = nn.Parameter(
-            torch.tensor([0.0]),
-            requires_grad=False,
-        )
+        self.register_buffer("dummy", torch.tensor([0.0]))
         if dtype is not None or device is not None:
             raise DeprecationWarning(
                 """
-                dtype and device are deprecated. 
+                dtype and device are deprecated.
                 Instead, use .to(dtype) or .to(device) to update the DRR module.
                 """
+            )
+        if projector is not None:
+            raise DeprecationWarning(
+                "projector is deprecated, Siddon is always used for raytracing"
             )
 
     def forward(
@@ -112,6 +107,7 @@ class DRR(nn.Module):
         bx=None,
         by=None,
         bz=None,
+        params=None,
     ):
         """
         Generate a DRR from a particular viewing angle. If the DRR module is in
@@ -129,20 +125,28 @@ class DRR(nn.Module):
             by    : Y-dir translation
             bz    : Z-dir translation
         """
+        paramlist = [sdr, theta, phi, gamma, bx, by, bz]
         if not self.optimization_mode:
-            self.sdr = torch.tensor([[sdr]]).to(self.dummy)
-            self.rotations = torch.tensor([[theta, phi, gamma]]).to(self.dummy)
-            self.translations = torch.tensor([[bx, by, bz]]).to(self.dummy)
-        params = [sdr, theta, phi, gamma, bx, by, bz]
-        if any(arg is not None for arg in params) and self.optimization_mode:
-            raise ValueError("Cannot provide parameters in optimization mode.")
+            if any(arg is not None for arg in paramlist):
+                self.sdr = torch.tensor([[sdr]]).to(self.dummy)
+                self.rotations = torch.tensor([[theta, phi, gamma]]).to(self.dummy)
+                self.translations = torch.tensor([[bx, by, bz]]).to(self.dummy)
+            elif params is not None:
+                self.sdr = params[..., 0:1].to(self.dummy)
+                self.rotations = params[..., 1:4].to(self.dummy)
+                self.translations = params[..., 4:7].to(self.dummy)
+            else:
+                raise ValueError("Must provide viewing angle parameters.")
+        else:
+            if any(arg is not None for arg in paramlist):
+                raise ValueError("Cannot provide parameters in optimization mode.")
 
         source, target = self.detector.make_xrays(
             sdr=self.sdr,
             rotations=self.rotations,
             translations=self.translations,
         )
-        img = self.siddon.raytrace(source, target)
+        img = self.raytrace(source, target, self.volume, self.spacing)
 
         if self.reshape:
             if self.detector.n_subsample is None:
@@ -150,6 +154,12 @@ class DRR(nn.Module):
             else:
                 img = reshape_subsampled_drr(img, self.detector, len(target))
         return img
+
+    def update_params(self, params):
+        state_dict = self.state_dict()
+        state_dict["sdr"].copy_(params[..., 0:1])
+        state_dict["rotations"].copy_(params[..., 1:4])
+        state_dict["translations"].copy_(params[..., 4:7])
 
     def plot_geometry(self, ax=None):
         """Visualize the geometry of the detector."""
