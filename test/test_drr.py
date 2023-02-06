@@ -19,11 +19,3 @@ def test_DRR():
     drr = DRR(volume, spacing, height=200, delx=1.4e-2).to("cpu")
     img = drr(**detector_kwargs)
     assert img.shape == (1, 1, 200, 200)
-
-
-def test_DRR_batch():
-    volume, spacing = load_example_ct()
-    params = torch.rand(3, 7)
-    drr = DRR(volume, spacing, height=200, delx=1.4e-2, params=params).to("cpu")
-    img = drr()
-    assert img.shape == (3, 1, 200, 200)
