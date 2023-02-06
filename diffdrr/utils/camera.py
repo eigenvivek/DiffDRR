@@ -1,8 +1,6 @@
 import torch
 from torch.nn.functional import normalize
 
-from .backend import get_device
-
 
 class Detector:
     """
@@ -20,17 +18,13 @@ class Detector:
         Pixel spacing in the Y-direction of the X-ray detector
     n_subsample : int
         Number of target points to randomly sample
-    device : str or torch.device
-        Compute device. If str, either "cpu", "cuda", or "mps".
     """
 
-    def __init__(self, height, width, delx, dely, n_subsample, dtype, device):
+    def __init__(self, height, width, delx, dely, n_subsample):
         self.height = height
         self.width = width
         self.delx = delx
         self.dely = dely
-        self.dtype = dtype
-        self.device = device if isinstance(device, torch.device) else get_device(device)
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
             self.subsamples = []
@@ -49,17 +43,17 @@ class Detector:
 
         # Get the detector plane normal vector
         assert len(rotations) == len(translations)
-        source, center, basis = _get_basis(sdr, rotations, self.device)
+        source, center, basis = _get_basis(sdr, rotations)
         source += translations.unsqueeze(1)
         center += translations.unsqueeze(1)
 
-        # Construct the detector plane
-        h_off = 1.0 if self.height % 2 else 0.5  # Different offsets for even or odd heights
+        # Construct the detector plane with different offsets for even or odd heights
+        h_off = 1.0 if self.height % 2 else 0.5
         w_off = 1.0 if self.width % 2 else 0.5
         t = (torch.arange(-self.height // 2, self.height // 2) + h_off) * self.delx
         s = (torch.arange(-self.width // 2, self.width // 2) + w_off) * self.dely
 
-        coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(self.device).to(self.dtype)
+        coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(sdr)
         target = torch.einsum("bcd,nc->bnd", basis, coefs)
         target += center
         if self.n_subsample is not None:
@@ -69,9 +63,9 @@ class Detector:
         return source, target
 
 
-def _get_basis(rho, rotations, device):
+def _get_basis(rho, rotations):
     # Get the rotation of 3D space
-    R = rho * Rxyz(rotations, device)
+    R = rho * Rxyz(rotations)
 
     # Get the detector center and X-ray source
     source = R[..., 0].unsqueeze(1)
@@ -86,9 +80,10 @@ def _get_basis(rho, rotations, device):
 
 
 # Define 3D rotation matrices
-def Rxyz(rotations, device):
+def Rxyz(rotations):
     theta, phi, gamma = rotations[:, 0], rotations[:, 1], rotations[:, 2]
     batch_size = len(rotations)
+    device = rotations
     R_z = Rz(theta, batch_size, device)
     R_y = Ry(phi, batch_size, device)
     R_x = Rx(gamma, batch_size, device)
@@ -96,8 +91,8 @@ def Rxyz(rotations, device):
 
 
 def Rx(gamma, batch_size, device):
-    t0 = torch.zeros(batch_size, 1, device=device)
-    t1 = torch.ones(batch_size, 1, device=device)
+    t0 = torch.zeros(batch_size, 1).to(device)
+    t1 = torch.ones(batch_size, 1).to(device)
     return torch.stack(
         [
             t1,
@@ -115,8 +110,8 @@ def Rx(gamma, batch_size, device):
 
 
 def Ry(phi, batch_size, device):
-    t0 = torch.zeros(batch_size, 1, device=device)
-    t1 = torch.ones(batch_size, 1, device=device)
+    t0 = torch.zeros(batch_size, 1).to(device)
+    t1 = torch.ones(batch_size, 1).to(device)
     return torch.stack(
         [
             torch.cos(phi.unsqueeze(1)),
@@ -134,8 +129,8 @@ def Ry(phi, batch_size, device):
 
 
 def Rz(theta, batch_size, device):
-    t0 = torch.zeros(batch_size, 1, device=device)
-    t1 = torch.ones(batch_size, 1, device=device)
+    t0 = torch.zeros(batch_size, 1).to(device)
+    t1 = torch.ones(batch_size, 1).to(device)
     return torch.stack(
         [
             torch.cos(theta.unsqueeze(1)),
