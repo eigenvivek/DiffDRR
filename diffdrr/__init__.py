@@ -8,7 +8,6 @@ from .metrics.ssd import SSD
 from .projectors.siddon import Siddon
 from .projectors.siddon_jacobs import SiddonJacobs
 
-from .utils.backend import get_device
 from .utils.camera import Detector
 
 from .visualization.animation import animate

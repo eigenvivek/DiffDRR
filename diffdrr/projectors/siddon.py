@@ -4,24 +4,22 @@ import torch
 class Siddon:
     """A vectorized version of the Siddon ray tracing algorithm."""
 
-    def __init__(self, volume, spacing, dtype, device, eps=1e-9):
-        self.spacing = torch.tensor(spacing, dtype=dtype, device=device)
-        self.dtype = dtype
-        self.device = device
+    def __init__(self, volume, spacing, eps=1e-9):
+        self.spacing = spacing
         self.eps = eps
 
         # Reverse the rows to match the indexing scheme of the Siddon-Jacob's algorithm
-        self.volume = torch.tensor(volume, dtype=self.dtype, device=self.device).flip([0])
-        self.dims = torch.tensor(self.volume.shape, dtype=self.dtype, device=self.device)
-        self.dims += 1.0
+        self.volume = volume
+        self.dims = torch.tensor(self.volume.shape)
+        self.dims += 1
 
     def get_alpha_minmax(self, source, target):
         sdd = target - source + self.eps
-        planes = torch.zeros(3, device=self.device)
+        planes = torch.zeros(3).to(source)
         alpha0 = (planes * self.spacing - source) / sdd
-        planes = self.dims - 1
+        planes = (self.dims - 1).to(source)
         alpha1 = (planes * self.spacing - source) / sdd
-        alphas = torch.stack([alpha0, alpha1])
+        alphas = torch.stack([alpha0, alpha1]).to(source)
 
         alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
         alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(-1)
@@ -35,9 +33,9 @@ class Siddon:
 
         # Get the alpha at each plane intersection
         sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
-        alphax = torch.arange(nx, dtype=self.dtype, device=self.device) * dx
-        alphay = torch.arange(ny, dtype=self.dtype, device=self.device) * dy
-        alphaz = torch.arange(nz, dtype=self.dtype, device=self.device) * dz
+        alphax = torch.arange(nx).to(source) * dx
+        alphay = torch.arange(ny).to(source) * dy
+        alphaz = torch.arange(nz).to(source) * dz
         alphax = alphax.expand(len(source), 1, -1) - sx.unsqueeze(-1)
         alphay = alphay.expand(len(source), 1, -1) - sy.unsqueeze(-1)
         alphaz = alphaz.expand(len(source), 1, -1) - sz.unsqueeze(-1)
@@ -61,7 +59,8 @@ class Siddon:
 
     def get_index(self, alpha, source, target):
         sdd = target - source + self.eps
-        idxs = (source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)) / self.spacing
+        idxs = source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)
+        idxs = idxs / self.spacing
         idxs = idxs.trunc()
         # Conversion to long makes nan->-inf, so temporarily replace them with 0
         # This is cancelled out later by multiplication by nan step_length
