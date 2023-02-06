@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .projectors.siddon import Siddon
+from .projectors.siddon import siddon_raycast
 from .utils import reshape_subsampled_drr
 from .utils.camera import Detector
 from .visualization import plot_camera, plot_volume
@@ -85,7 +85,7 @@ class DRR(nn.Module):
         self.register_buffer("volume", torch.tensor(volume).flip([0]))
         assert projector != "siddon_jacobs", "Siddon-Jacobs projector is deprecated."
         if projector == "siddon":
-            self.siddon = Siddon(self.volume, self.spacing)
+            self.raytrace = siddon_raycast
         else:
             raise ValueError("Invalid projector type.")
         self.reshape = reshape
@@ -95,7 +95,7 @@ class DRR(nn.Module):
         if dtype is not None or device is not None:
             raise DeprecationWarning(
                 """
-                dtype and device are deprecated. 
+                dtype and device are deprecated.
                 Instead, use .to(dtype) or .to(device) to update the DRR module.
                 """
             )
@@ -139,7 +139,7 @@ class DRR(nn.Module):
             rotations=self.rotations,
             translations=self.translations,
         )
-        img = self.siddon.raytrace(source, target)
+        img = self.raytrace(source, target, self.volume, self.spacing)
 
         if self.reshape:
             if self.detector.n_subsample is None:
