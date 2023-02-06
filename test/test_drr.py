@@ -16,21 +16,14 @@ def test_DRR():
         "by": by,
         "bz": bz,
     }
-    try:
-        drr = DRR(volume, spacing, height=200, delx=1.4e-2).to("cuda")
-    except:
-        drr = DRR(volume, spacing, height=200, delx=1.4e-2).to("cpu")
+    drr = DRR(volume, spacing, height=200, delx=1.4e-2).to("cpu")
     img = drr(**detector_kwargs)
     assert img.shape == (1, 1, 200, 200)
 
 
 def test_DRR_batch():
     volume, spacing = load_example_ct()
-    batch = torch.rand(3, 7)
-    try:
-        drr = DRR(volume, spacing, height=200, delx=1.4e-2, params=batch).to("cuda")
-    except:
-        drr = DRR(volume, spacing, height=200, delx=1.4e-2, params=batch).to("cpu")
-
+    params = torch.rand(3, 7)
+    drr = DRR(volume, spacing, height=200, delx=1.4e-2, params=params).to("cpu")
     img = drr()
     assert img.shape == (3, 1, 200, 200)
