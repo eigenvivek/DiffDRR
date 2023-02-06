@@ -18,7 +18,7 @@ def test_DRR():
     }
     try:
         drr = DRR(volume, spacing, height=200, delx=1.4e-2).to("cuda")
-    except ValueError:
+    except AssertionError:
         drr = DRR(volume, spacing, height=200, delx=1.4e-2).to("cpu")
     img = drr(**detector_kwargs)
     assert img.shape == (1, 1, 200, 200)
@@ -29,7 +29,7 @@ def test_DRR_batch():
     batch = torch.rand(3, 7)
     try:
         drr = DRR(volume, spacing, height=200, delx=1.4e-2, params=batch).to("cuda")
-    except ValueError:
+    except AssertionError:
         drr = DRR(volume, spacing, height=200, delx=1.4e-2, params=batch).to("cpu")
 
     img = drr()
