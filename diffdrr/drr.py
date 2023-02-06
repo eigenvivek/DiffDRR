@@ -81,8 +81,8 @@ class DRR(nn.Module):
         )
 
         # Initialize the Projector and register its parameters
-        self.spacing = nn.Parameter(torch.tensor(spacing), requires_grad=False)
-        self.volume = nn.Parameter(torch.tensor(volume).flip([0]), requires_grad=False)
+        self.register_buffer("spacing", torch.tensor(spacing))
+        self.register_buffer("volume", torch.tensor(volume).flip([0]))
         assert projector != "siddon_jacobs", "Siddon-Jacobs projector is deprecated."
         if projector == "siddon":
             self.siddon = Siddon(self.volume, self.spacing)
