@@ -65,7 +65,7 @@ class Detector:
 
 def _get_basis(rho, rotations):
     # Get the rotation of 3D space
-    R = rho * Rxyz(rotations)
+    R = rho.unsqueeze(-1) * Rxyz(rotations)
 
     # Get the detector center and X-ray source
     source = R[..., 0].unsqueeze(1)
