@@ -23,7 +23,6 @@ class DRR(nn.Module):
         reshape=True,
         dtype=None,
         device=None,
-        optimization_mode=False,
         params=None,
     ):
         """
@@ -49,27 +48,24 @@ class DRR(nn.Module):
             Proportion of target points to randomly sample for each forward pass
         reshape : bool, optional
             If True, return DRR as (b, n1, n2) tensor. If False, return as (b, n) tensor.
-        optimization_mode : bool, optional,
-            If True, initialize the DRR module with the provided parameters.
         params : torch.Tensor, optional
-            The parameters of the camera, including SDR, rotations, and translations. If
-            `optimization_mode` is True, then these parameters must be provided.
+            The parameters of the camera, including SDR, rotations, and translations.
+            If provided, the DRR module will be initialized in optimization mode.
+            Otherwise, the DRR module will be in rendering mode and the viewing angle
+            must be provided at each forward pass.
+
+            Note that this also enables batch rendering of DRRs!
         """
         super().__init__()
-        if dtype is not None or device is not None:
-            raise DeprecationWarning(
-                "dtype and device are deprecated. Instead, use .to(dtype) or .to(device) to update the DRR module."
-            )
 
         # Initialize the volume
-        self.optimization_mode = optimization_mode
-        if self.optimization_mode:
-            assert (
-                params is not None
-            ), "If in optimization mode, then sdr, translations, and rotations must be provided."
+        if params is not None:
+            self.optimization_mode = True
             self.sdr = nn.Parameter(params[..., 0:1])
-            self.translations = nn.Parameter(params[..., 1:4])
-            self.rotations = nn.Parameter(params[..., 4:7])
+            self.rotations = nn.Parameter(params[..., 1:4])
+            self.translations = nn.Parameter(params[..., 4:7])
+        else:
+            self.optimization_mode = False
 
         # Initialize the X-ray detector
         width = height if width is None else width
@@ -79,7 +75,9 @@ class DRR(nn.Module):
             width,
             delx,
             dely,
-            int(height * width * p_subsample) if p_subsample is not None else None,
+            n_subsample=int(height * width * p_subsample)
+            if p_subsample is not None
+            else None,
         )
 
         # Initialize the Projector and register its parameters
@@ -93,7 +91,17 @@ class DRR(nn.Module):
         self.reshape = reshape
 
         # Dummy tensor for device and dtype
-        self.dummy = torch.tensor([0.0])
+        self.dummy = nn.Parameter(
+            torch.tensor([0.0]),
+            requires_grad=False,
+        )
+        if dtype is not None or device is not None:
+            raise DeprecationWarning(
+                """
+                dtype and device are deprecated. 
+                Instead, use .to(dtype) or .to(device) to update the DRR module.
+                """
+            )
 
     def forward(
         self,
