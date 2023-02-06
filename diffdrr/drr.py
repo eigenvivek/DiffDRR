@@ -91,10 +91,7 @@ class DRR(nn.Module):
         self.reshape = reshape
 
         # Dummy tensor for device and dtype
-        self.dummy = nn.Parameter(
-            torch.tensor([0.0]),
-            requires_grad=False,
-        )
+        self.register_buffer("dummy", torch.tensor([0.0]))
         if dtype is not None or device is not None:
             raise DeprecationWarning(
                 """
