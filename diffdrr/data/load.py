@@ -50,6 +50,6 @@ def read_dicom(dcmdir="data/cxr", correct_zero=True):
 
 def load_example_ct():
     """Load an example chest CT for demonstration purposes."""
-    currdir = Path(__file__).resolve().parent
-    dcmdir = currdir / "cxr"
+    currdir = Path(__file__).resolve()
+    dcmdir = currdir.parents[5] / "diffdrr/data/cxr/"
     return read_dicom(dcmdir)
