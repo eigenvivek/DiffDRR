@@ -30,7 +30,7 @@ def read_dicom(dcmdir="data/cxr", correct_zero=True):
     nz = len(dcmfiles)
     delX, delY = ds.PixelSpacing
     delX, delY = float(delX), float(delY)
-    volume = np.zeros((nx, ny, nz))
+    volume = np.zeros((nx, ny, nz)).astype(np.float32)
 
     delZs = []
     for idx, dcm in enumerate(dcmfiles):
@@ -39,10 +39,10 @@ def read_dicom(dcmdir="data/cxr", correct_zero=True):
         delZs.append(ds.ImagePositionPatient[2])
 
     if correct_zero:
-        volume[volume == volume.min()] = 0.0
+        volume[volume == volume.min()] = 0
 
     delZs = np.diff(delZs)
-    delZ = np.abs(np.unique(delZs)[0])
+    delZ = float(np.abs(np.unique(delZs)[0]))
     spacing = [delX, delY, delZ]
 
     return volume, spacing
