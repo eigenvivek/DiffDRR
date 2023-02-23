@@ -55,6 +55,6 @@ def read_dicom(dcmdir, correct_zero=True):
 # %% ../notebooks/api/03_data.ipynb 5
 def load_example_ct():
     """Load an example chest CT for demonstration purposes."""
-    currdir = Path(__file__).resolve().parent.parent
+    currdir = Path(__file__).resolve().parent
     dcmdir = currdir / "data/cxr"
     return read_dicom(dcmdir)

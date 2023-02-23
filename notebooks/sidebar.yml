@@ -14,7 +14,7 @@ website:
       - section: tutorials
         contents:
           - tutorials/introduction.ipynb
-#           - tutorials/metrics.ipynb
-#           - tutorials/optimizers.ipynb
-#           - tutorials/spherical.ipynb
-#           - tutorials/timing.ipynb
+          - tutorials/metrics.ipynb
+          - tutorials/optimizers.ipynb
+          - tutorials/spherical.ipynb
+          - tutorials/timing.ipynb

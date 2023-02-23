@@ -2,5 +2,5 @@ include settings.ini
 include LICENSE
 include CONTRIBUTING.md
 include README.md
-include data/cxr
+recursive-include diffdrr/data *
 recursive-exclude * __pycache__
