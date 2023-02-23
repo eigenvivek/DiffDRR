@@ -1,0 +1,177 @@
+[
+  {
+    "objectID": "api/camera.html",
+    "href": "api/camera.html",
+    "title": "camera",
+    "section": "",
+    "text": "source\n\nDetector\n\n Detector (height, width, delx, dely, n_subsample)\n\nConstruct a 6 DoF X-ray detector system. This model is based on a C-Arm. Inputs —— height : int Height of the X-ray detector (ie, DRR height) width : int Width of the X-ray detector (ie, DRR width) delx : float Pixel spacing in the X-direction of the X-ray detector dely : float Pixel spacing in the Y-direction of the X-ray detector n_subsample : int Number of target points to randomly sample"
+  },
+  {
+    "objectID": "api/utils.html",
+    "href": "api/utils.html",
+    "title": "utils",
+    "section": "",
+    "text": "source\n\nreshape_subsampled_drr\n\n reshape_subsampled_drr (img, detector, batch_size)"
+  },
+  {
+    "objectID": "api/data.html",
+    "href": "api/data.html",
+    "title": "data",
+    "section": "",
+    "text": "/Users/vivek/mambaforge/envs/nbdev-diffdrr/lib/python3.9/site-packages/fastcore/docscrape.py:225: UserWarning: potentially wrong underline length... \nInputs \n----- in \nInputs\n-----...\n  else: warn(msg)\nsource"
+  },
+  {
+    "objectID": "api/data.html#inputs",
+    "href": "api/data.html#inputs",
+    "title": "data",
+    "section": "Inputs",
+    "text": "Inputs\ndcmdir : Path or str Path to a DICOM directory correct_zero : bool Make 0 the minimum value the CT Returns ——- volume : ndarray 3D array containing voxels of imaging data spacing : list X-, Y-, and Z-directional voxel spacings\n\nsource\n\nload_example_ct\n\n load_example_ct ()\n\nLoad an example chest CT for demonstration purposes."
+  },
+  {
+    "objectID": "api/metrics.html",
+    "href": "api/metrics.html",
+    "title": "metrics",
+    "section": "",
+    "text": "source\n\nXCorr2\n\n XCorr2 (zero_mean_normalized=False)\n\nCompute the normalized cross-correlation between two images with the same shape."
+  },
+  {
+    "objectID": "api/visualization.html",
+    "href": "api/visualization.html",
+    "title": "visualization",
+    "section": "",
+    "text": "source\n\nplot_drr\n\n plot_drr (drr, title=None, ticks=True)\n\nPlot an DRR output by the projector module. Inputs —— drr : torch.Tensor DRR image in torch tensor with shape (batch, channel, height, width) title : str, optional Title for the plot ticks : Bool Toggle ticks and ticklabels. Returns ——- fig : matplotlib.figure.Figure Figure with plotted image axs : matplotlib.axes._subplots.AxesSubplot Axis with plotted image\n\nsource\n\n\nanimate\n\n animate (out, df, sdr, drr, ground_truth=None, verbose=True)\n\nAnimate the optimization of a DRR."
+  },
+  {
+    "objectID": "api/projectors.html",
+    "href": "api/projectors.html",
+    "title": "projectors",
+    "section": "",
+    "text": "source\n\nsiddon_raycast\n\n siddon_raycast (source, target, volume, spacing, eps=1e-08)"
+  },
+  {
+    "objectID": "api/drr.html",
+    "href": "api/drr.html",
+    "title": "DRR",
+    "section": "",
+    "text": "/Users/vivek/mambaforge/envs/nbdev-diffdrr/lib/python3.9/site-packages/fastcore/docscrape.py:225: UserWarning: Unknown section Inputs\n  else: warn(msg)\n\nsource\n\nDRR\n\n DRR (volume, spacing, height, delx, width=None, dely=None,\n      p_subsample=None, reshape=True, params=None, dtype=None,\n      device=None, projector=None)\n\nClass for generating DRRs."
+  },
+  {
+    "objectID": "tutorials/introduction.html",
+    "href": "tutorials/introduction.html",
+    "title": "How to use DiffDRR",
+    "section": "",
+    "text": "import matplotlib.pyplot as plt\nimport torch\n\nfrom diffdrr import load_example_ct, DRR\nfrom diffdrr.visualization import plot_drr"
+  },
+  {
+    "objectID": "tutorials/introduction.html#drr-generation",
+    "href": "tutorials/introduction.html#drr-generation",
+    "title": "How to use DiffDRR",
+    "section": "DRR Generation",
+    "text": "DRR Generation\nDiffDRR is implemented as a custom PyTorch module.\nAll raytracing operations have been formulated in a vectorized function, enabling use of PyTorch’s GPU support and autograd. This also means that DRR generation is available as a layer in deep learning frameworks.\n\nModes\nDiffDRR operates in two modes:\n\nRendering mode\nOptimization mode\n\n\nRendering mode\nRendering mode is used for simulating an X-ray from a particular angle. To do this, pass the viewing angle an instance of the DRR module:\n\n# Read in the volume\nvolume, spacing = load_example_ct()\n\n# Get parameters for the detector\nbx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2\ndetector_kwargs = {\n    \"sdr\"   : 300.0,\n    \"theta\" : torch.pi,\n    \"phi\"   : 0,\n    \"gamma\" : torch.pi / 2,\n    \"bx\"    : bx,\n    \"by\"    : by,\n    \"bz\"    : bz,\n}\n\n# Make the DRR\ndrr = DRR(volume, spacing, height=200, delx=4.0).to(device=\"cuda\", dtype=torch.float32)\nimg = drr(**detector_kwargs)\nax = plot_drr(img, ticks=False)\nplt.show()\n\n\n\n\n\n\nOptimization mode\nOptimization mode is used to integrate DiffDRR in optimization schemes. To use this mode, pass the viewing angle as a tensor (shape: batch_size, 7) during initialization.\nThis mode offers the following benefits: 1. The viewing angle are stored as module parameters that can be optimized with any differentiable loss function. 2. This mode supports batched DRR synthesis (simulating X-rays from multiple viewing angles at once) 3. The viewing angle parameters don’t need to be passed each time.\nWe demonstrate the speed of DiffDRR by timing repeated DRR synthesis. Timing results are on a single NVIDIA RTX 2080 Ti GPU.\n\nparams = torch.tensor([list(detector_kwargs.values())])  # shape: (batch_size, 7)\ndrr = DRR(\n    volume,\n    spacing,\n    height=200,\n    delx=4.0,\n    params=params,  # Pass parameters to the constructor to initialize in optimization mode\n).to(\"cuda\")\n\n34.6 ms ± 36.9 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n\n\n\n\n\nSparse rendering\nYou can also render sparse subsets of the pixels in a DRR. This is useful for speeding up registration and registration tasks.\n\n# Make the DRR with 10% of the pixels\ndrr = DRR(\n    volume,\n    spacing,\n    height=200,\n    delx=4.0,\n    p_subsample=0.1,  # Set the proportion of pixels that should be rendered\n    reshape=True,     # Map rendered pixels back to their location in true space, \n                      # Useful for plotting, but can be disabled if using MSE as a loss function\n    params=params\n).to(device=\"cuda\")\nimg = drr()\nax = plot_drr(img, ticks=False)\nplt.show()\n\n\n\n\n\n\n\n7.07 ms ± 26.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)"
+  },
+  {
+    "objectID": "tutorials/introduction.html#gradients",
+    "href": "tutorials/introduction.html#gradients",
+    "title": "How to use DiffDRR",
+    "section": "Gradients",
+    "text": "Gradients\nGradients of input parameters are computable with autograd if the DRR is computed in optimization_mode.\n\ntorch.autograd.set_detect_anomaly(True)\n\nimg.mean().backward(retain_graph=True)\ndrr.sdr.grad, drr.rotations.grad, drr.translations.grad\n\n(tensor([[-15.7217]], device='cuda:0'),\n tensor([[ 593.5722, -553.5860, 1083.1176]], device='cuda:0'),\n tensor([[75.9779,  1.0208, -2.7288]], device='cuda:0'))"
+  },
+  {
+    "objectID": "tutorials/introduction.html#try-the-m1-gpu",
+    "href": "tutorials/introduction.html#try-the-m1-gpu",
+    "title": "How to use DiffDRR",
+    "section": "Try the M1 GPU",
+    "text": "Try the M1 GPU\nCertain PyTorch functions have not yet been ported :(\n\n# Make DRR\ndrr = DRR(volume, spacing, height=200, delx=1.4e-2).to(\"mps\", torch.float32)\nimg = drr(**detector_kwargs)\n\nplot_drr(drr)\nplt.show()\n\nNotImplementedError: The operator 'aten::sort.values_stable' is not currently implemented for the MPS device. If you want this op to be added in priority during the prototype phase of this feature, please comment on https://github.com/pytorch/pytorch/issues/77764. As a temporary fix, you can set the environment variable `PYTORCH_ENABLE_MPS_FALLBACK=1` to use the CPU as a fallback for this op. WARNING: this will be slower than running natively on MPS."
+  },
+  {
+    "objectID": "tutorials/metrics.html",
+    "href": "tutorials/metrics.html",
+    "title": "Visualize registration loss landscapes",
+    "section": "",
+    "text": "import matplotlib.pyplot as plt\nfrom mpl_toolkits.mplot3d import Axes3D\n\nimport torch\nfrom tqdm import tqdm\n\nfrom diffdrr import read_dicom, Detector, Siddon\nfrom diffdrr.metrics import xcorr2\n\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")"
+  },
+  {
+    "objectID": "tutorials/metrics.html#utility-functions-for-the-simulation",
+    "href": "tutorials/metrics.html#utility-functions-for-the-simulation",
+    "title": "Visualize registration loss landscapes",
+    "section": "Utility functions for the simulation",
+    "text": "Utility functions for the simulation\n\nGenerate ground truth DRR\nFunction for generating estimated DRRs\nFunctions for scoring (Negative NCC and L2-norm)\n\n\n# DRR utility functions\nvolume, spacing = read_dicom(\"../data/cxr/\")\nisocenter = [0., 0., 0.]\nsiddon = Siddon(spacing, isocenter, volume, device)\n\ndef make_drr(theta, phi, gamma, bx, by, bz, sdr=200., height=100, delx=10.0):\n    \"\"\"Detector parameters -> DRR\"\"\"\n    detector = Detector(\n        sdr    = sdr,\n        theta  = theta,\n        phi    = phi,\n        gamma  = gamma,\n        bx     = bx,\n        by     = by,\n        bz     = bz,\n        device = device\n    )\n    source, rays = detector.make_xrays(height, height, delx, delx)\n    drr = siddon.raytrace(source, rays)\n    return drr\n\ndef plot(drr):\n    plt.imshow(drr.detach().cpu(), cmap=\"gray\")\n    plt.show()    \n\n# Get the ground truth DRR\ntheta = torch.pi\nphi = 0\ngamma = torch.pi / 2\nbx = 180\nby = 180\nbz = 166.25\n\ndrr = make_drr(theta, phi, gamma, bx, by, bz)\nplot(drr)\n\n\n\n\n\n# Scoring functions\ndef get_normxcorr2(theta, phi, gamma, bx, by, bz):\n    est = make_drr(theta, phi, gamma, bx, by, bz)\n    return corr(drr, est)\n\ndef corr(drr, est):\n    x = xcorr2()\n    loss = x(drr.expand(1, 1, -1, -1), est.expand(1, 1, -1, -1)).item()\n    return loss\n\n\nest = make_drr(theta, phi, gamma+0.0001, bx+0.01, by+0.01, bz+0.01)\ntorch.norm(drr - est, 1) / (200*200)\n\ntensor(12.3270, device='cuda:0', grad_fn=<DivBackward0>)\n\n\n\nimport numpy as np\nnp.random.randint(0, 9)\n\n2"
+  },
+  {
+    "objectID": "tutorials/metrics.html#negative-normalized-xcorr",
+    "href": "tutorials/metrics.html#negative-normalized-xcorr",
+    "title": "Visualize registration loss landscapes",
+    "section": "Negative Normalized XCorr",
+    "text": "Negative Normalized XCorr\n\n# NCC for the XYZs\nxs = torch.arange(-15., 16.)\nys = torch.arange(-15., 16.)\nzs = torch.arange(-15., 16.)\n\n# Get coordinate-wise correlations\nxy_corrs = []\nfor x in tqdm(xs):\n    for y in ys:\n        xcorr = get_normxcorr2(theta, phi, gamma, bx+x, by+y, bz)\n        xy_corrs.append(-xcorr)\nXY = torch.tensor(xy_corrs).reshape(len(xs), len(ys))\n        \nxz_corrs = []\nfor x in tqdm(xs):\n    for z in zs:\n        xcorr = get_normxcorr2(theta, phi, gamma, bx+x, by, bz+z)\n        xz_corrs.append(-xcorr)\nXZ = torch.tensor(xz_corrs).reshape(len(xs), len(zs))\n        \nyz_corrs = []\nfor y in tqdm(ys):\n    for z in zs:\n        xcorr = get_normxcorr2(theta, phi, gamma, bx, by+y, bz+z)\n        yz_corrs.append(-xcorr)\nYZ = torch.tensor(yz_corrs).reshape(len(ys), len(zs))\n\n100%|████████████████████████████████████████████████████████████████| 31/31 [00:14<00:00,  2.20it/s]\n100%|████████████████████████████████████████████████████████████████| 31/31 [00:14<00:00,  2.21it/s]\n100%|████████████████████████████████████████████████████████████████| 31/31 [00:14<00:00,  2.19it/s]\n\n\n\n# NCC for the angles\nt_angles = torch.arange(-torch.pi/4, torch.pi/4, step=.05)\np_angles = torch.arange(-torch.pi/4, torch.pi/4, step=.05)\ng_angles = torch.arange(-torch.pi/8, torch.pi/8, step=.05)\n\n# Get coordinate-wise correlations\ntp_corrs = []\nfor t in tqdm(t_angles):\n    for p in p_angles:\n        xcorr = get_normxcorr2(theta+t, phi+p, gamma, bx, by, bz)\n        tp_corrs.append(-xcorr)\nTP = torch.tensor(tp_corrs).reshape(len(t_angles), len(p_angles))\n        \ntg_corrs = []\nfor t in tqdm(t_angles):\n    for g in g_angles:\n        xcorr = get_normxcorr2(theta+t, phi, gamma+g, bx, by, bz)\n        tg_corrs.append(-xcorr)\nTG = torch.tensor(tg_corrs).reshape(len(t_angles), len(g_angles))\n        \npg_corrs = []\nfor p in tqdm(p_angles):\n    for g in g_angles:\n        xcorr = get_normxcorr2(theta, phi+p, gamma+g, bx, by, bz)\n        pg_corrs.append(-xcorr)\nPG = torch.tensor(pg_corrs).reshape(len(p_angles), len(g_angles))\n\n100%|████████████████████████████████████████████████████████████████| 32/32 [00:16<00:00,  1.91it/s]\n100%|████████████████████████████████████████████████████████████████| 32/32 [00:08<00:00,  3.69it/s]\n100%|████████████████████████████████████████████████████████████████| 32/32 [00:08<00:00,  3.80it/s]\n\n\n\n# Make the plots\n\n# XYZ\nxyx, xyy = torch.meshgrid(xs, ys)\nxzx, xzz = torch.meshgrid(xs, zs)\nyzy, yzz = torch.meshgrid(ys, zs)\n\nfig = plt.figure(figsize=3*plt.figaspect(1.2/1), dpi=300)\n\nax = fig.add_subplot(1, 3, 1, projection='3d')\nax.contourf(xyx, xyy, XY, zdir=\"z\", offset=-1, cmap=plt.get_cmap('rainbow'), alpha=0.5)\nax.plot_surface(xyx, xyy, XY, rstride=1, cstride=1, cmap=plt.get_cmap('rainbow'))\nax.set_xlabel('ΔX (mm)')\nax.set_ylabel('ΔY (mm)')\nax.set_zlim3d(-1., -0.825)\n\nax = fig.add_subplot(1, 3, 2, projection='3d')\nax.contourf(xzx, xzz, XZ, zdir=\"z\", offset=-1, cmap=plt.get_cmap('rainbow'), alpha=0.5)\nax.plot_surface(xzx, xzz, XZ, rstride=1, cstride=1, cmap=plt.get_cmap('rainbow'))\nax.set_xlabel('ΔX (mm)')\nax.set_ylabel('ΔZ (mm)')\nax.set_zlim3d(-1., -0.825)\n\nax = fig.add_subplot(1, 3, 3, projection='3d')\nax.contourf(yzy, yzz, YZ, zdir=\"z\", offset=-1, cmap=plt.get_cmap('rainbow'), alpha=0.5)\nax.plot_surface(yzy, yzz, YZ, rstride=1, cstride=1, cmap=plt.get_cmap('rainbow'))\nax.set_xlabel('ΔY (mm)')\nax.set_ylabel('ΔZ (mm)')\nax.set_zlim3d(-1., -0.825)\n\n\n# Angles\nxyx, xyy = torch.meshgrid(t_angles, p_angles)\nxzx, xzz = torch.meshgrid(t_angles, g_angles)\nyzy, yzz = torch.meshgrid(p_angles, g_angles)\n\nax = fig.add_subplot(2, 3, 1, projection='3d')\nax.contourf(xyx, xyy, TP, zdir=\"z\", offset=-1, cmap=plt.get_cmap('rainbow'), alpha=0.5)\nax.plot_surface(xyx, xyy, TP, rstride=1, cstride=1, cmap=plt.get_cmap('rainbow'))\nax.set_xlabel('Δθ (radians)')\nax.set_ylabel('Δφ (radians)')\nax.set_zlim3d(-1., -0.4)\n\nax = fig.add_subplot(2, 3, 2, projection='3d')\nax.contourf(xzx, xzz, TG, zdir=\"z\", offset=-1, cmap=plt.get_cmap('rainbow'), alpha=0.5)\nax.plot_surface(xzx, xzz, TG, rstride=1, cstride=1, cmap=plt.get_cmap('rainbow'))\nax.set_xlabel('Δθ (radians)')\nax.set_ylabel('Δγ (radians)')\nax.set_zlim3d(-1., -0.4)\n\nax = fig.add_subplot(2, 3, 3, projection='3d')\nax.contourf(yzy, yzz, PG, zdir=\"z\", offset=-1, cmap=plt.get_cmap('rainbow'), alpha=0.5)\nax.plot_surface(yzy, yzz, PG, rstride=1, cstride=1, cmap=plt.get_cmap('rainbow'))\nax.set_xlabel('Δφ (radians)')\nax.set_ylabel('Δγ (radians)')\nax.set_zlim3d(-1., -0.4)\n\nplt.savefig(\"../figures/loss_nncc.pdf\", bbox_inches=\"tight\")\nplt.show()\n\n/home/vivekg/vivekg/miniconda3/envs/DiffDRR/lib/python3.7/site-packages/torch/functional.py:478: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1656352464346/work/aten/diffdrr/ATen/native/TensorShape.cpp:2894.)\n  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]"
+  },
+  {
+    "objectID": "tutorials/optimizers.html",
+    "href": "tutorials/optimizers.html",
+    "title": "diffdrr",
+    "section": "",
+    "text": "from pathlib import Path\n\nimport matplotlib.pyplot as plt\nimport matplotlib.gridspec as gridspec\nimport numpy as np\nimport pandas as pd\nimport seaborn as sns\nimport torch\nfrom IPython.display import HTML\nfrom matplotlib.animation import ArtistAnimation\nfrom tqdm import tqdm\n\nfrom diffdrr import DRR, load_example_ct\nfrom diffdrr.metrics import XCorr2\nfrom diffdrr.visualization import animate, plot_drr\n\nnp.random.seed(39)"
+  },
+  {
+    "objectID": "tutorials/optimizers.html#scipy-optimization-algorithms",
+    "href": "tutorials/optimizers.html#scipy-optimization-algorithms",
+    "title": "diffdrr",
+    "section": "SciPy optimization algorithms",
+    "text": "SciPy optimization algorithms\n\nimport scipy\n\n\nPARAMS = []\n\ndef gradfree(geoparams, *optimparams):\n    \"\"\"\n    optimparams = (drr, criterion, ground_truth, sdr)\n    \"\"\"\n    theta, phi, gamma = geoparams[:3]\n    bx, by, bz = geoparams[3:]\n    estimate = drr(sdr, theta, phi, gamma, bx, by, bz)\n    loss = -criterion(ground_truth, estimate).item()\n    \n    PARAMS.append([loss, theta, phi, gamma, bx, by, bz])\n    \n    return loss\n\n\ncriterion = XCorr2(zero_mean_normalized=True)\n\n\nx0 = [theta, phi, gamma, bx, by, bz]\nargs = [drr, criterion, ground_truth, sdr]\nscipy.optimize.minimize(gradfree, x0, args, method=\"Nelder-Mead\")\n\n final_simplex: (array([[  4.19414617,   0.31496119,   1.52000113, 188.77252245,\n        168.06425703, 147.39858006],\n       [  4.19414635,   0.31496084,   1.52000135, 188.77254168,\n        168.06430405, 147.39855893],\n       [  4.19414606,   0.31496127,   1.52000116, 188.77251287,\n        168.06428231, 147.39856602],\n       [  4.19414599,   0.31496116,   1.52000089, 188.77251456,\n        168.06433548, 147.39857394],\n       [  4.19414594,   0.31496119,   1.5200008 , 188.77251137,\n        168.06433502, 147.39860248],\n       [  4.19414616,   0.31496141,   1.52000109, 188.77248973,\n        168.06427643, 147.39857169],\n       [  4.19414612,   0.31496086,   1.52000096, 188.7725769 ,\n        168.06422458, 147.39860207]]), array([-0.81089503, -0.81089497, -0.81089485, -0.81089485, -0.81089485,\n       -0.81089485, -0.81089479]))\n           fun: -0.8108950257301331\n       message: 'Optimization terminated successfully.'\n          nfev: 687\n           nit: 426\n        status: 0\n       success: True\n             x: array([  4.19414617,   0.31496119,   1.52000113, 188.77252245,\n       168.06425703, 147.39858006])\n\n\n\nHTML(animate(params[::5], sdr, drr))\n\nPrecomputing DRRs: 100%|███████████████████████████████████████████████████████████████| 138/138 [00:03<00:00, 38.88it/s]\n\n\n\n\n\n\n\n\n\n  \n  \n    \n    \n      \n          \n      \n        \n      \n          \n      \n          \n      \n          \n      \n          \n      \n          \n      \n          \n      \n          \n    \n    \n      \n      Once\n      \n      Loop\n      \n      Reflect"
+  },
+  {
+    "objectID": "tutorials/spherical.html",
+    "href": "tutorials/spherical.html",
+    "title": "Spherical Coordinates",
+    "section": "",
+    "text": "import matplotlib.pyplot as plt\nimport numpy as np\nimport torch\n\nfrom diffdrr import DRR\n\n\ndrr = DRR(\n    volume=np.zeros([512, 512, 133]),\n    spacing=[1,1,1],\n    height=5,\n    delx=0.75,\n    device=\"cuda\",\n)\n\n\nfor i in range(9):\n    _ = drr(\n        sdr    =  1,\n        theta  =  (i / 8) * torch.pi,\n        phi    =  (0 / 8) * torch.pi,\n        gamma  =  (0 / 8) * torch.pi,\n        bx     =  10,\n        by     = -10,\n        bz     = -40,\n    )\n    source, rays = drr.detector.make_xrays(drr.sdr, drr.rotations, drr.translations)\n    source_ = source.detach().cpu()\n    rays_ = rays.permute(2, 0, 1).detach().cpu()\n\n    fig = plt.figure()\n    ax = fig.add_subplot(projection='3d')\n\n    ax.scatter(source_[0]        , source_[1]        , source_[2]        , label=\"Source\")\n    ax.scatter(rays_[0].flatten(), rays_[1].flatten(), rays_[2].flatten(), label=\"Targets\")\n\n    xs, ys, zs = rays_.reshape(3, -1)\n    for x, y, z in zip(xs, ys, zs):\n        ax.plot([source_[0], x], [source_[1], y], [source_[2], z], \"k\", alpha=0.2)\n\n    ax.set(xlabel=\"x\", ylabel=\"y\", zlabel=\"z\")\n    ax.set(xlim=[8,12], ylim=[-12,-8], zlim=[-42,-38])\n    plt.legend()\n    plt.show()\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nfor i in range(9):\n    _ = drr(\n        sdr    =  1,\n        theta  =  (0 / 8) * torch.pi,\n        phi    =  (i / 8) * torch.pi,\n        gamma  =  (0 / 8) * torch.pi,\n        bx     =  10,\n        by     = -10,\n        bz     = -40,\n    )\n    source, rays = drr.detector.make_xrays(drr.sdr, drr.rotations, drr.translations)\n    source_ = source.detach().cpu()\n    rays_ = rays.permute(2, 0, 1).detach().cpu()\n\n    fig = plt.figure()\n    ax = fig.add_subplot(projection='3d')\n\n    ax.scatter(source_[0]        , source_[1]        , source_[2]        , label=\"Source\")\n    ax.scatter(rays_[0].flatten(), rays_[1].flatten(), rays_[2].flatten(), label=\"Targets\")\n    \n    xs, ys, zs = rays_.reshape(3, -1)\n    for x, y, z in zip(xs, ys, zs):\n        ax.plot([source_[0], x], [source_[1], y], [source_[2], z], \"k\", alpha=0.2)\n\n    ax.set(xlabel=\"x\", ylabel=\"y\", zlabel=\"z\")\n    ax.set(xlim=[8,12], ylim=[-12,-8], zlim=[-42,-38])\n    plt.legend()\n    plt.show()\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nfor i in range(5):\n    _ = drr(\n        sdr    =  1,\n        theta  =  (0 / 8) * torch.pi,\n        phi    =  (0 / 8) * torch.pi,\n        gamma  =  (i / 8) * torch.pi,\n        bx     =  10,\n        by     = -10,\n        bz     = -40,\n    )\n    source, rays = drr.detector.make_xrays(drr.sdr, drr.rotations, drr.translations)\n    source_ = source.detach().cpu()\n    rays_ = rays.permute(2, 0, 1).detach().cpu()\n\n    fig = plt.figure()\n    ax = fig.add_subplot(projection='3d')\n\n    ax.scatter(source_[0]        , source_[1]        , source_[2]        , label=\"Source\")\n    ax.scatter(rays_[0].flatten(), rays_[1].flatten(), rays_[2].flatten(), label=\"Targets\")\n    \n    xs, ys, zs = rays_.reshape(3, -1)\n    for x, y, z in zip(xs, ys, zs):\n        ax.plot([source_[0], x], [source_[1], y], [source_[2], z], \"k\", alpha=0.2)\n\n    ax.set(xlabel=\"x\", ylabel=\"y\", zlabel=\"z\")\n    ax.set(xlim=[8,12], ylim=[-12,-8], zlim=[-42,-38])\n    plt.legend()\n    plt.show()"
+  },
+  {
+    "objectID": "tutorials/timing.html",
+    "href": "tutorials/timing.html",
+    "title": "diffdrr",
+    "section": "",
+    "text": "import numpy as np\n\nfrom diffdrr import DRR, load_example_ct\nfrom diffdrr.visualization import plot_drr\n\n\n\n# Read in the volume\nvolume, spacing = load_example_ct()\n\n# Get parameters for the detector\nbx, by, bz = np.array(volume.shape) * np.array(spacing) / 2\ndetector_kwargs = {\n    \"sdr\"   : 0.1,\n    \"theta\" : np.pi,\n    \"phi\"   : 0,\n    \"gamma\" : np.pi / 2,\n    \"bx\"    : bx,\n    \"by\"    : by,\n    \"bz\"    : bz,\n}\n\n\nheight = 100\n\ndrr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon\", device=\"cuda\")\n\ndel drr\n\n# drr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon_jacobs\", device=\"cuda\")\n# %timeit drr(**detector_kwargs)\n# del drr\n\n16.1 ms ± 452 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 200\n\ndrr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon\", device=\"cuda\")\n\ndel drr\n\n# drr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon_jacobs\", device=\"cuda\")\n# %timeit drr(**detector_kwargs)\n# del drr\n\n57.8 ms ± 75.1 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n\n\n\nheight = 300\n\ndrr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon\", device=\"cuda\")\n\ndel drr\n\n# drr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon_jacobs\", device=\"cuda\")\n# %timeit drr(**detector_kwargs)\n# del drr\n\n126 ms ± 530 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n\n\n\nheight = 400\n\ndrr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon\", device=\"cuda\")\n\ndel drr\n\n# drr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon_jacobs\", device=\"cuda\")\n# %timeit drr(**detector_kwargs)\n# del drr\n\n217 ms ± 7.54 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 500\n\ndrr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon\", device=\"cuda\")\n\ndel drr\n\n# drr = DRR(volume, spacing, height=height, delx=1.4e-2, projector=\"siddon_jacobs\", device=\"cuda\")\n# %timeit drr(**detector_kwargs)\n# del drr\n\nOutOfMemoryError: CUDA out of memory. Tried to allocate 3.20 GiB (GPU 0; 15.75 GiB total capacity; 7.84 GiB already allocated; 2.54 GiB free; 9.12 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "DiffDRR",
+    "section": "",
+    "text": "DiffDRR is a PyTorch-based digitally reconstructed radiograph (DRR) generator that provides\nMost importantly, DiffDRR implements DRR synthesis as a PyTorch module, making it interoperable in deep learning pipelines."
+  },
+  {
+    "objectID": "index.html#installation-guide",
+    "href": "index.html#installation-guide",
+    "title": "DiffDRR",
+    "section": "Installation Guide",
+    "text": "Installation Guide\n\nTo install DiffDRR from PyPI:\npip install diffdrr\nTo build DiffDRR from source:\ngit clone https://github.com/eigenvivek/DiffDRR\nconda env create -f environment.yaml\nconda activate DiffDRR"
+  },
+  {
+    "objectID": "index.html#usage",
+    "href": "index.html#usage",
+    "title": "DiffDRR",
+    "section": "Usage",
+    "text": "Usage\nThe following minimal example specifies the geometry of the projectional radiograph imaging system and traces rays through a CT volume:\n\nimport matplotlib.pyplot as plt\nimport torch\n\nfrom diffdrr.drr import DRR\nfrom diffdrr.data import load_example_ct\nfrom diffdrr.visualization import plot_drr\n\n# Read in the volume\nvolume, spacing = load_example_ct()\n\n# Get parameters for the detector\nbx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2\ndetector_kwargs = {\n    \"sdr\"   : 300.0,\n    \"theta\" : torch.pi,\n    \"phi\"   : 0,\n    \"gamma\" : torch.pi / 2,\n    \"bx\"    : bx,\n    \"by\"    : by,\n    \"bz\"    : bz,\n}\n\n# Make the DRR\ndrr = DRR(volume, spacing, height=200, delx=4.0).to(\"cpu\")\nimg = drr(**detector_kwargs)\n\nax = plot_drr(img)\nplt.show()\n\n\n\n\nOn a single NVIDIA RTX 2080 Ti GPU, producing such an image takes\n\ndrr(**detector_kwargs)\n\n1.09 s ± 83.1 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\nThe full example is available at tutorials/introduction.ipynb."
+  },
+  {
+    "objectID": "index.html#application-6-dof-slice-to-volume-registration",
+    "href": "index.html#application-6-dof-slice-to-volume-registration",
+    "title": "DiffDRR",
+    "section": "Application: 6-DoF Slice-to-Volume Registration",
+    "text": "Application: 6-DoF Slice-to-Volume Registration\nWe demonstrate the utility of our auto-differentiable DRR generator by solving a 6-DoF registration problem with gradient-based optimization. Here, we generate two DRRs:\n\nA fixed DRR from a set of ground truth parameters\nA moving DRR from randomly initialized parameters\n\nTo solve the registration problem, we use gradient descent to minimize an image loss similarity metric between the two DRRs. This produces optimization runs like this:\n\nThe full example is available at experiments/registration."
+  },
+  {
+    "objectID": "index.html#how-does-diffdrr-work",
+    "href": "index.html#how-does-diffdrr-work",
+    "title": "DiffDRR",
+    "section": "How does DiffDRR work?",
+    "text": "How does DiffDRR work?\nDiffDRR reformulates Siddon’s method1, the canonical algorithm for calculating the radiologic path of an X-ray through a volume, as a series of vectorized tensor operations. This version of the algorithm is easily implemented in tensor algebra libraries like PyTorch to achieve a fast auto-differentiable DRR generator."
+  },
+  {
+    "objectID": "index.html#citing-diffdrr",
+    "href": "index.html#citing-diffdrr",
+    "title": "DiffDRR",
+    "section": "Citing DiffDRR",
+    "text": "Citing DiffDRR\nIf you find DiffDRR useful in your work, please cite our paper (or the freely accessible arXiv version):\n@inproceedings{gopalakrishnanDiffDRR2022,\n    author    = {Gopalakrishnan, Vivek and Golland, Polina},\n    title     = {Fast Auto-Differentiable Digitally Reconstructed Radiographs for Solving Inverse Problems in Intraoperative Imaging},\n    year      = {2022},\n    booktitle = {Clinical Image-based Procedures: 11th International Workshop, CLIP 2022, Held in Conjunction with MICCAI 2022, Singapore, Proceedings},\n    series    = {Lecture Notes in Computer Science},\n    publisher = {Springer},\n    doi       = {https://doi.org/10.1007/978-3-031-23179-7_1},\n}"
+  }
+]
