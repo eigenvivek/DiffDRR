@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 # %% ../notebooks/api/05_visualization.ipynb 4
-def plot_drr(drr, title=None, ticks=True):
+def plot_drr(drr, title=None, ticks=True, axs=None):
     """
     Plot an DRR output by the projector module.
     Inputs
@@ -30,7 +30,8 @@ def plot_drr(drr, title=None, ticks=True):
     axs : matplotlib.axes._subplots.AxesSubplot
         Axis with plotted image
     """
-    fig, axs = plt.subplots(ncols=len(drr), figsize=(10, 5))
+    if axs is None:
+        fig, axs = plt.subplots(ncols=len(drr), figsize=(10, 5))
     if len(drr) == 1:
         axs = [axs]
     for img, ax in zip(drr, axs):
@@ -47,10 +48,10 @@ def plot_drr(drr, title=None, ticks=True):
         if ticks is False:
             ax.set_xticks([])
             ax.set_yticks([])
-    return fig, axs
+    return axs
 
 # %% ../notebooks/api/05_visualization.ipynb 5
-def animate(out, df, sdr, drr, ground_truth=None, verbose=True):
+def animate(out, df, sdr, drr, ground_truth=None, verbose=True, **kwargs):
     """Animate the optimization of a DRR."""
     # Make the axes
     if ground_truth is None:
@@ -70,7 +71,7 @@ def animate(out, df, sdr, drr, ground_truth=None, verbose=True):
                 figsize=(6, 3),
                 constrained_layout=True,
             )
-            plot_drr(ground_truth, ax=ax_fix)
+            plot_drr(ground_truth, axs=ax_fix)
             ax_fix.set(xlabel="Fixed DRR")
             return fig, ax_opt
 
@@ -83,10 +84,10 @@ def animate(out, df, sdr, drr, ground_truth=None, verbose=True):
     with tempfile.TemporaryDirectory() as tmpdir:
         idxs = []
         for idx, row in itr:
-            fig, ax_opt = make_fig(ground_truth)
+            fig, ax_opt = make_fig() if ground_truth is None else make_fig(ground_truth)
             params = row[["theta", "phi", "gamma", "bx", "by", "bz"]].values
             itr = drr(sdr, *params)
-            _ = plot_drr(itr, ax=ax_opt)
+            _ = plot_drr(itr, axs=ax_opt)
             ax_opt.set(xlabel="Moving DRR")
             fig.savefig(f"{tmpdir}/{idx}.png")
             plt.close(fig)
@@ -97,4 +98,4 @@ def animate(out, df, sdr, drr, ground_truth=None, verbose=True):
         )
 
     # Make the animation
-    iio.imwrite(out, frames)
+    return iio.imwrite(out, frames, **kwargs)
