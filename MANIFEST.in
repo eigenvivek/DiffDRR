@@ -1,0 +1,6 @@
+include settings.ini
+include LICENSE
+include CONTRIBUTING.md
+include README.md
+recursive-include diffdrr/data *
+recursive-exclude * __pycache__

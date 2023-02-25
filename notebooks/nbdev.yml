@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "diffdrr"
+  site-url: "https://vivekg.dev/DiffDRR"
+  description: "Auto-differentiable digitally reconstructed radiographs in PyTorch"
+  repo-branch: main
+  repo-url: "https://github.com/eigenvivek/DiffDRR"
