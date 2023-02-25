@@ -3,7 +3,7 @@ DiffDRR
 
 > Auto-differentiable DRR synthesis and optimization in PyTorch
 
-[![Build Status](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/eigenvivek/DiffDRR/actions/workflows/CI.yml?query=branch%3Amain)
+[![CI](https://github.com/eigenvivek/DiffDRR/actions/workflows/test.yaml/badge.svg)](https://github.com/eigenvivek/DiffDRR/actions/workflows/test.yaml)
 [![Paper shield](https://img.shields.io/badge/arXiv-2208.12737-red)](https://arxiv.org/abs/2208.12737)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Downloads](https://static.pepy.tech/badge/diffdrr/month)](https://pepy.tech/project/diffdrr)
@@ -92,10 +92,7 @@ plt.show()
 
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
-``` python
-```
-
-    1.38 s ± 89.1 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    34.6 ms ± 17.9 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 The full example is available at
 [`tutorials/introduction.ipynb`](tutorial.ipynb).
@@ -120,7 +117,7 @@ The full example is available at
 
 ## How does `DiffDRR` work?
 
-`DiffDRR` reformulates Siddon’s method [1], the canonical algorithm for
+`DiffDRR` reformulates Siddon’s method [^1], the canonical algorithm for
 calculating the radiologic path of an X-ray through a volume, as a
 series of vectorized tensor operations. This version of the algorithm is
 easily implemented in tensor algebra libraries like PyTorch to achieve a
@@ -142,6 +139,6 @@ accessible arXiv version](https://arxiv.org/abs/2208.12737)):
         doi       = {https://doi.org/10.1007/978-3-031-23179-7_1},
     }
 
-[1]: [Siddon RL. Fast calculation of the exact radiological path for a
+[^1]: [Siddon RL. Fast calculation of the exact radiological path for a
     three-dimensional ct array. Medical Physics, 2(12):252–5,
     1985.](https://doi.org/10.1118/1.595715)
