@@ -5,12 +5,12 @@ website:
       - section: api
         contents:
           - api/00_drr.ipynb
-          - api/01_projectors.ipynb
+          - api/01_siddon.ipynb
           - api/02_camera.ipynb
           - api/03_data.ipynb
-          - api/04_utils.ipynb
-          - api/05_visualization.ipynb
-          - api/06_metrics.ipynb
+          - api/04_visualization.ipynb
+          - api/05_metrics.ipynb
+          - api/06_utils.ipynb
       - section: tutorials
         contents:
           - tutorials/introduction.ipynb

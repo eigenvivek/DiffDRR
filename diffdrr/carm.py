@@ -59,7 +59,7 @@ def make_xrays(
         self.subsamples.append(sample.tolist())
     return source, target
 
-# %% ../notebooks/api/02_camera.ipynb 8
+# %% ../notebooks/api/02_camera.ipynb 7
 def _get_basis(rho, rotations):
     # Get the rotation of 3D space
     R = rho.unsqueeze(-1) * Rxyz(rotations)
@@ -75,7 +75,7 @@ def _get_basis(rho, rotations):
 
     return source, center, basis
 
-# %% ../notebooks/api/02_camera.ipynb 9
+# %% ../notebooks/api/02_camera.ipynb 8
 # Define 3D rotation matrices
 def Rxyz(rotations):
     theta, phi, gamma = rotations[:, 0], rotations[:, 1], rotations[:, 2]
