@@ -45,12 +45,10 @@ To install `DiffDRR` from PyPI:
 pip install diffdrr
 ```
 
-To build `DiffDRR` from source:
+To install `DiffDRR` from conda (or mamba):
 
-``` zsh
-git clone https://github.com/eigenvivek/DiffDRR
-conda env create -f environment.yaml
-conda activate DiffDRR
+```zsh
+conda install -c eigenvivek diffdrr
 ```
 
 ## Usage
