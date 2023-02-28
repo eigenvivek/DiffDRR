@@ -4,69 +4,40 @@
 __all__ = ['DRR']
 
 # %% ../notebooks/api/00_drr.ipynb 3
+import numpy as np
 import torch
 import torch.nn as nn
 
-from .projectors import siddon_raycast
-from .camera import Detector
+from fastcore.basics import patch
+
+from .siddon import siddon_raycast
+from .carm import Detector
 from .utils import reshape_subsampled_drr
 
-
+# %% ../notebooks/api/00_drr.ipynb 4
 class DRR(nn.Module):
-    """
-    Class for generating DRRs.
-
-    Inputs
-    ------
-    volume : np.ndarray
-        CT volume.
-    spacing : tuple of float
-        The spacing of the volume.
-    height : int
-        The height of the DRR.
-    width : int, optional
-        The width of the DRR. If not provided, it is set to `height`.
-    delx : float
-        The x-axis pixel size.
-    dely : float, optional
-        The y-axis pixel size. If not provided, it is set to `delx`.
-    p_subsample : int, optional
-        Proportion of target points to randomly sample for each forward pass
-    reshape : bool, optional
-        If True, return DRR as (b, n1, n2) tensor. If False, return as (b, n) tensor.
-    params : torch.Tensor, optional
-        The parameters of the camera, including SDR, rotations, and translations.
-        If provided, the DRR module will be initialized in optimization mode.
-        Otherwise, the DRR module will be in rendering mode and the viewing angle
-        must be provided at each forward pass.
-        Note that this also enables batch rendering of DRRs!
-    """
+    """Torch module that computes differentiable digitally reconstructed radiographs."""
 
     def __init__(
         self,
-        volume,
-        spacing,
-        height,
-        delx,
-        width=None,
-        dely=None,
-        p_subsample=None,
-        reshape=True,
-        params=None,
-        dtype=None,
-        device=None,
-        projector=None,
+        volume: np.ndarray,  # CT volume
+        spacing: np.ndarray,  # Dimensions of voxels in the CT volume
+        height: int,  # Height of the rendered DRR
+        delx: float,  # X-axis pixel size
+        width: int
+        | None = None,  # Width of the rendered DRR (if not provided, set to `height`)
+        dely: float | None = None,  # Y-axis pixel size (if not provided, set to `delx`)
+        p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
+        reshape: bool = True,  # Return DRR with shape (b, h, w)
+        params: torch.Tensor
+        | None = None,  # The parameters of the camera, including SDR, rotations, and translations.
     ):
         super().__init__()
 
-        # Initialize the volume
         if params is not None:
-            self.optimization_mode = True
             self.sdr = nn.Parameter(params[..., 0:1])
             self.rotations = nn.Parameter(params[..., 1:4])
             self.translations = nn.Parameter(params[..., 4:7])
-        else:
-            self.optimization_mode = False
 
         # Initialize the X-ray detector
         width = height if width is None else width
@@ -81,92 +52,63 @@ class DRR(nn.Module):
             else None,
         )
 
-        # Initialize the Projector and register its parameters
+        # Initialize the volume
         self.register_buffer("spacing", torch.tensor(spacing))
         self.register_buffer("volume", torch.tensor(volume).flip([0]))
-        self.raytrace = siddon_raycast
         self.reshape = reshape
 
         # Dummy tensor for device and dtype
         self.register_buffer("dummy", torch.tensor([0.0]))
-        if dtype is not None or device is not None:
-            raise DeprecationWarning(
-                """
-                dtype and device are deprecated.
-                Instead, use .to(dtype) or .to(device) to update the DRR module.
-                """
-            )
-        if projector is not None:
-            raise DeprecationWarning(
-                "projector is deprecated, Siddon is always used for raytracing"
-            )
 
-    def forward(
-        self,
-        sdr=None,
-        theta=None,
-        phi=None,
-        gamma=None,
-        bx=None,
-        by=None,
-        bz=None,
-        params=None,
-    ):
-        """
-        Generate a DRR from a particular viewing angle. If the DRR module is in
-        optimization mode, the viewing angle is ignored and the DRR is generated
-        from the provided parameters.
-
-        Inputs
-        ------
-        Projector parameters:
-            sdr   : Source-to-Detector radius (half of the source-to-detector distance)
-            theta : Azimuthal angle
-            phi   : Polar angle
-            gamma : Plane rotation angle
-            bx    : X-dir translation
-            by    : Y-dir translation
-            bz    : Z-dir translation
-        """
-        paramlist = [sdr, theta, phi, gamma, bx, by, bz]
-        if not self.optimization_mode:
-            if any(arg is not None for arg in paramlist):
-                self.sdr = torch.tensor([[sdr]]).to(self.dummy)
-                self.rotations = torch.tensor([[theta, phi, gamma]]).to(self.dummy)
-                self.translations = torch.tensor([[bx, by, bz]]).to(self.dummy)
-            elif params is not None:
-                self.sdr = params[..., 0:1].to(self.dummy)
-                self.rotations = params[..., 1:4].to(self.dummy)
-                self.translations = params[..., 4:7].to(self.dummy)
-            else:
-                raise ValueError("Must provide viewing angle parameters.")
-        else:
-            if any(arg is not None for arg in paramlist):
-                raise ValueError("Cannot provide parameters in optimization mode.")
-
-        source, target = self.detector.make_xrays(
-            sdr=self.sdr,
-            rotations=self.rotations,
-            translations=self.translations,
-        )
-        img = self.raytrace(source, target, self.volume, self.spacing)
-
+    def reshape_transform(self, img, batch_size):
         if self.reshape:
             if self.detector.n_subsample is None:
                 img = img.view(-1, 1, self.detector.height, self.detector.width)
             else:
-                img = reshape_subsampled_drr(img, self.detector, len(target))
+                img = reshape_subsampled_drr(img, self.detector, batch_size)
         return img
 
-    def update_params(self, params):
-        state_dict = self.state_dict()
-        state_dict["sdr"].copy_(params[..., 0:1])
-        state_dict["rotations"].copy_(params[..., 1:4])
-        state_dict["translations"].copy_(params[..., 4:7])
+# %% ../notebooks/api/00_drr.ipynb 5
+@patch
+def _update_params(self: DRR, params: torch.Tensor):
+    state_dict = self.state_dict()
+    state_dict["sdr"].copy_(params[..., 0:1])
+    state_dict["rotations"].copy_(params[..., 1:4])
+    state_dict["translations"].copy_(params[..., 4:7])
 
-    def __repr__(self):
-        params = [str(param) for param in self.parameters()]
-        if len(params) == 0:
-            return "Parameters uninitialized."
-        else:
-            return "\n".join(params)
+# %% ../notebooks/api/00_drr.ipynb 7
+@patch
+def forward(self: DRR):
+    """Forward call if DRR has been initialized with params."""
+    if any(param is None for param in [self.sdr, self.rotations, self.translations]):
+        raise ValueError("Pose parameters are uninitialized.")
+    source, target = self.detector.make_xrays(
+        sdr=self.sdr,
+        rotations=self.rotations,
+        translations=self.translations,
+    )
+    img = siddon_raycast(source, target, self.volume, self.spacing)
+    return self.reshape_transform(img, batch_size=len(self.sdr))
+
+# %% ../notebooks/api/00_drr.ipynb 9
+@patch
+def project(
+    self: DRR,
+    sdr: float,
+    theta: float,
+    phi: float,
+    gamma: float,
+    bx: float,
+    by: float,
+    bz: float,
+):
+    sdr = torch.tensor([[sdr]]).to(self.dummy)
+    rotations = torch.tensor([[theta, phi, gamma]]).to(self.dummy)
+    translations = torch.tensor([[bx, by, bz]]).to(self.dummy)
+    source, target = self.detector.make_xrays(
+        sdr=sdr,
+        rotations=rotations,
+        translations=translations,
+    )
+    img = siddon_raycast(source, target, self.volume, self.spacing)
+    return self.reshape_transform(img, batch_size=len(sdr))

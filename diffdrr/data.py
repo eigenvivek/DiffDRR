@@ -10,21 +10,8 @@ import numpy as np
 from pydicom import dcmread
 
 # %% ../notebooks/api/03_data.ipynb 4
-def read_dicom(dcmdir, correct_zero=True):
-    """
-    Inputs
-    -----
-    dcmdir : Path or str
-        Path to a DICOM directory
-    correct_zero : bool
-        Make 0 the minimum value the CT
-    Returns
-    -------
-    volume : ndarray
-        3D array containing voxels of imaging data
-    spacing : list
-        X-, Y-, and Z-directional voxel spacings
-    """
+def read_dicom(dcmdir: Path | str, correct_zero: bool = True):
+    """Read a directory of DICOM files and return the volume and voxel spacings."""
 
     dcmfiles = Path(dcmdir).glob("*.dcm")
     dcmfiles = list(dcmfiles)
