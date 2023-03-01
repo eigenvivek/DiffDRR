@@ -12,7 +12,7 @@ def siddon_raycast(
     target: torch.Tensor,
     volume: torch.Tensor,
     spacing: torch.Tensor,
-    eps: float = 1e-8,
+    eps: float=1e-8,
 ):
     """Compute Siddon's method."""
     dims = torch.tensor(volume.shape) + 1
