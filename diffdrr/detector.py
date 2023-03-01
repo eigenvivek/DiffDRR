@@ -20,7 +20,7 @@ class Detector:
         width: int,  # Width of the X-ray detector
         delx: float,  # Pixel spacing in the X-direction
         dely: float,  # Pixel spacing in the Y-direction
-        n_subsample: int | None=None,  # Number of target points to randomly sample
+        n_subsample: int | None = None,  # Number of target points to randomly sample
     ):
         self.height = height
         self.width = width
