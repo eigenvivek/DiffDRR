@@ -2,15 +2,960 @@ website:
   sidebar:
     contents:
       - index.ipynb
+      - favicon.png
+      - nbdev.yml
+      - sidebar.yml
+      - styles.css
       - section: api
         contents:
           - api/00_drr.ipynb
           - api/01_siddon.ipynb
-          - api/02_camera.ipynb
+          - api/02_detector.ipynb
           - api/03_data.ipynb
           - api/04_visualization.ipynb
           - api/05_metrics.ipynb
           - api/06_utils.ipynb
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/069.xml
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-001.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-002.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-003.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-004.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-005.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-006.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-007.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-008.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-009.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-010.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-011.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-012.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-013.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-014.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-015.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-016.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-017.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-018.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-019.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-020.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-021.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-022.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-023.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-024.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-025.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-026.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-027.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-028.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-029.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-030.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-031.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-032.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-033.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-034.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-035.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-036.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-037.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-038.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-039.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-040.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-041.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-042.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-043.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-044.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-045.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-046.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-047.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-048.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-049.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-050.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-051.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-052.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-053.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-054.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-055.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-056.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-057.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-058.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-059.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-060.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-061.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-062.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-063.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-064.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-065.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-066.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-067.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-068.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-069.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-070.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-071.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-072.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-073.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-074.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-075.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-076.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-077.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-078.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-079.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-080.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-081.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-082.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-083.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-084.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-085.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-086.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-087.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-088.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-089.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-090.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-091.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-092.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-093.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-094.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-095.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-096.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-097.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-098.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-099.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-100.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-101.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-102.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-103.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-104.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-105.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-106.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-107.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-108.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-109.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-110.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-111.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-112.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-113.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-114.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-115.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-116.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-117.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-118.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-119.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-120.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-121.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-122.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-123.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-124.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-125.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-126.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-127.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-128.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-129.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-130.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-131.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-132.dcm
+      - section: api
+        contents:
+          - section: data
+            contents:
+              - section: cxr
+                contents:
+                  - api/data/cxr/1-133.dcm
+      - section: index_files
+        contents:
+          - section: figure-commonmark
+            contents:
+              - index_files/figure-commonmark/cell-2-output-1.png
       - section: tutorials
         contents:
           - tutorials/introduction.ipynb
