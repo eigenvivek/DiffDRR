@@ -32,7 +32,8 @@ class DRR(nn.Module):
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, h, w)
         params: torch.Tensor
-        | None = None,  # The parameters of the camera, including SDR, rotations, and translations.
+        | None = None,  # The parameters of the camera, including SDR, rotations, and translations
+        convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
     ):
         super().__init__()
 
@@ -52,6 +53,7 @@ class DRR(nn.Module):
             n_subsample=int(height * width * p_subsample)
             if p_subsample is not None
             else None,
+            convention=convention,
         )
 
         # Initialize the volume
