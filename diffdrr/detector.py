@@ -21,6 +21,7 @@ class Detector:
         delx: float,  # Pixel spacing in the X-direction
         dely: float,  # Pixel spacing in the Y-direction
         n_subsample: int | None = None,  # Number of target points to randomly sample
+        convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
     ):
         self.height = height
         self.width = width
@@ -29,6 +30,12 @@ class Detector:
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
             self.subsamples = []
+        if convention not in ["diffdrr", "deepdrr"]:
+            raise ValueError(
+                f"{convention} not recongnized, must be either ['diffdrr', 'deepdrr']"
+            )
+        else:
+            self.convention = convention
 
 # %% ../notebooks/api/02_detector.ipynb 6
 @patch
@@ -42,7 +49,7 @@ def make_xrays(
 
     # Get the detector plane normal vector
     assert len(rotations) == len(translations)
-    source, center, basis = _get_basis(sdr, rotations)
+    source, center, basis = _get_basis(sdr, rotations, self.convention)
     source += translations.unsqueeze(1)
     center += translations.unsqueeze(1)
 
@@ -62,9 +69,9 @@ def make_xrays(
     return source, target
 
 # %% ../notebooks/api/02_detector.ipynb 7
-def _get_basis(rho, rotations):
+def _get_basis(rho, rotations, convention):
     # Get the rotation of 3D space
-    R = rho.unsqueeze(-1) * Rxyz(rotations)
+    R = rho.unsqueeze(-1) * Rxyz(rotations, convention)
 
     # Get the detector center and X-ray source
     source = R[..., 0].unsqueeze(1)
@@ -79,14 +86,21 @@ def _get_basis(rho, rotations):
 
 # %% ../notebooks/api/02_detector.ipynb 8
 # Define 3D rotation matrices
-def Rxyz(rotations):
+def Rxyz(rotations, convention):
     theta, phi, gamma = rotations[:, 0], rotations[:, 1], rotations[:, 2]
     batch_size = len(rotations)
     device = rotations
     R_z = Rz(theta, batch_size, device)
     R_y = Ry(phi, batch_size, device)
     R_x = Rx(gamma, batch_size, device)
-    return torch.einsum("bij,bjk,bkl->bil", R_z, R_y, R_x)
+    if convention == "diffdrr":
+        return torch.einsum("bij,bjk,bkl->bil", R_z, R_y, R_x)
+    elif convention == "deepdrr":
+        return torch.einsum("bij,bjk,bkl->bil", R_y, R_z, R_x)
+    else:
+        raise ValueError(
+            f"{convention} not recongnized, must be either ['diffdrr', 'deepdrr']"
+        )
 
 
 def Rx(gamma, batch_size, device):
