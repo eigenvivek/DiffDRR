@@ -115,7 +115,7 @@ optimization runs like this:
 ![](https://cdn.githubraw.com/eigenvivek/DiffDRR/7a6a44aeab58d19cc7a4afabfc5aabab3a494974/experiments/registration/results/momentum_dampen/gifs/converged/649.gif)
 
 The full example is available at
-[`experiments/registration`](experiments/registration).
+[`tutorials/optimizers.ipynb`](tutorials/optimizers.ipynb).
 
 ## How does `DiffDRR` work?
 
