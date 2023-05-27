@@ -57,7 +57,6 @@ from .drr import DRR
 def animate(
     out: str | pathlib.Path,  # Savepath
     df: pandas.DataFrame,
-    sdr: float,
     drr: DRR,
     ground_truth: torch.Tensor | None = None,
     verbose: bool = True,
@@ -97,7 +96,10 @@ def animate(
         for idx, row in itr:
             fig, ax_opt = make_fig() if ground_truth is None else make_fig(ground_truth)
             params = row[["theta", "phi", "gamma", "bx", "by", "bz"]].values
-            itr = drr.project(sdr, *params)
+            rotations = torch.tensor(row[["theta", "phi", "gamma"]].values)
+            translations = torch.tensor(row[["bx", "by", "bz"]].values)
+            drr.move_carm(rotations, translations)
+            itr = drr().detach()
             _ = plot_drr(itr, axs=ax_opt)
             ax_opt.set(xlabel="Moving DRR")
             fig.savefig(f"{tmpdir}/{idx}.png")

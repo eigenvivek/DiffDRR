@@ -16,7 +16,7 @@ from .utils import reshape_subsampled_drr
 # %% auto 0
 __all__ = ['DRR']
 
-# %% ../notebooks/api/00_drr.ipynb 4
+# %% ../notebooks/api/00_drr.ipynb 5
 class DRR(nn.Module):
     """Torch module that computes differentiable digitally reconstructed radiographs."""
 
@@ -24,6 +24,7 @@ class DRR(nn.Module):
         self,
         volume: np.ndarray,  # CT volume
         spacing: np.ndarray,  # Dimensions of voxels in the CT volume
+        sdr: float,  # Source-to-detector radius for the C-arm (half of the source-to-detector distance)
         height: int,  # Height of the rendered DRR
         delx: float,  # X-axis pixel size
         width: int
@@ -31,21 +32,20 @@ class DRR(nn.Module):
         dely: float | None = None,  # Y-axis pixel size (if not provided, set to `delx`)
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, h, w)
-        params: torch.Tensor
-        | None = None,  # The parameters of the camera, including SDR, rotations, and translations
         convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
+        batch_size: int = 1,  # Number of DRRs to generate per forward pass
     ):
         super().__init__()
 
-        if params is not None:
-            self.sdr = nn.Parameter(params[..., 0:1])
-            self.rotations = nn.Parameter(params[..., 1:4])
-            self.translations = nn.Parameter(params[..., 4:7])
+        params = torch.empty(batch_size, 6)
+        self.rotations = nn.Parameter(params[..., :3])
+        self.translations = nn.Parameter(params[..., 3:])
 
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else dely
         self.detector = Detector(
+            sdr,
             height,
             width,
             delx,
@@ -72,47 +72,20 @@ class DRR(nn.Module):
                 img = reshape_subsampled_drr(img, self.detector, batch_size)
         return img
 
-# %% ../notebooks/api/00_drr.ipynb 5
-@patch
-def _update_params(self: DRR, params: torch.Tensor):
-    state_dict = self.state_dict()
-    state_dict["sdr"].copy_(params[..., 0:1])
-    state_dict["rotations"].copy_(params[..., 1:4])
-    state_dict["translations"].copy_(params[..., 4:7])
-
 # %% ../notebooks/api/00_drr.ipynb 7
 @patch
+def move_carm(self: DRR, rotations: torch.Tensor, translations: torch.Tensor):
+    state_dict = self.state_dict()
+    state_dict["rotations"].copy_(rotations)
+    state_dict["translations"].copy_(translations)
+
+# %% ../notebooks/api/00_drr.ipynb 8
+@patch
 def forward(self: DRR):
-    """Forward call if DRR has been initialized with params."""
-    if any(param is None for param in [self.sdr, self.rotations, self.translations]):
-        raise ValueError("Pose parameters are uninitialized.")
+    """Generate DRR with rotations and translations parameters."""
     source, target = self.detector.make_xrays(
-        sdr=self.sdr,
         rotations=self.rotations,
         translations=self.translations,
     )
     img = siddon_raycast(source, target, self.volume, self.spacing)
-    return self.reshape_transform(img, batch_size=len(self.sdr))
-
-# %% ../notebooks/api/00_drr.ipynb 9
-@patch
-def project(
-    self: DRR,
-    sdr: float,
-    theta: float,
-    phi: float,
-    gamma: float,
-    bx: float,
-    by: float,
-    bz: float,
-):
-    sdr = torch.tensor([[sdr]]).to(self.dummy)
-    rotations = torch.tensor([[theta, phi, gamma]]).to(self.dummy)
-    translations = torch.tensor([[bx, by, bz]]).to(self.dummy)
-    source, target = self.detector.make_xrays(
-        sdr=sdr,
-        rotations=rotations,
-        translations=translations,
-    )
-    img = siddon_raycast(source, target, self.volume, self.spacing)
-    return self.reshape_transform(img, batch_size=len(sdr))
+    return self.reshape_transform(img, batch_size=len(self.rotations))
