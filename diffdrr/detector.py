@@ -16,6 +16,7 @@ class Detector:
 
     def __init__(
         self,
+        sdr: float,  # Source-to-detector radius (half of the source-to-detector distance)
         height: int,  # Height of the X-ray detector
         width: int,  # Width of the X-ray detector
         delx: float,  # Pixel spacing in the X-direction
@@ -23,6 +24,7 @@ class Detector:
         n_subsample: int | None = None,  # Number of target points to randomly sample
         convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
     ):
+        self.sdr = sdr
         self.height = height
         self.width = width
         self.delx = delx
@@ -41,7 +43,6 @@ class Detector:
 @patch
 def make_xrays(
     self: Detector,
-    sdr: torch.Tensor,  # source-to-detector radius (half of the source-to-detector distance)
     rotations: torch.Tensor,  # Vector of C-arm rotations (theta, phi, gamma) for azimuthal, polar, and roll angles
     translations: torch.Tensor,  # Vector of C-arm translations (bx, by, bz)
 ):
@@ -49,7 +50,7 @@ def make_xrays(
 
     # Get the detector plane normal vector
     assert len(rotations) == len(translations)
-    source, center, basis = _get_basis(sdr, rotations, self.convention)
+    source, center, basis = _get_basis(self.sdr, rotations, self.convention)
     source += translations.unsqueeze(1)
     center += translations.unsqueeze(1)
 
@@ -59,7 +60,7 @@ def make_xrays(
     t = (torch.arange(-self.height // 2, self.height // 2) + h_off) * self.delx
     s = (torch.arange(-self.width // 2, self.width // 2) + w_off) * self.dely
 
-    coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(sdr)
+    coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(rotations)
     target = torch.einsum("bcd,nc->bnd", basis, coefs)
     target += center
     if self.n_subsample is not None:
@@ -69,9 +70,9 @@ def make_xrays(
     return source, target
 
 # %% ../notebooks/api/02_detector.ipynb 7
-def _get_basis(rho, rotations, convention):
+def _get_basis(sdr, rotations, convention):
     # Get the rotation of 3D space
-    R = rho.unsqueeze(-1) * Rxyz(rotations, convention)
+    R = sdr * Rxyz(rotations, convention)
 
     # Get the detector center and X-ray source
     source = R[..., 0].unsqueeze(1)

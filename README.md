@@ -34,13 +34,6 @@ module, making it interoperable in deep learning pipelines.
 
 ## Installation Guide
 
-To install `DiffDRR` with conda (or mamba):
-
-``` zsh
-conda install -c eigenvivek diffdrr
-conda install -c nvidia pytorch-cuda=11.7  # Optional for GPU support
-```
-
 To install `DiffDRR` from PyPI:
 
 ``` zsh
@@ -63,38 +56,37 @@ from diffdrr.visualization import plot_drr
 # Read in the volume
 volume, spacing = load_example_ct()
 
-# Get parameters for the detector
-bx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2
-detector_kwargs = {
-    "sdr"   : 300.0,
-    "theta" : torch.pi,
-    "phi"   : 0,
-    "gamma" : torch.pi / 2,
-    "bx"    : bx,
-    "by"    : by,
-    "bz"    : bz,
-}
+# Initialize the DRR module for generating synthetic X-rays
+drr = DRR(
+    volume,        # The CT volume as a numpy array
+    spacing,       # Voxel dimensions of the CT
+    sdr=300.0,     # Source-to-detector radius (half of the source-to-detector distance)
+    height=200,    # Height of the DRR (if width is not seperately provided, the generated image is square)
+    delx=4.0,      # Pixel spacing (in mm)
+    batch_size=1,  # How many batches of parameters will be passed = number of DRRs generated each forward pass
+).to("cuda" if torch.cuda.is_available() else "cpu")
 
-# Make the DRR
-drr = DRR(volume, spacing, height=200, delx=4.0).to("cuda" if torch.cuda.is_available() else "cpu")
-img = drr.project(**detector_kwargs)
+# Rotations and translations determine the viewing angle
+# They must have the same batch_size as was passed to the DRR constructor
+# Rotations are (yaw pitch roll)
+# Translations are (bx by bz)
+rotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]])
+translations = torch.tensor(volume.shape) * torch.tensor(spacing) / 2
+translations = translations.unsqueeze(0)
+
+# Generate the DRR
+drr.move_carm(rotations, translations)
+img = drr().detach()  # Only keep the graph if optimizing DRRs
 ax = plot_drr(img)
 plt.show()
 ```
 
-![](index_files/figure-commonmark/cell-2-output-1.png)
-
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
-
-<details>
-<summary>Code</summary>
 
 ``` python
 ```
 
-</details>
-
-    34.9 ms ± 22.5 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    34.9 ms ± 90.5 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 The full example is available at
 [`tutorials/introduction.ipynb`](tutorials/introduction.ipynb).
