@@ -76,15 +76,21 @@ translations = translations.unsqueeze(0)
 
 # Generate the DRR
 drr.move_carm(rotations, translations)
-img = drr().detach()  # Only keep the graph if optimizing DRRs
+with torch.no_grad():
+    img = drr()  # Only keep the graph if optimizing DRRs
 ax = plot_drr(img)
 plt.show()
 ```
 
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
+<details>
+<summary>Code</summary>
+
 ``` python
 ```
+
+</details>
 
     34.9 ms ± 90.5 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
