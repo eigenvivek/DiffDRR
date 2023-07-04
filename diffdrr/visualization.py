@@ -32,7 +32,7 @@ def plot_drr(
         axs = [axs]
     for img, ax in zip(img, axs):
         ax.imshow(img.squeeze().cpu().detach(), cmap="gray")
-        _, nx, ny = img.shape
+        _, ny, nx = img.shape
         ax.xaxis.tick_top()
         ax.set(
             title=title,

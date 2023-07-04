@@ -82,17 +82,15 @@ ax = plot_drr(img)
 plt.show()
 ```
 
+![](index_files/figure-commonmark/cell-2-output-1.png)
+
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
-<details>
-<summary>Code</summary>
-
 ``` python
+%timeit drr()
 ```
 
-</details>
-
-    34.9 ms ± 90.5 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    34.9 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 The full example is available at
 [`tutorials/introduction.ipynb`](tutorials/introduction.ipynb).
