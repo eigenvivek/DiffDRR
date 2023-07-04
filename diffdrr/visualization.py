@@ -32,14 +32,14 @@ def plot_drr(
         axs = [axs]
     for img, ax in zip(img, axs):
         ax.imshow(img.squeeze().cpu().detach(), cmap="gray")
-        _, ny, nx = img.shape
+        _, height, width = img.shape
         ax.xaxis.tick_top()
         ax.set(
             title=title,
-            xticks=[0, nx - 1],
-            xticklabels=[1, nx],
-            yticks=[0, ny - 1],
-            yticklabels=[1, ny],
+            xticks=[0, width - 1],
+            xticklabels=[1, width],
+            yticks=[0, height - 1],
+            yticklabels=[1, height],
         )
         if ticks is False:
             ax.set_xticks([])
