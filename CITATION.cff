@@ -1,17 +1,22 @@
-cff-version: 1.1.0
-message: "If you are referencing DiffDRR in a publication, please cite the paper below."
+cff-version: 1.2.0
+message: "If you use DiffDRR in a publication, please cite the paper below."
+authors:
+- family-names: "Gopalakrishnan"
+  given-names: "Vivek"
+title: "DiffDRR"
+version: 0.3.2
+url: "https://github.com/eigenvivek/DiffDRR"
 preferred-citation:
   type: conference-paper
-  doi: "10.1007/978-3-031-23179-7_1"
-  url: "https://github.com/eigenvivek/DiffDRR"
   authors:
   - family-names: "Gopalakrishnan"
     given-names: "Vivek"
   - family-names: "Golland"
     given-names: "Polina"
+  doi: "10.1007/978-3-031-23179-7_1"
   title: "Fast Auto-Differentiable Digitally Reconstructed Radiographs for Solving Inverse Problems in Intraoperative Imaging"
   conference:
     name: "Clinical Image-based Procedures: 11th International Workshop, CLIP 2022, Held in Conjunction with MICCAI 2022"
-    country: "Singapore"
-  month: September
+  publisher: "Springer International Publishing"
+  month: 9
   year: 2022
