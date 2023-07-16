@@ -11,9 +11,13 @@ website:
   twitter-card: true
   open-graph: true
   repo-actions: [issue]
+  favicon: favicon.png
   navbar:
     background: primary
     search: true
+    right:
+      - icon: github
+        href: "https://github.com/eigenvivek/DiffDRR"
   sidebar:
     style: floating
 

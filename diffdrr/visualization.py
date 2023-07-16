@@ -60,6 +60,7 @@ def animate(
     drr: DRR,
     ground_truth: torch.Tensor | None = None,
     verbose: bool = True,
+    device="cpu",
     **kwargs,  # To pass to imageio.v3.imwrite
 ):
     """Animate the optimization of a DRR."""
@@ -96,10 +97,15 @@ def animate(
         for idx, row in itr:
             fig, ax_opt = make_fig() if ground_truth is None else make_fig(ground_truth)
             params = row[["theta", "phi", "gamma", "bx", "by", "bz"]].values
-            rotations = torch.tensor(row[["theta", "phi", "gamma"]].values)
-            translations = torch.tensor(row[["bx", "by", "bz"]].values)
-            drr.move_carm(rotations, translations)
-            itr = drr().detach()
+            rotations = (
+                torch.tensor(row[["theta", "phi", "gamma"]].values)
+                .unsqueeze(0)
+                .to(device)
+            )
+            translations = (
+                torch.tensor(row[["bx", "by", "bz"]].values).unsqueeze(0).to(device)
+            )
+            itr = drr(rotations, translations)
             _ = plot_drr(itr, axs=ax_opt)
             ax_opt.set(xlabel="Moving DRR")
             fig.savefig(f"{tmpdir}/{idx}.png")
