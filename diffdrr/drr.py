@@ -30,8 +30,10 @@ class DRR(nn.Module):
         | None = None,  # Width of the rendered DRR (if not provided, set to `height`)
         dely: float | None = None,  # Y-axis pixel size (if not provided, set to `delx`)
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
-        reshape: bool = True,  # Return DRR with shape (b, h, w)
+        reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
+        patch_size: int
+        | None = None,  # Render patches of the DRR in series (useful for large DRRs)
     ):
         super().__init__()
 
@@ -54,9 +56,9 @@ class DRR(nn.Module):
         self.register_buffer("spacing", torch.tensor(spacing))
         self.register_buffer("volume", torch.tensor(volume).flip([0]))
         self.reshape = reshape
-
-        # Dummy tensor for device and dtype
-        self.register_buffer("dummy", torch.tensor([0.0]))
+        self.patch_size = patch_size
+        if self.patch_size is not None:
+            self.n_patches = (height * width) // (self.patch_size**2)
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
@@ -76,7 +78,17 @@ def forward(self: DRR, rotations: torch.Tensor, translations: torch.Tensor):
         rotations=rotations,
         translations=translations,
     )
-    img = siddon_raycast(source, target, self.volume, self.spacing)
+
+    if self.patch_size is not None:
+        n_points = target.shape[1] // self.n_patches
+        img = []
+        for idx in range(self.n_patches):
+            t = target[:, idx * n_points : (idx + 1) * n_points]
+            partial = siddon_raycast(source, t, self.volume, self.spacing)
+            img.append(partial)
+        img = torch.cat(img, dim=1)
+    else:
+        img = siddon_raycast(source, target, self.volume, self.spacing)
     return self.reshape_transform(img, batch_size=batch_size)
 
 # %% ../notebooks/api/00_drr.ipynb 9
