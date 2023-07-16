@@ -6,19 +6,18 @@ from __future__ import annotations
 import numpy as np
 import torch
 import torch.nn as nn
-
 from fastcore.basics import patch
 
-from .siddon import siddon_raycast
 from .detector import Detector
+from .siddon import siddon_raycast
 from .utils import reshape_subsampled_drr
 
 # %% auto 0
-__all__ = ['DRR']
+__all__ = ['DRR', 'Registration']
 
 # %% ../notebooks/api/00_drr.ipynb 5
 class DRR(nn.Module):
-    """Torch module that computes differentiable digitally reconstructed radiographs."""
+    """PyTorch module that computes differentiable digitally reconstructed radiographs."""
 
     def __init__(
         self,
@@ -31,15 +30,12 @@ class DRR(nn.Module):
         | None = None,  # Width of the rendered DRR (if not provided, set to `height`)
         dely: float | None = None,  # Y-axis pixel size (if not provided, set to `delx`)
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
-        reshape: bool = True,  # Return DRR with shape (b, h, w)
+        reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
-        batch_size: int = 1,  # Number of DRRs to generate per forward pass
+        patch_size: int
+        | None = None,  # Render patches of the DRR in series (useful for large DRRs)
     ):
         super().__init__()
-
-        params = torch.empty(batch_size, 6)
-        self.rotations = nn.Parameter(params[..., :3])
-        self.translations = nn.Parameter(params[..., 3:])
 
         # Initialize the X-ray detector
         width = height if width is None else width
@@ -60,9 +56,9 @@ class DRR(nn.Module):
         self.register_buffer("spacing", torch.tensor(spacing))
         self.register_buffer("volume", torch.tensor(volume).flip([0]))
         self.reshape = reshape
-
-        # Dummy tensor for device and dtype
-        self.register_buffer("dummy", torch.tensor([0.0]))
+        self.patch_size = patch_size
+        if self.patch_size is not None:
+            self.n_patches = (height * width) // (self.patch_size**2)
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
@@ -74,18 +70,41 @@ class DRR(nn.Module):
 
 # %% ../notebooks/api/00_drr.ipynb 7
 @patch
-def move_carm(self: DRR, rotations: torch.Tensor, translations: torch.Tensor):
-    state_dict = self.state_dict()
-    state_dict["rotations"].copy_(rotations)
-    state_dict["translations"].copy_(translations)
-
-# %% ../notebooks/api/00_drr.ipynb 8
-@patch
-def forward(self: DRR):
+def forward(self: DRR, rotations: torch.Tensor, translations: torch.Tensor):
     """Generate DRR with rotations and translations parameters."""
+    assert len(rotations) == len(translations)
+    batch_size = len(rotations)
     source, target = self.detector.make_xrays(
-        rotations=self.rotations,
-        translations=self.translations,
+        rotations=rotations,
+        translations=translations,
     )
-    img = siddon_raycast(source, target, self.volume, self.spacing)
-    return self.reshape_transform(img, batch_size=len(self.rotations))
+
+    if self.patch_size is not None:
+        n_points = target.shape[1] // self.n_patches
+        img = []
+        for idx in range(self.n_patches):
+            t = target[:, idx * n_points : (idx + 1) * n_points]
+            partial = siddon_raycast(source, t, self.volume, self.spacing)
+            img.append(partial)
+        img = torch.cat(img, dim=1)
+    else:
+        img = siddon_raycast(source, target, self.volume, self.spacing)
+    return self.reshape_transform(img, batch_size=batch_size)
+
+# %% ../notebooks/api/00_drr.ipynb 9
+class Registration(nn.Module):
+    """Perform automatic 2D-to-3D registration using differentiable rendering."""
+
+    def __init__(
+        self,
+        drr: DRR,
+        rotations: torch.Tensor,
+        translations: torch.Tensor,
+    ):
+        super().__init__()
+        self.drr = drr
+        self.rotations = nn.Parameter(rotations)
+        self.translations = nn.Parameter(translations)
+
+    def forward(self):
+        return self.drr(self.rotations, self.translations)
