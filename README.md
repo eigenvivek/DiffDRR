@@ -9,8 +9,8 @@ DiffDRR
 [![Paper
 shield](https://img.shields.io/badge/arXiv-2208.12737-red.svg)](https://arxiv.org/abs/2208.12737)
 [![License:
-MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Downloads](https://static.pepy.tech/personalized-badge/diffdrr?period=month&units=international_system&left_color=grey&right_color=blue&left_text=downloads.month)](https://pepy.tech/project/diffdrr)
+MIT](https://img.shields.io/badge/License-Apache2.0-blue.svg)](LICENSE)
+[![Downloads](https://static.pepy.tech/badge/diffdrr.png)](https://pepy.tech/project/diffdrr)
 [![Docs](https://img.shields.io/badge/docs-passing-brightgreen.svg)](https://vivekg.dev/DiffDRR/)
 [![Code style:
 black](https://img.shields.io/badge/Code%20style-black-black.svg)](https://github.com/psf/black)
@@ -82,18 +82,14 @@ ax = plot_drr(img)
 plt.show()
 ```
 
-![](index_files/figure-commonmark/cell-2-output-1.png)
+![](notebooks/index_files/figure-commonmark/cell-2-output-1.png)
 
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
-``` python
-%timeit drr()
-```
-
-    34.9 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    34.9 ms ± 32.2 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 The full example is available at
-[`tutorials/introduction.ipynb`](tutorials/introduction.ipynb).
+[`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).
 
 ## Application: 6-DoF Slice-to-Volume Registration
 
@@ -111,7 +107,7 @@ optimization runs like this:
 ![](https://cdn.githubraw.com/eigenvivek/DiffDRR/7a6a44aeab58d19cc7a4afabfc5aabab3a494974/experiments/registration/results/momentum_dampen/gifs/converged/649.gif)
 
 The full example is available at
-[`tutorials/optimizers.ipynb`](tutorials/optimizers.ipynb).
+[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
 
 ## How does `DiffDRR` work?
 
