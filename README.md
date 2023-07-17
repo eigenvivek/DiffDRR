@@ -89,7 +89,7 @@ To solve the registration problem, we use gradient descent to maximize
 an image loss similarity metric between the two DRRs. This produces
 optimization runs like this:
 
-![](experiments/registration/registration.gif)
+![](registration/registration.gif)
 
 The full example is available at
 [`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
