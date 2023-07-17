@@ -89,7 +89,7 @@ To solve the registration problem, we use gradient descent to maximize
 an image loss similarity metric between the two DRRs. This produces
 optimization runs like this:
 
-![](https://cdn.githubraw.com/eigenvivek/DiffDRR/7a6a44aeab58d19cc7a4afabfc5aabab3a494974/experiments/registration/results/momentum_dampen/gifs/converged/649.gif)
+![](registration/registration.gif)
 
 The full example is available at
 [`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
