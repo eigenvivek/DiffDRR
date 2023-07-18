@@ -58,7 +58,7 @@ class DRR(nn.Module):
         self.reshape = reshape
         self.patch_size = patch_size
         if self.patch_size is not None:
-            self.n_patches = (height * width) // (self.patch_size**2)
+            self.n_patches = (height * width) // (self.patch_size ** 2)
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
