@@ -31,6 +31,29 @@ To install `DiffDRR` from PyPI:
 pip install diffdrr
 ```
 
+### Development (optional)
+
+`DiffDRR` source code, docs, and CI are all built using
+[`nbdev`](https://nbdev.fast.ai/). To get set up with `nbdev`, install
+the following
+
+``` zsh
+mamba install jupyterlab nbdev -c fastai -c conda-forge 
+nbdev_install_quarto  # To build docs
+nbdev_install_hooks  # Make notebooks git-friendly
+```
+
+Running `nbdev_help` will give you the full list of options. The most
+important ones are
+
+``` zsh
+nbdev_preview  # Render docs locally and inspect in browser
+nbdev_prepare  # NECESSARY BEFORE PUSHING: builds package, tests notebooks, and builds docs in one step
+```
+
+For more details, follow this [in-depth
+tutorial](https://nbdev.fast.ai/tutorials/tutorial.html).
+
 ## Usage
 
 The following minimal example specifies the geometry of the projectional radiograph imaging system and traces rays through a CT volume:
@@ -96,14 +119,16 @@ The full example is available at
 
 ## How does `DiffDRR` work?
 
-`DiffDRR` reformulates Siddon’s method ([Siddon RL. Fast calculation of
-the exact radiological path for a three-dimensional CT array. Medical
-Physics, 2(12):252–5, 1985.](https://doi.org/10.1118/1.595715)), the
+`DiffDRR` reformulates Siddon’s method,[^1] the
 canonical algorithm for calculating the radiologic path of an X-ray
 through a volume, as a series of vectorized tensor operations. This
 version of the algorithm is easily implemented in tensor algebra
 libraries like PyTorch to achieve a fast auto-differentiable DRR
 generator.
+
+[^1]: [Siddon RL. Fast calculation of
+the exact radiological path for a three-dimensional CT array. Medical
+Physics, 2(12):252–5, 1985.](https://doi.org/10.1118/1.595715)
 
 ## Citing `DiffDRR`
 
