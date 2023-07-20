@@ -12,8 +12,8 @@ __all__ = ['reshape_subsampled_drr']
 
 # %% ../notebooks/api/06_utils.ipynb 4
 def reshape_subsampled_drr(
-    img: torch.Tensor, 
-    detector: Detector, 
+    img: torch.Tensor,
+    detector: Detector,
     batch_size: int,
 ):
     n_points = detector.height * detector.width

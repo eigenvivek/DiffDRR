@@ -21,8 +21,8 @@ class Detector:
         width: int,  # Width of the X-ray detector
         delx: float,  # Pixel spacing in the X-direction
         dely: float,  # Pixel spacing in the Y-direction
-        n_subsample: int | None=None,  # Number of target points to randomly sample
-        convention: str="diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
+        n_subsample: int | None = None,  # Number of target points to randomly sample
+        convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
     ):
         self.sdr = sdr
         self.height = height
@@ -33,7 +33,9 @@ class Detector:
         if self.n_subsample is not None:
             self.subsamples = []
         if convention not in ["diffdrr", "deepdrr"]:
-            raise ValueError(f"{convention} not recongnized, must be either ['diffdrr', 'deepdrr']")
+            raise ValueError(
+                f"{convention} not recongnized, must be either ['diffdrr', 'deepdrr']"
+            )
         else:
             self.convention = convention
 
@@ -97,7 +99,9 @@ def Rxyz(rotations, convention):
     elif convention == "deepdrr":
         return torch.einsum("bij,bjk,bkl->bil", R_y, R_z, R_x)
     else:
-        raise ValueError(f"{convention} not recongnized, must be either ['diffdrr', 'deepdrr']")
+        raise ValueError(
+            f"{convention} not recongnized, must be either ['diffdrr', 'deepdrr']"
+        )
 
 
 def Rx(gamma, batch_size, device):
