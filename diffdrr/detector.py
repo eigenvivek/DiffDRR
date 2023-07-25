@@ -23,6 +23,7 @@ class Detector:
         dely: float,  # Pixel spacing in the Y-direction
         n_subsample: int | None = None,  # Number of target points to randomly sample
         convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
+        reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
         self.sdr = sdr
         self.height = height
@@ -38,6 +39,7 @@ class Detector:
             )
         else:
             self.convention = convention
+        self.reverse_x_axis = reverse_x_axis
 
 # %% ../notebooks/api/02_detector.ipynb 6
 @patch
@@ -59,6 +61,8 @@ def make_xrays(
     w_off = 1.0 if self.width % 2 else 0.5
     t = (torch.arange(-self.height // 2, self.height // 2) + h_off) * self.delx
     s = (torch.arange(-self.width // 2, self.width // 2) + w_off) * self.dely
+    if self.reverse_x_axis:
+        s = -s
 
     coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(rotations)
     target = torch.einsum("bcd,nc->bnd", basis, coefs)
