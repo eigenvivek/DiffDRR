@@ -66,8 +66,9 @@ from diffdrr.drr import DRR
 from diffdrr.data import load_example_ct
 from diffdrr.visualization import plot_drr
 
-# Read in the volume
+# Read in the volume and get the isocenter
 volume, spacing = load_example_ct()
+bx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2
 
 # Initialize the DRR module for generating synthetic X-rays
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -81,7 +82,6 @@ drr = DRR(
 
 # Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
 rotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)
-bx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2
 translations = torch.tensor([[bx, by, bz]], device=device)
 
 # Make the DRR
