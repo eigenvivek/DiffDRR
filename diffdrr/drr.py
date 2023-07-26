@@ -32,6 +32,7 @@ class DRR(nn.Module):
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
+        reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
         patch_size: int
         | None = None,  # Render patches of the DRR in series (useful for large DRRs)
     ):
@@ -50,6 +51,7 @@ class DRR(nn.Module):
             if p_subsample is not None
             else None,
             convention=convention,
+            reverse_x_axis=reverse_x_axis,
         )
 
         # Initialize the volume

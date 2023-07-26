@@ -52,13 +52,13 @@ def _get_alphas(source, target, spacing, dims, eps):
     alphaz = alphaz / sdd[..., 2].unsqueeze(-1)
     alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
-    # # Get the alphas within the range [alphamin, alphamax]
+    # Get the alphas within the range [alphamin, alphamax]
     alphamin, alphamax = _get_alpha_minmax(source, target, spacing, dims, eps)
     good_idxs = torch.logical_and(alphas >= alphamin, alphas <= alphamax)
     alphas[~good_idxs] = torch.nan
 
-    # # Sort the alphas by ray, putting nans at the end of the list
-    # # Drop indices where alphas for all rays are nan
+    # Sort the alphas by ray, putting nans at the end of the list
+    # Drop indices where alphas for all rays are nan
     alphas = torch.sort(alphas, dim=-1).values
     alphas = alphas[..., ~alphas.isnan().all(dim=0).all(dim=0)]
     return alphas, maxidx
@@ -74,6 +74,9 @@ def _get_alpha_minmax(source, target, spacing, dims, eps):
 
     alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
     alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(-1)
+
+    alphamin = torch.where(alphamin < 0.0, 0.0, alphamin)
+    alphamax = torch.where(alphamax > 1.0, 1.0, alphamax)
     return alphamin, alphamax
 
 
