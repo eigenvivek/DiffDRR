@@ -6,7 +6,7 @@ __all__ = ['siddon_raycast']
 # %% ../notebooks/api/01_siddon.ipynb 3
 import torch
 
-# %% ../notebooks/api/01_siddon.ipynb 5
+# %% ../notebooks/api/01_siddon.ipynb 6
 def siddon_raycast(
     source: torch.Tensor,
     target: torch.Tensor,
@@ -30,7 +30,7 @@ def siddon_raycast(
     drr *= raylength
     return drr
 
-# %% ../notebooks/api/01_siddon.ipynb 7
+# %% ../notebooks/api/01_siddon.ipynb 8
 def _get_alphas(source, target, spacing, dims, eps):
     # Get the CT sizing and spacing parameters
     dx, dy, dz = spacing
