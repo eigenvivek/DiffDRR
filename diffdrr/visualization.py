@@ -107,7 +107,7 @@ def animate(
             )
             itr = drr(rotations, translations)
             _ = plot_drr(itr, axs=ax_opt)
-            ax_opt.set(xlabel="Moving DRR")
+            ax_opt.set(xlabel=f"Moving DRR (loss = {row['loss']:.3f})")
             fig.savefig(f"{tmpdir}/{idx}.png")
             plt.close(fig)
             idxs.append(idx)
