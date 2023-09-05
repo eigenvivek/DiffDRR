@@ -7,10 +7,12 @@ import torch
 import torch.nn as nn
 
 # %% auto 0
-__all__ = ['NormalizedCrossCorrelation2d', 'Sobel', 'GradientNormalizedCrossCorrelation2d']
+__all__ = ['NormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d']
 
 # %% ../notebooks/api/05_metrics.ipynb 4
 class NormalizedCrossCorrelation2d(torch.nn.Module):
+    """Compute Normalized Cross Correlation between two batches of images."""
+
     def __init__(self):
         super().__init__()
         self.norm = torch.nn.InstanceNorm2d(num_features=1)
@@ -24,6 +26,17 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
         return score
 
 # %% ../notebooks/api/05_metrics.ipynb 5
+class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
+    """Compute Normalized Cross Correlation between the image gradients of two batches of images."""
+
+    def __init__(self):
+        super().__init__()
+        self.sobel = Sobel()
+
+    def forward(self, x1, x2):
+        return super().forward(self.sobel(x1), self.sobel(x2))
+
+# %% ../notebooks/api/05_metrics.ipynb 6
 class Sobel(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -44,12 +57,3 @@ class Sobel(torch.nn.Module):
     def forward(self, img):
         x = self.filter(img)
         return x
-
-
-class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
-    def __init__(self):
-        super().__init__()
-        self.sobel = Sobel()
-
-    def forward(self, x1, x2):
-        return super().forward(self.sobel(x1), self.sobel(x2))
