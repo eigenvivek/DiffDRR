@@ -6,27 +6,50 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
+# %% auto 0
+__all__ = ['NormalizedCrossCorrelation2d', 'Sobel', 'GradientNormalizedCrossCorrelation2d']
 
-class XCorr2(nn.Module):
-    """
-    Compute the normalized cross-correlation between two images with the same shape.
-    """
-
-    def __init__(self, zero_mean_normalized=False):
-        super(XCorr2, self).__init__()
-        self.InstanceNorm = nn.InstanceNorm2d(1)
-        self.zero_mean_normalized = zero_mean_normalized
+# %% ../notebooks/api/05_metrics.ipynb 4
+class NormalizedCrossCorrelation2d(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.norm = torch.nn.InstanceNorm2d(num_features=1)
 
     def forward(self, x1, x2):
-        assert x1.shape == x2.shape
+        assert x1.shape == x2.shape, "Input images must be the same size"
         _, c, h, w = x1.shape
-        assert c == 1, "Output DRRs should be grayscale."
-        if self.zero_mean_normalized:
-            x1 = self.InstanceNorm(x1)
-            x2 = self.InstanceNorm(x2)
+        x1, x2 = self.norm(x1), self.norm(x2)
         score = torch.einsum("b...,b...->b", x1, x2)
-        score /= h * w * c
+        score /= c * h * w
         return score
 
-# %% auto 0
-__all__ = ['XCorr2']
+# %% ../notebooks/api/05_metrics.ipynb 5
+class Sobel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.filter = torch.nn.Conv2d(
+            in_channels=1,
+            out_channels=2,  # X- and Y-gradients
+            kernel_size=3,
+            stride=1,
+            padding=1,  # Return images of the same size as inputs
+            bias=False,
+        )
+
+        Gx = torch.tensor([[1, 0, -1], [2, 0, -2], [1, 0, -1]]).to(torch.float32)
+        Gy = torch.tensor([[1, 2, 1], [0, 0, 0], [-1, -2, -1]]).to(torch.float32)
+        G = torch.stack([Gx, Gy]).unsqueeze(1)
+        self.filter.weight = torch.nn.Parameter(G, requires_grad=False)
+
+    def forward(self, img):
+        x = self.filter(img)
+        return x
+
+
+class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
+    def __init__(self):
+        super().__init__()
+        self.sobel = Sobel()
+
+    def forward(self, x1, x2):
+        return super().forward(self.sobel(x1), self.sobel(x2))
