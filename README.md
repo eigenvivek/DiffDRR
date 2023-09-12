@@ -5,7 +5,7 @@ DiffDRR
 
 [![CI](https://github.com/eigenvivek/DiffDRR/actions/workflows/test.yaml/badge.svg)](https://github.com/eigenvivek/DiffDRR/actions/workflows/test.yaml)
 [![Paper shield](https://img.shields.io/badge/arXiv-2208.12737-red.svg)](https://arxiv.org/abs/2208.12737)
-[![License: MIT](https://img.shields.io/badge/License-Apache2.0-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Downloads](https://static.pepy.tech/personalized-badge/diffdrr?period=total&units=none&left_color=grey&right_color=blue&left_text=downloads)](https://pepy.tech/project/diffdrr)
 [![Docs](https://img.shields.io/badge/docs-passing-brightgreen.svg)](https://vivekg.dev/DiffDRR/)
 [![Code style: black](https://img.shields.io/badge/Code%20style-black-black.svg)](https://github.com/psf/black)
