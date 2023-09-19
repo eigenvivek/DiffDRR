@@ -31,26 +31,25 @@ class DRR(nn.Module):
         dely: float | None = None,  # Y-axis pixel size (if not provided, set to `delx`)
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
-        convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
         patch_size: int
-        | None = None,  # Render patches of the DRR in series (useful for large DRRs)
+        | None = None,  # If the entire DRR can't fit in memory, render patches of the DRR in series
     ):
         super().__init__()
 
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else dely
+        n_subsample = (
+            int(height * width * p_subsample) if p_subsample is not None else None
+        )
         self.detector = Detector(
             sdr,
             height,
             width,
             delx,
             dely,
-            n_subsample=int(height * width * p_subsample)
-            if p_subsample is not None
-            else None,
-            convention=convention,
+            n_subsample=n_subsample,
             reverse_x_axis=reverse_x_axis,
         )
 
@@ -72,13 +71,21 @@ class DRR(nn.Module):
 
 # %% ../notebooks/api/00_drr.ipynb 7
 @patch
-def forward(self: DRR, rotations: torch.Tensor, translations: torch.Tensor):
+def forward(
+    self: DRR,
+    rotations: torch.Tensor,
+    translations: torch.Tensor,
+    parameterization: str,
+    convention: str = None,
+):
     """Generate DRR with rotations and translations parameters."""
     assert len(rotations) == len(translations)
     batch_size = len(rotations)
-    source, target = self.detector.make_xrays(
+    source, target = self.detector(
         rotations=rotations,
         translations=translations,
+        parameterization=parameterization,
+        convention=convention,
     )
 
     if self.patch_size is not None:
@@ -102,11 +109,17 @@ class Registration(nn.Module):
         drr: DRR,
         rotations: torch.Tensor,
         translations: torch.Tensor,
+        parameterization: str,
+        convention: str = None,
     ):
         super().__init__()
         self.drr = drr
         self.rotations = nn.Parameter(rotations)
         self.translations = nn.Parameter(translations)
+        self.parameterization = parameterization
+        self.convention = convention
 
     def forward(self):
-        return self.drr(self.rotations, self.translations)
+        return self.drr(
+            self.rotations, self.translations, self.parameterization, self.convention
+        )
