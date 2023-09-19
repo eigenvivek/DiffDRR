@@ -10,7 +10,6 @@ from fastcore.basics import patch
 
 from .detector import Detector
 from .siddon import siddon_raycast
-from .utils import reshape_subsampled_drr
 
 # %% auto 0
 __all__ = ['DRR', 'Registration']
@@ -69,7 +68,19 @@ class DRR(nn.Module):
                 img = reshape_subsampled_drr(img, self.detector, batch_size)
         return img
 
-# %% ../notebooks/api/00_drr.ipynb 7
+# %% ../notebooks/api/00_drr.ipynb 6
+def reshape_subsampled_drr(
+    img: torch.Tensor,
+    detector: Detector,
+    batch_size: int,
+):
+    n_points = detector.height * detector.width
+    drr = torch.zeros(batch_size, n_points).to(img)
+    drr[:, detector.subsamples[-1]] = img
+    drr = drr.view(batch_size, 1, detector.height, detector.width)
+    return drr
+
+# %% ../notebooks/api/00_drr.ipynb 8
 @patch
 def forward(
     self: DRR,
@@ -100,7 +111,7 @@ def forward(
         img = siddon_raycast(source, target, self.volume, self.spacing)
     return self.reshape_transform(img, batch_size=batch_size)
 
-# %% ../notebooks/api/00_drr.ipynb 9
+# %% ../notebooks/api/00_drr.ipynb 10
 class Registration(nn.Module):
     """Perform automatic 2D-to-3D registration using differentiable rendering."""
 
