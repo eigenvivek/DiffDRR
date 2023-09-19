@@ -3,7 +3,7 @@
 # %% auto 0
 __all__ = ['install_pytorch3d']
 
-# %% ../notebooks/api/06_utils.ipynb 4
+# %% ../notebooks/api/06_utils.ipynb 5
 import subprocess
 import sys
 
@@ -11,14 +11,6 @@ import torch
 
 
 def install_pytorch3d():
-    pyt_version_str = torch.__version__.split("+")[0].replace(".", "")
-    version_str = "".join(
-        [
-            f"py3{sys.version_info.minor}_cu",
-            torch.version.cuda.replace(".", ""),
-            f"_pyt{pyt_version_str}",
-        ]
-    )
     subprocess.run(["pip", "install", "fvcore", "iopath"])
     subprocess.run(
         [
@@ -28,6 +20,6 @@ def install_pytorch3d():
             "--no-cache-dir",
             "pytorch3d",
             "-f",
-            f"https://dl.fbaipublicfiles.com/pytorch3d/packaging/wheels/{version_str}/download.html",
+            "git+https://github.com/facebookresearch/pytorch3d.git@stable",
         ]
     )
