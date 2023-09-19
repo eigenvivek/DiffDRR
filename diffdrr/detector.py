@@ -10,7 +10,15 @@ from torch.nn.functional import normalize
 # %% auto 0
 __all__ = ['Detector']
 
-# %% ../notebooks/api/02_detector.ipynb 5
+# %% ../notebooks/api/02_detector.ipynb 4
+from diffdrr.utils import install_pytorch3d
+
+try:
+    import pytorch3d
+except ModuleNotFoundError:
+    install_pytorch3d()
+
+# %% ../notebooks/api/02_detector.ipynb 6
 class Detector(torch.nn.Module):
     """Construct a 6 DoF X-ray detector system. This model is based on a C-Arm."""
 
@@ -40,7 +48,7 @@ class Detector(torch.nn.Module):
         self.register_buffer("source", source)
         self.register_buffer("target", target)
 
-# %% ../notebooks/api/02_detector.ipynb 6
+# %% ../notebooks/api/02_detector.ipynb 7
 @patch
 def _initialize_carm(self: Detector):
     """Initialize the default position for the source and detector plane."""
@@ -76,7 +84,7 @@ def _initialize_carm(self: Detector):
         self.subsamples.append(sample.tolist())
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 9
+# %% ../notebooks/api/02_detector.ipynb 10
 PARAMETERIZATIONS = [
     "axis_angle",
     "euler_angles",
@@ -86,7 +94,7 @@ PARAMETERIZATIONS = [
     "rotation_10d",
 ]
 
-# %% ../notebooks/api/02_detector.ipynb 10
+# %% ../notebooks/api/02_detector.ipynb 11
 from pytorch3d.transforms import (
     axis_angle_to_matrix,
     euler_angles_to_matrix,
@@ -111,7 +119,7 @@ def _convert_to_rotation_matrix(rotations, parameterization, convention):
         )
     return R
 
-# %% ../notebooks/api/02_detector.ipynb 11
+# %% ../notebooks/api/02_detector.ipynb 12
 from pytorch3d.transforms import Transform3d
 
 
@@ -146,5 +154,5 @@ def forward(
     target = t.transform_points(self.target)
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 12
+# %% ../notebooks/api/02_detector.ipynb 13
 # TODO: Provide way to convert any rotation to DeepDRR angles
