@@ -20,6 +20,6 @@ def install_pytorch3d():
             "--no-cache-dir",
             "pytorch3d",
             "-f",
-            "git+https://github.com/facebookresearch/pytorch3d.git@stable",
+            "pytorch3d @ git+https://github.com/facebookresearch/pytorch3d.git@stable",
         ]
     )
