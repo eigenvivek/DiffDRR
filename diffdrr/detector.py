@@ -11,12 +11,13 @@ from torch.nn.functional import normalize
 __all__ = ['Detector']
 
 # %% ../notebooks/api/02_detector.ipynb 4
-from diffdrr.utils import install_pytorch3d
-
 try:
     import pytorch3d
 except ModuleNotFoundError:
-    install_pytorch3d()
+    install = "https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md"
+    raise ModuleNotFoundError(
+        f"PyTorch3D is not installed, which is required to parameterize camera poses. See installation instructions here: {install}."
+    )
 
 # %% ../notebooks/api/02_detector.ipynb 6
 class Detector(torch.nn.Module):

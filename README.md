@@ -31,6 +31,12 @@ To install `DiffDRR` from PyPI:
 pip install diffdrr
 ```
 
+`DiffDRR` also requires `PyTorch3D`, which gives us the ability to use multiple parameterizations of SO(3) when constructing camera poses! For most users,
+```zsh
+conda install pytorch3d -c pytorch3d
+```
+should work perfectly well. Otherwise, see PyTorch3D's [installation guide](https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md).
+
 ### Development (optional)
 
 `DiffDRR` source code, docs, and CI are all built using
