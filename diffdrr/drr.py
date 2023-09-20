@@ -81,6 +81,11 @@ def reshape_subsampled_drr(
     return drr
 
 # %% ../notebooks/api/00_drr.ipynb 8
+from pytorch3d.transforms import Transform3d
+
+from .detector import make_xrays
+
+
 @patch
 def forward(
     self: DRR,
@@ -88,16 +93,20 @@ def forward(
     translations: torch.Tensor,
     parameterization: str,
     convention: str = None,
+    se3: Transform3d = None,  # If you have a preformed pose, can pass it directly
 ):
     """Generate DRR with rotations and translations parameters."""
-    assert len(rotations) == len(translations)
-    batch_size = len(rotations)
-    source, target = self.detector(
-        rotations=rotations,
-        translations=translations,
-        parameterization=parameterization,
-        convention=convention,
-    )
+    if se3 is None:
+        assert len(rotations) == len(translations)
+        batch_size = len(rotations)
+        source, target = self.detector(
+            rotations=rotations,
+            translations=translations,
+            parameterization=parameterization,
+            convention=convention,
+        )
+    else:
+        source, target = make_xrays(se3, self.detector.source, self.detector.target)
 
     if self.patch_size is not None:
         n_points = target.shape[1] // self.n_patches

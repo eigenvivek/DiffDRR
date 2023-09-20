@@ -118,9 +118,9 @@ def _convert_to_rotation_matrix(rotations, parameterization, convention):
     elif parameterization == "rotation_6d":
         R = rotation_6d_to_matrix(rotations)
     elif parameterization == "rotation_10d":
-        R = rotation_10d_to_matrix(rotations)
+        R = quaternion_to_matrix(rotation_10d_to_quaternion(rotations))
     elif parameterization == "quaternion_adjugate":
-        R = quaternion_adjugate_to_matrix(rotations)
+        R = quaternion_to_matrix(quaternion_adjugate_to_quaternion(rotations))
     else:
         raise ValueError(
             f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
@@ -158,11 +158,16 @@ def forward(
     R = _convert_to_rotation_matrix(rotations, parameterization, convention)
     R = R.transpose(-1, -2)
     t = Transform3d(device=rotations.device).rotate(R).translate(translations)
-    source = t.transform_points(self.source)
-    target = t.transform_points(self.target)
+    source, target = make_xrays(t, self.source, self.target)
     return source, target
 
 # %% ../notebooks/api/02_detector.ipynb 12
+def make_xrays(t: Transform3d, source: torch.Tensor, target: torch.Tensor):
+    source = t.transform_points(source)
+    target = t.transform_points(target)
+    return source, target
+
+# %% ../notebooks/api/02_detector.ipynb 13
 def diffdrr_to_deepdrr(euler_angles):
     alpha, beta, gamma = euler_angles.unbind(-1)
     return torch.stack([beta, alpha, gamma], dim=1)
