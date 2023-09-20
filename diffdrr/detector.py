@@ -16,7 +16,7 @@ try:
 except ModuleNotFoundError:
     install = "https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md"
     raise ModuleNotFoundError(
-        f"PyTorch3D is not installed, which is required to parameterize camera poses. See installation instructions here: {install}."
+        f"PyTorch3D is not installed, which is required to parameterize camera poses. See installation instructions here: {install}"
     )
 
 # %% ../notebooks/api/02_detector.ipynb 6
