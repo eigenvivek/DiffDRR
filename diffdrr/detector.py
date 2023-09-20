@@ -85,7 +85,7 @@ def _initialize_carm(self: Detector):
         self.subsamples.append(sample.tolist())
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 10
+# %% ../notebooks/api/02_detector.ipynb 9
 PARAMETERIZATIONS = [
     "axis_angle",
     "euler_angles",
@@ -93,15 +93,18 @@ PARAMETERIZATIONS = [
     "quaternion",
     "rotation_6d",
     "rotation_10d",
+    "quaternion_adjugate",
 ]
 
-# %% ../notebooks/api/02_detector.ipynb 11
+# %% ../notebooks/api/02_detector.ipynb 10
 from pytorch3d.transforms import (
     axis_angle_to_matrix,
     euler_angles_to_matrix,
     quaternion_to_matrix,
     rotation_6d_to_matrix,
 )
+
+from diffdrr.utils import quaternion_adjugate_to_matrix, rotation_10d_to_matrix
 
 
 def _convert_to_rotation_matrix(rotations, parameterization, convention):
@@ -114,13 +117,17 @@ def _convert_to_rotation_matrix(rotations, parameterization, convention):
         R = quaternion_to_matrix(rotations)
     elif parameterization == "rotation_6d":
         R = rotation_6d_to_matrix(rotations)
+    elif parameterization == "rotation_10d":
+        R = rotation_10d_to_matrix(rotations)
+    elif parameterization == "quaternion_adjugate":
+        R = quaternion_adjugate_to_matrix(rotations)
     else:
         raise ValueError(
             f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
         )
     return R
 
-# %% ../notebooks/api/02_detector.ipynb 12
+# %% ../notebooks/api/02_detector.ipynb 11
 from pytorch3d.transforms import Transform3d
 
 
@@ -155,5 +162,5 @@ def forward(
     target = t.transform_points(self.target)
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 13
+# %% ../notebooks/api/02_detector.ipynb 12
 # TODO: Provide way to convert any rotation to DeepDRR angles
