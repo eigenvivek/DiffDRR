@@ -8,7 +8,7 @@ from fastcore.basics import patch
 from torch.nn.functional import normalize
 
 # %% auto 0
-__all__ = ['Detector']
+__all__ = ['Detector', 'diffdrr_to_deepdrr']
 
 # %% ../notebooks/api/02_detector.ipynb 4
 try:
@@ -163,4 +163,6 @@ def forward(
     return source, target
 
 # %% ../notebooks/api/02_detector.ipynb 12
-# TODO: Provide way to convert any rotation to DeepDRR angles
+def diffdrr_to_deepdrr(euler_angles):
+    alpha, beta, gamma = euler_angles.unbind(-1)
+    return torch.stack([beta, alpha, gamma], dim=1)
