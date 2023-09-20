@@ -31,6 +31,12 @@ To install `DiffDRR` from PyPI:
 pip install diffdrr
 ```
 
+`DiffDRR` also requires `PyTorch3D`, which gives us the ability to use multiple parameterizations of SO(3) when constructing camera poses! For most users,
+```zsh
+conda install pytorch3d -c pytorch3d
+```
+should work perfectly well. Otherwise, see PyTorch3D's [installation guide](https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md).
+
 ### Development (optional)
 
 `DiffDRR` source code, docs, and CI are all built using
@@ -81,11 +87,12 @@ drr = DRR(
 ).to(device)
 
 # Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
+# Note: DiffDRR can accept many angular parameterizations, not just Euler angles
 rotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)
 translations = torch.tensor([[bx, by, bz]], device=device)
 
 # Make the DRR
-img = drr(rotations, translations)
+img = drr(rotations, translations, parameterization="euler_angles", convention="ZYX")
 plot_drr(img, ticks=False)
 plt.show()
 ```
@@ -94,7 +101,7 @@ plt.show()
 
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
-    34.9 ms ± 32.2 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    33.3 ms ± 6.78 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 The full example is available at
 [`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).

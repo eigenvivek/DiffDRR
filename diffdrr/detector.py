@@ -8,10 +8,19 @@ from fastcore.basics import patch
 from torch.nn.functional import normalize
 
 # %% auto 0
-__all__ = ['Detector']
+__all__ = ['Detector', 'diffdrr_to_deepdrr']
 
-# %% ../notebooks/api/02_detector.ipynb 5
-class Detector:
+# %% ../notebooks/api/02_detector.ipynb 4
+try:
+    import pytorch3d
+except ModuleNotFoundError:
+    install = "https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md"
+    raise ModuleNotFoundError(
+        f"PyTorch3D is not installed, which is required to parameterize camera poses. See installation instructions here: {install}"
+    )
+
+# %% ../notebooks/api/02_detector.ipynb 6
+class Detector(torch.nn.Module):
     """Construct a 6 DoF X-ray detector system. This model is based on a C-Arm."""
 
     def __init__(
@@ -22,9 +31,9 @@ class Detector:
         delx: float,  # Pixel spacing in the X-direction
         dely: float,  # Pixel spacing in the Y-direction
         n_subsample: int | None = None,  # Number of target points to randomly sample
-        convention: str = "diffdrr",  # Either `diffdrr` or `deepdrr`, order of basis matrix multiplication
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
+        super().__init__()
         self.sdr = sdr
         self.height = height
         self.width = width
@@ -33,133 +42,127 @@ class Detector:
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
             self.subsamples = []
-        if convention not in ["diffdrr", "deepdrr"]:
-            raise ValueError(
-                f"{convention} not recongnized, must be either ['diffdrr', 'deepdrr']"
-            )
-        else:
-            self.convention = convention
         self.reverse_x_axis = reverse_x_axis
 
-# %% ../notebooks/api/02_detector.ipynb 6
-@patch
-def make_xrays(
-    self: Detector,
-    rotations: torch.Tensor,  # Vector of C-arm rotations (theta, phi, gamma) for azimuthal, polar, and roll angles
-    translations: torch.Tensor,  # Vector of C-arm translations (bx, by, bz)
-):
-    """Create source and target points for X-rays to trace through the volume."""
+        # Initialize the source and detector plane in default positions (along the x-axis)
+        source, target = self._initialize_carm()
+        self.register_buffer("source", source)
+        self.register_buffer("target", target)
 
-    # Get the detector plane normal vector
-    assert len(rotations) == len(translations)
-    source, center, basis = _get_basis(self.sdr, rotations, self.convention)
-    source += translations.unsqueeze(1)
-    center += translations.unsqueeze(1)
+# %% ../notebooks/api/02_detector.ipynb 7
+@patch
+def _initialize_carm(self: Detector):
+    """Initialize the default position for the source and detector plane."""
+    # Initialize the source on the x-axis
+    source = torch.tensor([[self.sdr, 0.0, 0.0]])
+
+    # Initialize the center of the detector plane on the negative x-axis
+    center = torch.tensor([[-self.sdr, 0.0, 0.0]])
+
+    # Use the standard basis for the detector plane
+    basis = torch.tensor([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
 
     # Construct the detector plane with different offsets for even or odd heights
     h_off = 1.0 if self.height % 2 else 0.5
     w_off = 1.0 if self.width % 2 else 0.5
+
+    # Construct equally spaced points along the basis vectors
     t = (torch.arange(-self.height // 2, self.height // 2) + h_off) * self.delx
     s = (torch.arange(-self.width // 2, self.width // 2) + w_off) * self.dely
     if self.reverse_x_axis:
         s = -s
-
-    coefs = torch.cartesian_prod(t, s).reshape(-1, 2).to(rotations)
-    target = torch.einsum("bcd,nc->bnd", basis, coefs)
+    coefs = torch.cartesian_prod(t, s).reshape(-1, 2)
+    target = torch.einsum("cd,nc->nd", basis, coefs)
     target += center
+
+    # Batch source and target
+    source = source.unsqueeze(0)
+    target = target.unsqueeze(0)
+
     if self.n_subsample is not None:
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
         target = target[:, sample, :]
         self.subsamples.append(sample.tolist())
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 7
-def _get_basis(sdr, rotations, convention):
-    # Get the rotation of 3D space
-    R = sdr * Rxyz(rotations, convention)
+# %% ../notebooks/api/02_detector.ipynb 9
+PARAMETERIZATIONS = [
+    "axis_angle",
+    "euler_angles",
+    "matrix",
+    "quaternion",
+    "rotation_6d",
+    "rotation_10d",
+    "quaternion_adjugate",
+]
 
-    # Get the detector center and X-ray source
-    source = R[..., 0].unsqueeze(1)
-    center = -source
+# %% ../notebooks/api/02_detector.ipynb 10
+from pytorch3d.transforms import (
+    axis_angle_to_matrix,
+    euler_angles_to_matrix,
+    quaternion_to_matrix,
+    rotation_6d_to_matrix,
+)
 
-    # Get the basis of the detector plane (before translation)
-    R_ = normalize(R.clone(), dim=-1)
-    u, v = R_[..., 1], R_[..., 2]
-    basis = torch.stack([u, v], dim=1)
+from diffdrr.utils import quaternion_adjugate_to_matrix, rotation_10d_to_matrix
 
-    return source, center, basis
 
-# %% ../notebooks/api/02_detector.ipynb 8
-# Define 3D rotation matrices
-def Rxyz(rotations, convention):
-    theta, phi, gamma = rotations[:, 0], rotations[:, 1], rotations[:, 2]
-    batch_size = len(rotations)
-    device = rotations
-    R_z = Rz(theta, batch_size, device)
-    R_y = Ry(phi, batch_size, device)
-    R_x = Rx(gamma, batch_size, device)
-    if convention == "diffdrr":
-        return torch.einsum("bij,bjk,bkl->bil", R_z, R_y, R_x)
-    elif convention == "deepdrr":
-        return torch.einsum("bij,bjk,bkl->bil", R_y, R_z, R_x)
+def _convert_to_rotation_matrix(rotations, parameterization, convention):
+    """Convert any parameterization of a rotation to a matrix representation."""
+    if parameterization == "axis_angle":
+        R = axis_angle_to_matrix(rotations)
+    elif parameterization == "euler_angles":
+        R = euler_angles_to_matrix(rotations, convention)
+    elif parameterization == "quaternion":
+        R = quaternion_to_matrix(rotations)
+    elif parameterization == "rotation_6d":
+        R = rotation_6d_to_matrix(rotations)
+    elif parameterization == "rotation_10d":
+        R = rotation_10d_to_matrix(rotations)
+    elif parameterization == "quaternion_adjugate":
+        R = quaternion_adjugate_to_matrix(rotations)
     else:
         raise ValueError(
-            f"{convention} not recongnized, must be either ['diffdrr', 'deepdrr']"
+            f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
+        )
+    return R
+
+# %% ../notebooks/api/02_detector.ipynb 11
+from pytorch3d.transforms import Transform3d
+
+
+@patch
+def forward(
+    self: Detector,
+    rotations: torch.Tensor,  # Some (batched) representation of a rotation
+    translations: torch.Tensor,  # Batch of C-arm translations (bx, by, bz)
+    parameterization: str,  # Specifies the representation of the rotation
+    convention: str,  # If parameterization is Euler angles, specify convention
+):
+    """Create source and target points for X-rays to trace through the volume."""
+    if parameterization not in PARAMETERIZATIONS:
+        raise ValueError(
+            f"parameterization must be in f{PARAMETERIZATIONS}, not {parameterization}"
+        )
+    if parameterization == "rotation_10d":
+        raise NotImplementedError(
+            "rotation_10d is not supported yet, but will be in the future"
+        )
+    if parameterization == "euler_angles" and convention is None:
+        raise ValueError(
+            "convention for Euler angles must be specified as a 3 letter combination of [X, Y, Z]"
         )
 
+    # Convert rotation representation to a rotation matrix, R
+    # Transpose R to convert to right-handed convention for PyTorch3D
+    R = _convert_to_rotation_matrix(rotations, parameterization, convention)
+    R = R.transpose(-1, -2)
+    t = Transform3d(device=rotations.device).rotate(R).translate(translations)
+    source = t.transform_points(self.source)
+    target = t.transform_points(self.target)
+    return source, target
 
-def Rx(gamma, batch_size, device):
-    t0 = torch.zeros(batch_size, 1).to(device)
-    t1 = torch.ones(batch_size, 1).to(device)
-    return torch.stack(
-        [
-            t1,
-            t0,
-            t0,
-            t0,
-            torch.cos(gamma.unsqueeze(1)),
-            -torch.sin(gamma.unsqueeze(1)),
-            t0,
-            torch.sin(gamma.unsqueeze(1)),
-            torch.cos(gamma.unsqueeze(1)),
-        ],
-        dim=1,
-    ).reshape(batch_size, 3, 3)
-
-
-def Ry(phi, batch_size, device):
-    t0 = torch.zeros(batch_size, 1).to(device)
-    t1 = torch.ones(batch_size, 1).to(device)
-    return torch.stack(
-        [
-            torch.cos(phi.unsqueeze(1)),
-            t0,
-            torch.sin(phi.unsqueeze(1)),
-            t0,
-            t1,
-            t0,
-            -torch.sin(phi.unsqueeze(1)),
-            t0,
-            torch.cos(phi.unsqueeze(1)),
-        ],
-        dim=1,
-    ).reshape(batch_size, 3, 3)
-
-
-def Rz(theta, batch_size, device):
-    t0 = torch.zeros(batch_size, 1).to(device)
-    t1 = torch.ones(batch_size, 1).to(device)
-    return torch.stack(
-        [
-            torch.cos(theta.unsqueeze(1)),
-            -torch.sin(theta.unsqueeze(1)),
-            t0,
-            torch.sin(theta.unsqueeze(1)),
-            torch.cos(theta.unsqueeze(1)),
-            t0,
-            t0,
-            t0,
-            t1,
-        ],
-        dim=1,
-    ).reshape(batch_size, 3, 3)
+# %% ../notebooks/api/02_detector.ipynb 12
+def diffdrr_to_deepdrr(euler_angles):
+    alpha, beta, gamma = euler_angles.unbind(-1)
+    return torch.stack([beta, alpha, gamma], dim=1)

@@ -58,6 +58,8 @@ def animate(
     out: str | pathlib.Path,  # Savepath
     df: pandas.DataFrame,
     drr: DRR,
+    parameterization: str,
+    convention: str = None,
     ground_truth: torch.Tensor | None = None,
     verbose: bool = True,
     device="cpu",
@@ -96,16 +98,16 @@ def animate(
         idxs = []
         for idx, row in itr:
             fig, ax_opt = make_fig() if ground_truth is None else make_fig(ground_truth)
-            params = row[["theta", "phi", "gamma", "bx", "by", "bz"]].values
+            params = row[["alpha", "beta", "gamma", "bx", "by", "bz"]].values
             rotations = (
-                torch.tensor(row[["theta", "phi", "gamma"]].values)
+                torch.tensor(row[["alpha", "beta", "gamma"]].values)
                 .unsqueeze(0)
                 .to(device)
             )
             translations = (
                 torch.tensor(row[["bx", "by", "bz"]].values).unsqueeze(0).to(device)
             )
-            itr = drr(rotations, translations)
+            itr = drr(rotations, translations, parameterization, convention)
             _ = plot_drr(itr, axs=ax_opt)
             ax_opt.set(xlabel=f"Moving DRR (loss = {row['loss']:.3f})")
             fig.savefig(f"{tmpdir}/{idx}.png")
