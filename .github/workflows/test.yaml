@@ -2,6 +2,64 @@ name: CI
 on:  [workflow_dispatch, pull_request, push]
 
 jobs:
-  test:
+  test_and_deploy:
     runs-on: ubuntu-latest
-    steps: [uses: fastai/workflows/nbdev-ci@master]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Activate conda env with environment.yml
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: false
+          auto-activate-base: false
+          activate-environment: gtbook
+          python-version: 3.9
+          environment-file: environment.yml
+
+      - name: Install nbdev
+        shell: bash -l {0}
+        run: |
+          pip install -U nbdev
+
+      - name: Doing editable install
+        shell: bash -l {0}
+        run: |
+          test -f setup.py && pip install -e ".[dev]"
+
+      - name: Check we are starting with clean git checkout
+        shell: bash -l {0}
+        run: |
+          if [[ `git status --porcelain -uno` ]]; then
+            git diff
+            echo "git status is not clean"
+            false
+          fi
+
+      - name: Trying to strip out notebooks
+        shell: bash -l {0}
+        run: |
+          nbdev_clean
+          git status -s # display the status to see which nbs need cleaning up
+          if [[ `git status --porcelain -uno` ]]; then
+            git status -uno
+            echo -e "!!! Detected unstripped out notebooks\n!!!Remember to run nbdev_install_hooks"
+            echo -e "This error can also happen if you are using an older version of nbdev relative to what is in CI.  Please try to upgrade nbdev with the command `pip install -U nbdev`"
+            false
+          fi
+
+      - name: Run nbdev_export
+        shell: bash -l {0}
+        run: |
+          nbdev_export
+          if [[ `git status --porcelain -uno` ]]; then
+            echo "::error::Notebooks and library are not in sync.  Please run nbdev_export."
+            git status -uno
+            git diff
+            exit 1;
+          fi
+
+      - name: Run nbdev_test
+        shell: bash -l {0}
+        run: |
+          nbdev_test
