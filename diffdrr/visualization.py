@@ -12,9 +12,9 @@ import numpy as np
 from tqdm import tqdm
 
 # %% auto 0
-__all__ = ['plot_drr', 'animate']
+__all__ = ['plot_drr', 'animate', 'drr_to_mesh', 'img_to_mesh']
 
-# %% ../notebooks/api/04_visualization.ipynb 4
+# %% ../notebooks/api/04_visualization.ipynb 5
 import torch
 
 
@@ -46,7 +46,7 @@ def plot_drr(
             ax.set_yticks([])
     return axs
 
-# %% ../notebooks/api/04_visualization.ipynb 5
+# %% ../notebooks/api/04_visualization.ipynb 6
 import pathlib
 
 import pandas
@@ -120,3 +120,92 @@ def animate(
 
     # Make the animation
     return iio.imwrite(out, frames, **kwargs)
+
+# %% ../notebooks/api/04_visualization.ipynb 9
+import pyvista
+
+from .drr import DRR
+
+# %% ../notebooks/api/04_visualization.ipynb 10
+def drr_to_mesh(
+    drr: DRR,
+    threshold: float = 0.2,  # Min value for marching cubes
+    verbose: bool = True,  # Display progress bars for mesh processing steps
+):
+    """
+    Convert the CT in a DRR object into a mesh.
+
+    Mesh processing steps:
+
+    1. Keep only largest connected components
+    2. Smooth
+    3. Decimate
+    4. Fill any holes
+    5. Clean (remove any redundant vertices/edges)
+    """
+    # Turn the CT into a PyVista object and run marching cubes
+    grid = pyvista.ImageData(
+        dimensions=drr.volume.shape,
+        spacing=drr.spacing,
+        origin=(0, 0, 0),
+    )
+    mesh = grid.contour(
+        isosurfaces=1,
+        scalars=drr.volume.cpu().numpy().flatten(order="F"),
+        rng=[threshold, torch.inf],
+        method="marching_cubes",
+        progress_bar=verbose,
+    )
+
+    # Process the mesh
+    mesh.extract_largest(inplace=True, progress_bar=verbose)
+    mesh.point_data.clear()
+    mesh.cell_data.clear()
+    mesh.smooth_taubin(
+        n_iter=100,
+        feature_angle=120.0,
+        boundary_smoothing=False,
+        feature_smoothing=False,
+        non_manifold_smoothing=True,
+        normalize_coordinates=True,
+        inplace=True,
+        progress_bar=verbose,
+    )
+    mesh.decimate_pro(0.25, inplace=True, progress_bar=verbose)
+    mesh.fill_holes(100, inplace=True, progress_bar=verbose)
+    mesh.clean(inplace=True, progress_bar=verbose)
+    return mesh
+
+# %% ../notebooks/api/04_visualization.ipynb 11
+def img_to_mesh(drr: DRR, rotations, translations, parameterization, convention=None):
+    """
+    For a given pose (not batched), turn the camera and detector into a mesh.
+    Additionally, render the DRR for the pose. Convert into a texture that
+    can be applied to the detector mesh.
+    """
+    # Turn DRR img into a texture that can be applied to a mesh
+    img = drr(rotations, translations, parameterization)
+    img = img.detach().cpu().squeeze().numpy()
+    img = (img - img.min()) / (img.max() - img.min())
+    img = (255.0 * img).astype(np.uint8)
+    texture = pyvista.numpy_to_texture(img)
+
+    # Make a mesh for the source and detector plane
+    source, target = drr.detector(rotations, translations, parameterization, convention)
+    camera = pyvista.Sphere(radius=10, center=source.squeeze().cpu().numpy())
+    target = target.reshape(drr.detector.height, drr.detector.width, 3).cpu().numpy()
+    detector = pyvista.StructuredGrid(
+        target[..., 0],
+        target[..., 1],
+        target[..., 2],
+    )
+    detector.add_field_data([drr.detector.height], "height")
+    detector.add_field_data([drr.detector.width], "width")
+    detector.texture_map_to_plane(
+        origin=target[-1, 0],
+        point_u=target[-1, -1],
+        point_v=target[0, 0],
+        inplace=True,
+    )
+
+    return camera, detector, texture

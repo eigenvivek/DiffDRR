@@ -50,4 +50,8 @@ d = { 'settings': { 'branch': 'main',
                                'diffdrr.utils.rotation_10d_to_quaternion': ( 'api/utils.html#rotation_10d_to_quaternion',
                                                                              'diffdrr/utils.py')},
             'diffdrr.visualization': { 'diffdrr.visualization.animate': ('api/visualization.html#animate', 'diffdrr/visualization.py'),
+                                       'diffdrr.visualization.drr_to_mesh': ( 'api/visualization.html#drr_to_mesh',
+                                                                              'diffdrr/visualization.py'),
+                                       'diffdrr.visualization.img_to_mesh': ( 'api/visualization.html#img_to_mesh',
+                                                                              'diffdrr/visualization.py'),
                                        'diffdrr.visualization.plot_drr': ('api/visualization.html#plot_drr', 'diffdrr/visualization.py')}}}
