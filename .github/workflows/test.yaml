@@ -13,7 +13,7 @@ jobs:
         with:
           auto-update-conda: false
           auto-activate-base: false
-          activate-environment: gtbook
+          activate-environment: diffdrr
           python-version: 3.9
           environment-file: environment.yml
 
