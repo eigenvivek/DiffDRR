@@ -19,11 +19,7 @@ jobs:
       - name: Activate conda env with environment.yml
         uses: mamba-org/setup-micromamba@v1
         with:
-          micromamba-version: '1.3.1-0'
           environment-file: environment.yml
-          init-shell: >-
-            bash
-            powershell
           cache-environment: true
           post-cleanup: 'all'
 

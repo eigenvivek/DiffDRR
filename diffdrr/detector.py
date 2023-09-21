@@ -85,7 +85,7 @@ def _initialize_carm(self: Detector):
         self.subsamples.append(sample.tolist())
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 9
+# %% ../notebooks/api/02_detector.ipynb 8
 PARAMETERIZATIONS = [
     "axis_angle",
     "euler_angles",
@@ -96,7 +96,7 @@ PARAMETERIZATIONS = [
     "quaternion_adjugate",
 ]
 
-# %% ../notebooks/api/02_detector.ipynb 10
+# %% ../notebooks/api/02_detector.ipynb 9
 from pytorch3d.transforms import (
     axis_angle_to_matrix,
     euler_angles_to_matrix,
@@ -127,7 +127,7 @@ def _convert_to_rotation_matrix(rotations, parameterization, convention):
         )
     return R
 
-# %% ../notebooks/api/02_detector.ipynb 11
+# %% ../notebooks/api/02_detector.ipynb 10
 from pytorch3d.transforms import Transform3d
 
 
@@ -161,13 +161,13 @@ def forward(
     source, target = make_xrays(t, self.source, self.target)
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 12
+# %% ../notebooks/api/02_detector.ipynb 11
 def make_xrays(t: Transform3d, source: torch.Tensor, target: torch.Tensor):
     source = t.transform_points(source)
     target = t.transform_points(target)
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 13
+# %% ../notebooks/api/02_detector.ipynb 12
 def diffdrr_to_deepdrr(euler_angles):
     alpha, beta, gamma = euler_angles.unbind(-1)
     return torch.stack([beta, alpha, gamma], dim=1)

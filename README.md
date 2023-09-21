@@ -87,11 +87,10 @@ drr = DRR(
 ).to(device)
 
 # Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
-# Note: DiffDRR can accept many angular parameterizations, not just Euler angles
+# 📸 Also note that DiffDRR can take many representations of SO(3) 📸
+# For example, quaternions, rotation matrix, axis-angle, etc...
 rotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)
 translations = torch.tensor([[bx, by, bz]], device=device)
-
-# Make the DRR
 img = drr(rotations, translations, parameterization="euler_angles", convention="ZYX")
 plot_drr(img, ticks=False)
 plt.show()

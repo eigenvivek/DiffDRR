@@ -14,7 +14,7 @@ from .siddon import siddon_raycast
 # %% auto 0
 __all__ = ['DRR', 'Registration']
 
-# %% ../notebooks/api/00_drr.ipynb 5
+# %% ../notebooks/api/00_drr.ipynb 7
 class DRR(nn.Module):
     """PyTorch module that computes differentiable digitally reconstructed radiographs."""
 
@@ -68,7 +68,7 @@ class DRR(nn.Module):
                 img = reshape_subsampled_drr(img, self.detector, batch_size)
         return img
 
-# %% ../notebooks/api/00_drr.ipynb 6
+# %% ../notebooks/api/00_drr.ipynb 8
 def reshape_subsampled_drr(
     img: torch.Tensor,
     detector: Detector,
@@ -80,7 +80,7 @@ def reshape_subsampled_drr(
     drr = drr.view(batch_size, 1, detector.height, detector.width)
     return drr
 
-# %% ../notebooks/api/00_drr.ipynb 8
+# %% ../notebooks/api/00_drr.ipynb 10
 from pytorch3d.transforms import Transform3d
 
 from .detector import make_xrays
@@ -120,7 +120,7 @@ def forward(
         img = siddon_raycast(source, target, self.volume, self.spacing)
     return self.reshape_transform(img, batch_size=batch_size)
 
-# %% ../notebooks/api/00_drr.ipynb 10
+# %% ../notebooks/api/00_drr.ipynb 12
 class Registration(nn.Module):
     """Perform automatic 2D-to-3D registration using differentiable rendering."""
 
