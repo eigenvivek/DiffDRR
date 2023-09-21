@@ -113,6 +113,8 @@ def _convert_to_rotation_matrix(rotations, parameterization, convention):
         R = axis_angle_to_matrix(rotations)
     elif parameterization == "euler_angles":
         R = euler_angles_to_matrix(rotations, convention)
+    elif parameterization == "matrix":
+        pass
     elif parameterization == "quaternion":
         R = quaternion_to_matrix(rotations)
     elif parameterization == "rotation_6d":
