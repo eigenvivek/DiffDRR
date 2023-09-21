@@ -104,7 +104,7 @@ from pytorch3d.transforms import (
     rotation_6d_to_matrix,
 )
 
-from diffdrr.utils import quaternion_adjugate_to_matrix, rotation_10d_to_matrix
+from diffdrr.utils import rotation_10d_to_quaternion, rotation_10d_to_quaternion
 
 
 def _convert_to_rotation_matrix(rotations, parameterization, convention):
