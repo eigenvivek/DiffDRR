@@ -86,12 +86,13 @@ drr = DRR(
     delx=4.0,    # Pixel spacing (in mm)
 ).to(device)
 
-# Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
+# Set the camera pose with rotation (yaw, pitch, roll) and translation (x, y, z)
+rotation = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)
+translation = torch.tensor([[bx, by, bz]], device=device)
+
 # 📸 Also note that DiffDRR can take many representations of SO(3) 📸
 # For example, quaternions, rotation matrix, axis-angle, etc...
-rotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)
-translations = torch.tensor([[bx, by, bz]], device=device)
-img = drr(rotations, translations, parameterization="euler_angles", convention="ZYX")
+img = drr(rotation, translation, parameterization="euler_angles", convention="ZYX")
 plot_drr(img, ticks=False)
 plt.show()
 ```

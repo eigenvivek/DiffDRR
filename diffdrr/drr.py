@@ -89,24 +89,25 @@ from .detector import make_xrays
 @patch
 def forward(
     self: DRR,
-    rotations: torch.Tensor,
-    translations: torch.Tensor,
+    rotation: torch.Tensor,
+    translation: torch.Tensor,
     parameterization: str,
     convention: str = None,
-    se3: Transform3d = None,  # If you have a preformed pose, can pass it directly
+    pose: Transform3d = None,  # If you have a preformed pose, can pass it directly
 ):
-    """Generate DRR with rotations and translations parameters."""
-    if se3 is None:
-        assert len(rotations) == len(translations)
-        batch_size = len(rotations)
+    """Generate DRR with rotational and translational parameters."""
+    if pose is None:
+        assert len(rotation) == len(translation)
+        batch_size = len(rotation)
         source, target = self.detector(
-            rotations=rotations,
-            translations=translations,
+            rotation=rotation,
+            translation=translation,
             parameterization=parameterization,
             convention=convention,
         )
     else:
-        source, target = make_xrays(se3, self.detector.source, self.detector.target)
+        batch_size = len(pose)
+        source, target = make_xrays(pose, self.detector.source, self.detector.target)
 
     if self.patch_size is not None:
         n_points = target.shape[1] // self.n_patches
@@ -127,19 +128,22 @@ class Registration(nn.Module):
     def __init__(
         self,
         drr: DRR,
-        rotations: torch.Tensor,
-        translations: torch.Tensor,
+        rotation: torch.Tensor,
+        translation: torch.Tensor,
         parameterization: str,
         convention: str = None,
     ):
         super().__init__()
         self.drr = drr
-        self.rotations = nn.Parameter(rotations)
-        self.translations = nn.Parameter(translations)
+        self.rotation = nn.Parameter(rotation)
+        self.translation = nn.Parameter(translation)
         self.parameterization = parameterization
         self.convention = convention
 
     def forward(self):
         return self.drr(
-            self.rotations, self.translations, self.parameterization, self.convention
+            self.rotation,
+            self.translation,
+            self.parameterization,
+            self.convention,
         )

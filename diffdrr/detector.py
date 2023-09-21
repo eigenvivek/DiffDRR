@@ -86,70 +86,20 @@ def _initialize_carm(self: Detector):
     return source, target
 
 # %% ../notebooks/api/02_detector.ipynb 8
-PARAMETERIZATIONS = [
-    "axis_angle",
-    "euler_angles",
-    "matrix",
-    "quaternion",
-    "rotation_6d",
-    "rotation_10d",
-    "quaternion_adjugate",
-]
-
-# %% ../notebooks/api/02_detector.ipynb 9
-from pytorch3d.transforms import (
-    axis_angle_to_matrix,
-    euler_angles_to_matrix,
-    quaternion_to_matrix,
-    rotation_6d_to_matrix,
-)
-
-from diffdrr.utils import rotation_10d_to_quaternion, rotation_10d_to_quaternion
-
-
-def _convert_to_rotation_matrix(rotations, parameterization, convention):
-    """Convert any parameterization of a rotation to a matrix representation."""
-    if parameterization == "axis_angle":
-        R = axis_angle_to_matrix(rotations)
-    elif parameterization == "euler_angles":
-        R = euler_angles_to_matrix(rotations, convention)
-    elif parameterization == "matrix":
-        pass
-    elif parameterization == "quaternion":
-        R = quaternion_to_matrix(rotations)
-    elif parameterization == "rotation_6d":
-        R = rotation_6d_to_matrix(rotations)
-    elif parameterization == "rotation_10d":
-        R = quaternion_to_matrix(rotation_10d_to_quaternion(rotations))
-    elif parameterization == "quaternion_adjugate":
-        R = quaternion_to_matrix(quaternion_adjugate_to_quaternion(rotations))
-    else:
-        raise ValueError(
-            f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
-        )
-    return R
-
-# %% ../notebooks/api/02_detector.ipynb 10
 from pytorch3d.transforms import Transform3d
+
+from .utils import convert
 
 
 @patch
 def forward(
     self: Detector,
-    rotations: torch.Tensor,  # Some (batched) representation of a rotation
-    translations: torch.Tensor,  # Batch of C-arm translations (bx, by, bz)
+    rotation: torch.Tensor,  # Some (batched) representation of a rotation
+    translation: torch.Tensor,  # Batch of C-arm translation (bx, by, bz)
     parameterization: str,  # Specifies the representation of the rotation
     convention: str,  # If parameterization is Euler angles, specify convention
 ):
     """Create source and target points for X-rays to trace through the volume."""
-    if parameterization not in PARAMETERIZATIONS:
-        raise ValueError(
-            f"parameterization must be in f{PARAMETERIZATIONS}, not {parameterization}"
-        )
-    if parameterization == "rotation_10d":
-        raise NotImplementedError(
-            "rotation_10d is not supported yet, but will be in the future"
-        )
     if parameterization == "euler_angles" and convention is None:
         raise ValueError(
             "convention for Euler angles must be specified as a 3 letter combination of [X, Y, Z]"
@@ -157,19 +107,19 @@ def forward(
 
     # Convert rotation representation to a rotation matrix, R
     # Transpose R to convert to right-handed convention for PyTorch3D
-    R = _convert_to_rotation_matrix(rotations, parameterization, convention)
+    R = convert(rotation, parameterization, "matrix", input_convention=convention)
     R = R.transpose(-1, -2)
-    t = Transform3d(device=rotations.device).rotate(R).translate(translations)
+    t = Transform3d(device=rotation.device).rotate(R).translate(translation)
     source, target = make_xrays(t, self.source, self.target)
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 11
+# %% ../notebooks/api/02_detector.ipynb 9
 def make_xrays(t: Transform3d, source: torch.Tensor, target: torch.Tensor):
     source = t.transform_points(source)
     target = t.transform_points(target)
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 12
+# %% ../notebooks/api/02_detector.ipynb 10
 def diffdrr_to_deepdrr(euler_angles):
     alpha, beta, gamma = euler_angles.unbind(-1)
     return torch.stack([beta, alpha, gamma], dim=1)
