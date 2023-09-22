@@ -108,7 +108,7 @@ def _convert_to_rotation_matrix(rotation, parameterization, convention):
     elif parameterization == "matrix":
         R = rotation
     elif parameterization == "quaternion":
-        R = standardize_quaternion(quaternion_to_matrix(rotation))
+        R = quaternion_to_matrix(rotation)
     elif parameterization == "rotation_6d":
         R = rotation_6d_to_matrix(rotation)
     elif parameterization == "rotation_10d":
