@@ -122,6 +122,9 @@ def forward(
     return self.reshape_transform(img, batch_size=batch_size)
 
 # %% ../notebooks/api/00_drr.ipynb 12
+from .utils import convert
+
+
 class Registration(nn.Module):
     """Perform automatic 2D-to-3D registration using differentiable rendering."""
 
@@ -131,19 +134,38 @@ class Registration(nn.Module):
         rotation: torch.Tensor,
         translation: torch.Tensor,
         parameterization: str,
-        convention: str = None,
+        input_convention: str = None,
+        output_convention: str = "ZYX",
     ):
         super().__init__()
         self.drr = drr
         self.rotation = nn.Parameter(rotation)
         self.translation = nn.Parameter(translation)
         self.parameterization = parameterization
-        self.convention = convention
+        self.input_convention = input_convention
+        self.output_convention = output_convention
 
     def forward(self):
         return self.drr(
             self.rotation,
             self.translation,
             self.parameterization,
-            self.convention,
+            self.input_convention,
         )
+
+    def get_rotation(self):
+        return (
+            convert(
+                self.rotation,
+                input_parameterization=self.parameterization,
+                output_parameterization="euler_angles",
+                input_convention=self.input_convention,
+                output_convention=self.output_convention,
+            )
+            .clone()
+            .detach()
+            .cpu()
+        )
+
+    def get_translation(self):
+        return self.translation.clone().detach().cpu()
