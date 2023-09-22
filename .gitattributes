@@ -1,2 +1,2 @@
-*.ipynb  linguist-vendored=true
+*.ipynb linguist-vendored=true
 *.ipynb merge=nbdev-merge
