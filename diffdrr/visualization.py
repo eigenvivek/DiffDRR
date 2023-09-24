@@ -90,7 +90,7 @@ def animate(
 
     # Compute DRRs, plot, and save to temporary folder
     if verbose:
-        itr = tqdm(df.iterrows(), desc="Precomputing DRRs", total=len(df), ncols=50)
+        itr = tqdm(df.iterrows(), desc="Precomputing DRRs", total=len(df), ncols=75)
     else:
         itr = df.iterrows()
 
