@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
-from einops import rearrange
 
 # %% auto 0
 __all__ = ['NormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d']
@@ -31,25 +30,32 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
         return score
 
 # %% ../notebooks/api/05_metrics.ipynb 5
+from einops import rearrange
+
+
 def to_patches(x, patch_size):
-    x = x.unfold(2, patch_size, 1).unfold(3, patch_size, 1).contiguous()
+    x = x.unfold(2, patch_size, step=1).unfold(3, patch_size, step=1).contiguous()
     return rearrange(x, "b c p1 p2 h w -> b (c p1 p2) h w")
 
 # %% ../notebooks/api/05_metrics.ipynb 6
 class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
     """Compute Normalized Cross Correlation between the image gradients of two batches of images."""
 
-    def __init__(self, patch_size=None):
+    def __init__(self, patch_size=None, sigma=1.0):
         super().__init__(patch_size)
-        self.sobel = Sobel()
+        self.sobel = Sobel(sigma)
 
     def forward(self, x1, x2):
         return super().forward(self.sobel(x1), self.sobel(x2))
 
 # %% ../notebooks/api/05_metrics.ipynb 7
+from torchvision.transforms.functional import gaussian_blur
+
+
 class Sobel(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, sigma):
         super().__init__()
+        self.sigma = sigma
         self.filter = torch.nn.Conv2d(
             in_channels=1,
             out_channels=2,  # X- and Y-gradients
@@ -65,5 +71,6 @@ class Sobel(torch.nn.Module):
         self.filter.weight = torch.nn.Parameter(G, requires_grad=False)
 
     def forward(self, img):
+        x = gaussian_blur(img, 5, self.sigma)
         x = self.filter(img)
         return x
