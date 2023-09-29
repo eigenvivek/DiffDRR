@@ -33,7 +33,6 @@ class DRR(nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
         patch_size: int
         | None = None,  # If the entire DRR can't fit in memory, render patches of the DRR in series
-        bone_attenuation_multiplier: float = 1.0,  # Ratio of bone to soft tissue density
     ):
         super().__init__()
 
@@ -61,19 +60,10 @@ class DRR(nn.Module):
         if self.patch_size is not None:
             self.n_patches = (height * width) // (self.patch_size**2)
 
+        # Parameters for segmenting the CT volume and reweighting voxels
         self.air = torch.where(self.volume <= -800)
         self.soft_tissue = torch.where((-800 < self.volume) & (self.volume <= 350))
         self.bone = torch.where(350 < self.volume)
-        self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
-
-    def set_bone_attenuation_multiplier(self, bone_attenuation_multiplier):
-        self.density = torch.empty_like(self.volume)
-        self.density[self.air] = self.volume[self.soft_tissue].min()
-        self.density[self.soft_tissue] = self.volume[self.soft_tissue]
-        self.density[self.bone] = self.volume[self.bone] * bone_attenuation_multiplier
-        self.density -= self.density.min()
-        self.density /= self.density.max()
-        self.bone_attenuation_multiplier = bone_attenuation_multiplier
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
@@ -109,8 +99,14 @@ def forward(
     parameterization: str,
     convention: str = None,
     pose: Transform3d = None,  # If you have a preformed pose, can pass it directly
+    bone_attenuation_multiplier: float = None,  # Ratio of bone to soft tissue
 ):
     """Generate DRR with rotational and translational parameters."""
+    if not hasattr(self, "density"):
+        self.set_bone_attenuation_multiplier(1.0)
+    if bone_attenuation_multiplier is not None:
+        self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
+
     if pose is None:
         assert len(rotation) == len(translation)
         batch_size = len(rotation)
@@ -136,7 +132,18 @@ def forward(
         img = siddon_raycast(source, target, self.density, self.spacing)
     return self.reshape_transform(img, batch_size=batch_size)
 
-# %% ../notebooks/api/00_drr.ipynb 12
+# %% ../notebooks/api/00_drr.ipynb 11
+@patch
+def set_bone_attenuation_multiplier(self: DRR, bone_attenuation_multiplier: float):
+    self.density = torch.empty_like(self.volume)
+    self.density[self.air] = self.volume[self.soft_tissue].min()
+    self.density[self.soft_tissue] = self.volume[self.soft_tissue]
+    self.density[self.bone] = self.volume[self.bone] * bone_attenuation_multiplier
+    self.density -= self.density.min()
+    self.density /= self.density.max()
+    self.bone_attenuation_multiplier = bone_attenuation_multiplier
+
+# %% ../notebooks/api/00_drr.ipynb 13
 from .utils import convert
 
 
