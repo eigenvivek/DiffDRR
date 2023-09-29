@@ -12,7 +12,7 @@ from pydicom import dcmread
 __all__ = ['read_dicom', 'load_example_ct']
 
 # %% ../notebooks/api/03_data.ipynb 4
-def read_dicom(dcmdir: Path | str, correct_zero: bool = True):
+def read_dicom(dcmdir: Path | str):
     """Read a directory of DICOM files and return the volume and voxel spacings."""
 
     dcmfiles = Path(dcmdir).glob("*.dcm")
@@ -31,9 +31,6 @@ def read_dicom(dcmdir: Path | str, correct_zero: bool = True):
         ds = dcmread(dcm)
         volume[:, :, idx] = ds.pixel_array
         del_zs.append(ds.ImagePositionPatient[2])
-
-    if correct_zero:
-        volume[volume == volume.min()] = 0
 
     del_zs = np.diff(del_zs)
     del_z = float(np.abs(np.unique(del_zs)[0]))
