@@ -60,6 +60,11 @@ class DRR(nn.Module):
         if self.patch_size is not None:
             self.n_patches = (height * width) // (self.patch_size**2)
 
+        # Parameters for segmenting the CT volume and reweighting voxels
+        self.air = torch.where(self.volume <= -800)
+        self.soft_tissue = torch.where((-800 < self.volume) & (self.volume <= 350))
+        self.bone = torch.where(350 < self.volume)
+
     def reshape_transform(self, img, batch_size):
         if self.reshape:
             if self.detector.n_subsample is None:
@@ -94,8 +99,14 @@ def forward(
     parameterization: str,
     convention: str = None,
     pose: Transform3d = None,  # If you have a preformed pose, can pass it directly
+    bone_attenuation_multiplier: float = None,  # Ratio of bone to soft tissue
 ):
     """Generate DRR with rotational and translational parameters."""
+    if not hasattr(self, "density"):
+        self.set_bone_attenuation_multiplier(1.0)
+    if bone_attenuation_multiplier is not None:
+        self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
+
     if pose is None:
         assert len(rotation) == len(translation)
         batch_size = len(rotation)
@@ -114,14 +125,25 @@ def forward(
         img = []
         for idx in range(self.n_patches):
             t = target[:, idx * n_points : (idx + 1) * n_points]
-            partial = siddon_raycast(source, t, self.volume, self.spacing)
+            partial = siddon_raycast(source, t, self.density, self.spacing)
             img.append(partial)
         img = torch.cat(img, dim=1)
     else:
-        img = siddon_raycast(source, target, self.volume, self.spacing)
+        img = siddon_raycast(source, target, self.density, self.spacing)
     return self.reshape_transform(img, batch_size=batch_size)
 
-# %% ../notebooks/api/00_drr.ipynb 12
+# %% ../notebooks/api/00_drr.ipynb 11
+@patch
+def set_bone_attenuation_multiplier(self: DRR, bone_attenuation_multiplier: float):
+    self.density = torch.empty_like(self.volume)
+    self.density[self.air] = self.volume[self.soft_tissue].min()
+    self.density[self.soft_tissue] = self.volume[self.soft_tissue]
+    self.density[self.bone] = self.volume[self.bone] * bone_attenuation_multiplier
+    self.density -= self.density.min()
+    self.density /= self.density.max()
+    self.bone_attenuation_multiplier = bone_attenuation_multiplier
+
+# %% ../notebooks/api/00_drr.ipynb 13
 from .utils import convert
 
 
