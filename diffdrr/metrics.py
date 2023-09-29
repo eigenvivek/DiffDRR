@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+from einops import rearrange
 
 # %% auto 0
 __all__ = ['NormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d']
@@ -13,11 +14,15 @@ __all__ = ['NormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d
 class NormalizedCrossCorrelation2d(torch.nn.Module):
     """Compute Normalized Cross Correlation between two batches of images."""
 
-    def __init__(self):
+    def __init__(self, patch_size=None):
         super().__init__()
         self.norm = torch.nn.InstanceNorm2d(num_features=1)
+        self.patch_size = patch_size
 
     def forward(self, x1, x2):
+        if self.patch_size is not None:
+            x1 = to_patches(x1, self.patch_size)
+            x2 = to_patches(x2, self.patch_size)
         assert x1.shape == x2.shape, "Input images must be the same size"
         _, c, h, w = x1.shape
         x1, x2 = self.norm(x1), self.norm(x2)
@@ -26,17 +31,22 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
         return score
 
 # %% ../notebooks/api/05_metrics.ipynb 5
+def to_patches(x, patch_size):
+    x = x.unfold(2, patch_size, 1).unfold(3, patch_size, 1).contiguous()
+    return rearrange(x, "b c p1 p2 h w -> b (c p1 p2) h w")
+
+# %% ../notebooks/api/05_metrics.ipynb 6
 class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
     """Compute Normalized Cross Correlation between the image gradients of two batches of images."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, patch_size=None):
+        super().__init__(patch_size)
         self.sobel = Sobel()
 
     def forward(self, x1, x2):
         return super().forward(self.sobel(x1), self.sobel(x2))
 
-# %% ../notebooks/api/05_metrics.ipynb 6
+# %% ../notebooks/api/05_metrics.ipynb 7
 class Sobel(torch.nn.Module):
     def __init__(self):
         super().__init__()
