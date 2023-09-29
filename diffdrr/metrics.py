@@ -13,11 +13,15 @@ __all__ = ['NormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d
 class NormalizedCrossCorrelation2d(torch.nn.Module):
     """Compute Normalized Cross Correlation between two batches of images."""
 
-    def __init__(self):
+    def __init__(self, patch_size=None):
         super().__init__()
         self.norm = torch.nn.InstanceNorm2d(num_features=1)
+        self.patch_size = patch_size
 
     def forward(self, x1, x2):
+        if self.patch_size is not None:
+            x1 = to_patches(x1, self.patch_size)
+            x2 = to_patches(x2, self.patch_size)
         assert x1.shape == x2.shape, "Input images must be the same size"
         _, c, h, w = x1.shape
         x1, x2 = self.norm(x1), self.norm(x2)
@@ -26,20 +30,32 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
         return score
 
 # %% ../notebooks/api/05_metrics.ipynb 5
+from einops import rearrange
+
+
+def to_patches(x, patch_size):
+    x = x.unfold(2, patch_size, step=1).unfold(3, patch_size, step=1).contiguous()
+    return rearrange(x, "b c p1 p2 h w -> b (c p1 p2) h w")
+
+# %% ../notebooks/api/05_metrics.ipynb 6
 class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
     """Compute Normalized Cross Correlation between the image gradients of two batches of images."""
 
-    def __init__(self):
-        super().__init__()
-        self.sobel = Sobel()
+    def __init__(self, patch_size=None, sigma=1.0):
+        super().__init__(patch_size)
+        self.sobel = Sobel(sigma)
 
     def forward(self, x1, x2):
         return super().forward(self.sobel(x1), self.sobel(x2))
 
-# %% ../notebooks/api/05_metrics.ipynb 6
+# %% ../notebooks/api/05_metrics.ipynb 7
+from torchvision.transforms.functional import gaussian_blur
+
+
 class Sobel(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, sigma):
         super().__init__()
+        self.sigma = sigma
         self.filter = torch.nn.Conv2d(
             in_channels=1,
             out_channels=2,  # X- and Y-gradients
@@ -55,5 +71,6 @@ class Sobel(torch.nn.Module):
         self.filter.weight = torch.nn.Parameter(G, requires_grad=False)
 
     def forward(self, img):
+        x = gaussian_blur(img, 5, self.sigma)
         x = self.filter(img)
         return x
