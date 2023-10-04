@@ -33,6 +33,7 @@ class DRR(nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
         patch_size: int
         | None = None,  # If the entire DRR can't fit in memory, render patches of the DRR in series
+        bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
     ):
         super().__init__()
 
@@ -64,6 +65,7 @@ class DRR(nn.Module):
         self.air = torch.where(self.volume <= -800)
         self.soft_tissue = torch.where((-800 < self.volume) & (self.volume <= 350))
         self.bone = torch.where(350 < self.volume)
+        self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
@@ -99,11 +101,9 @@ def forward(
     parameterization: str,
     convention: str = None,
     pose: Transform3d = None,  # If you have a preformed pose, can pass it directly
-    bone_attenuation_multiplier: float = None,  # Ratio of bone to soft tissue
+    bone_attenuation_multiplier: float = None,  # Contrast ratio of bone to soft tissue
 ):
     """Generate DRR with rotational and translational parameters."""
-    if not hasattr(self, "density"):
-        self.set_bone_attenuation_multiplier(1.0)
     if bone_attenuation_multiplier is not None:
         self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
 
