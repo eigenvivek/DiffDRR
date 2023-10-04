@@ -65,7 +65,7 @@ class DRR(nn.Module):
         self.air = torch.where(self.volume <= -800)
         self.soft_tissue = torch.where((-800 < self.volume) & (self.volume <= 350))
         self.bone = torch.where(350 < self.volume)
-        self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
+        self.bone_attenuation_multiplier = bone_attenuation_multiplier
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
@@ -104,6 +104,8 @@ def forward(
     bone_attenuation_multiplier: float = None,  # Contrast ratio of bone to soft tissue
 ):
     """Generate DRR with rotational and translational parameters."""
+    if not hasattr(self, "density"):
+        self.set_bone_attenuation_multiplier(self.bone_attenuation_multiplier)
     if bone_attenuation_multiplier is not None:
         self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
 
