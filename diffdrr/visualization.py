@@ -129,7 +129,7 @@ from .drr import DRR
 # %% ../notebooks/api/04_visualization.ipynb 10
 def drr_to_mesh(
     drr: DRR,
-    threshold: float = 0.2,  # Min value for marching cubes
+    threshold: float = 300,  # Min value for marching cubes (Hounsfield units)
     verbose: bool = True,  # Display progress bars for mesh processing steps
 ):
     """
