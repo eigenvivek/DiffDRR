@@ -32,6 +32,7 @@ class Detector(torch.nn.Module):
         dely: float,  # Pixel spacing in the Y-direction
         n_subsample: int | None = None,  # Number of target points to randomly sample
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
+        mode: str = "perspective",  # Either `perspective` or `orthographic`
     ):
         super().__init__()
         self.sdr = sdr
@@ -43,6 +44,11 @@ class Detector(torch.nn.Module):
         if self.n_subsample is not None:
             self.subsamples = []
         self.reverse_x_axis = reverse_x_axis
+        if mode not in ["perspective", "orthographic"]:
+            raise ValueError(
+                f"mode must be 'perspective' or 'orthographic', not {mode}"
+            )
+        self.mode = mode
 
         # Initialize the source and detector plane in default positions (along the x-axis)
         source, target = self._initialize_carm()
@@ -54,7 +60,10 @@ class Detector(torch.nn.Module):
 def _initialize_carm(self: Detector):
     """Initialize the default position for the source and detector plane."""
     # Initialize the source on the x-axis
-    source = torch.tensor([[self.sdr, 0.0, 0.0]])
+    if self.mode == "perspective":
+        source = torch.tensor([[self.sdr, 0.0, 0.0]])
+    else:
+        source = torch.tensor([[1e6, 0.0, 0.0]])
 
     # Initialize the center of the detector plane on the negative x-axis
     center = torch.tensor([[-self.sdr, 0.0, 0.0]])

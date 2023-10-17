@@ -34,6 +34,7 @@ class DRR(nn.Module):
         patch_size: int
         | None = None,  # If the entire DRR can't fit in memory, render patches of the DRR in series
         bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
+        mode: str = "perspective",  # Either `perspective` or `orthographic`
     ):
         super().__init__()
 
@@ -51,6 +52,7 @@ class DRR(nn.Module):
             dely,
             n_subsample=n_subsample,
             reverse_x_axis=reverse_x_axis,
+            mode=mode,
         )
 
         # Initialize the volume
