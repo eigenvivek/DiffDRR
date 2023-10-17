@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 # %% auto 0
-__all__ = ['NormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d']
+__all__ = ['NormalizedCrossCorrelation2d', 'MultiscaleNormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d']
 
 # %% ../notebooks/api/05_metrics.ipynb 4
 class NormalizedCrossCorrelation2d(torch.nn.Module):
@@ -28,6 +28,26 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
         score = torch.einsum("b...,b...->b", x1, x2)
         score /= c * h * w
         return score
+
+
+class MultiscaleNormalizedCrossCorrelation2d(torch.nn.Module):
+    """Compute Normalized Cross Correlation between two batches of images at multiple scales."""
+
+    def __init__(self, patch_sizes=[None], patch_weights=[1.0]):
+        super().__init__()
+        self.norm = torch.nn.InstanceNorm2d(num_features=1)
+
+        assert len(patch_sizes) == len(patch_weights), "Each scale must have a weight"
+        self.nccs = [
+            NormalizedCrossCorrelation2d(patch_size) for patch_size in patch_sizes
+        ]
+        self.patch_weights = patch_weights
+
+    def forward(self, x1, x2):
+        scores = []
+        for weight, ncc in zip(self.patch_weights, self.nccs):
+            scores.append(weight * ncc(x1, x2))
+        return torch.stack(scores, dim=0).sum(dim=0)
 
 # %% ../notebooks/api/05_metrics.ipynb 5
 from einops import rearrange
