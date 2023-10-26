@@ -13,9 +13,9 @@ __all__ = ['NormalizedCrossCorrelation2d', 'MultiscaleNormalizedCrossCorrelation
 class NormalizedCrossCorrelation2d(torch.nn.Module):
     """Compute Normalized Cross Correlation between two batches of images."""
 
-    def __init__(self, patch_size=None):
+    def __init__(self, patch_size=None, eps=1e-5):
         super().__init__()
-        self.norm = torch.nn.InstanceNorm2d(num_features=1)
+        self.norm = torch.nn.InstanceNorm2d(num_features=1, eps=eps)
         self.patch_size = patch_size
 
     def forward(self, x1, x2):
@@ -33,9 +33,9 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
 class MultiscaleNormalizedCrossCorrelation2d(torch.nn.Module):
     """Compute Normalized Cross Correlation between two batches of images at multiple scales."""
 
-    def __init__(self, patch_sizes=[None], patch_weights=[1.0]):
+    def __init__(self, patch_sizes=[None], patch_weights=[1.0], eps=1e-5):
         super().__init__()
-        self.norm = torch.nn.InstanceNorm2d(num_features=1)
+        self.norm = torch.nn.InstanceNorm2d(num_features=1, eps=eps)
 
         assert len(patch_sizes) == len(patch_weights), "Each scale must have a weight"
         self.nccs = [
@@ -61,8 +61,8 @@ def to_patches(x, patch_size):
 class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
     """Compute Normalized Cross Correlation between the image gradients of two batches of images."""
 
-    def __init__(self, patch_size=None, sigma=1.0):
-        super().__init__(patch_size)
+    def __init__(self, patch_size=None, sigma=1.0, **kwargs):
+        super().__init__(patch_size, **kwargs)
         self.sobel = Sobel(sigma)
 
     def forward(self, x1, x2):
