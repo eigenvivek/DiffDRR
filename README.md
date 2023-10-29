@@ -18,12 +18,6 @@ DiffDRR
 
 Most importantly, `DiffDRR` implements DRR synthesis as a PyTorch module, making it interoperable in deep learning pipelines.
 
-- [Installation Guide](#installation-guide)
-- [Usage](#usage)
-- [Example: Rigid 2D-to-3D registration](#application-6-dof-slice-to-volume-registration)
-- [How does `DiffDRR` work?](#how-does-diffdrr-work)
-- [Citing `DiffDRR`](#citing-diffdrr)
-
 ## Installation Guide
 
 To install `DiffDRR` from PyPI:
@@ -36,29 +30,6 @@ pip install diffdrr
 conda install pytorch3d -c pytorch3d
 ```
 should work perfectly well. Otherwise, see PyTorch3D's [installation guide](https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md).
-
-### Development (optional)
-
-`DiffDRR` source code, docs, and CI are all built using
-[`nbdev`](https://nbdev.fast.ai/). To get set up with `nbdev`, install
-the following
-
-``` zsh
-mamba install jupyterlab nbdev -c fastai -c conda-forge 
-nbdev_install_quarto  # To build docs
-nbdev_install_hooks  # Make notebooks git-friendly
-```
-
-Running `nbdev_help` will give you the full list of options. The most
-important ones are
-
-``` zsh
-nbdev_preview  # Render docs locally and inspect in browser
-nbdev_prepare  # NECESSARY BEFORE PUSHING: builds package, tests notebooks, and builds docs in one step
-```
-
-For more details, follow this [in-depth
-tutorial](https://nbdev.fast.ai/tutorials/tutorial.html).
 
 ## Usage
 
@@ -106,7 +77,7 @@ On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 The full example is available at
 [`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).
 
-## Application: 6-DoF Slice-to-Volume Registration
+## Application: 2D-3D Registration with Gradient Descent
 
 We demonstrate the utility of our auto-differentiable DRR generator by
 solving a 6-DoF registration problem with gradient-based optimization.
@@ -123,6 +94,29 @@ optimization runs like this:
 
 The full example is available at
 [`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
+
+## Development (optional)
+
+`DiffDRR` source code, docs, and CI are all built using
+[`nbdev`](https://nbdev.fast.ai/). To get set up with `nbdev`, install
+the following
+
+``` zsh
+mamba install jupyterlab nbdev -c fastai -c conda-forge 
+nbdev_install_quarto  # To build docs
+nbdev_install_hooks  # Make notebooks git-friendly
+```
+
+Running `nbdev_help` will give you the full list of options. The most
+important ones are
+
+``` zsh
+nbdev_preview  # Render docs locally and inspect in browser
+nbdev_prepare  # NECESSARY BEFORE PUSHING: builds package, tests notebooks, and builds docs in one step
+```
+
+For more details, follow this [in-depth
+tutorial](https://nbdev.fast.ai/tutorials/tutorial.html).
 
 ## How does `DiffDRR` work?
 
