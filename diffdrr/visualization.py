@@ -184,7 +184,7 @@ def img_to_mesh(drr: DRR, rotations, translations, parameterization, convention=
     can be applied to the detector mesh.
     """
     # Turn DRR img into a texture that can be applied to a mesh
-    img = drr(rotations, translations, parameterization)
+    img = drr(rotations, translations, parameterization, convention)
     img = img.detach().cpu().squeeze().numpy()
     img = (img - img.min()) / (img.max() - img.min())
     img = (255.0 * img).astype(np.uint8)
