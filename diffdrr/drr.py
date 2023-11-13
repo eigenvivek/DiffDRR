@@ -28,6 +28,8 @@ class DRR(nn.Module):
         width: int
         | None = None,  # Width of the rendered DRR (if not provided, set to `height`)
         dely: float | None = None,  # Y-axis pixel size (if not provided, set to `delx`)
+        x0: float = 0.0,  # Principal point X-offset
+        y0: float = 0.0,  # Principal point Y-offset
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
@@ -49,6 +51,8 @@ class DRR(nn.Module):
             width,
             delx,
             dely,
+            x0,
+            y0,
             n_subsample=n_subsample,
             reverse_x_axis=reverse_x_axis,
         )
