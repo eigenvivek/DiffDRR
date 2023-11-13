@@ -30,6 +30,8 @@ class Detector(torch.nn.Module):
         width: int,  # Width of the X-ray detector
         delx: float,  # Pixel spacing in the X-direction
         dely: float,  # Pixel spacing in the Y-direction
+        x0: float,  # Principal point X-offset
+        y0: float,  # Principal point Y-offset
         n_subsample: int | None = None,  # Number of target points to randomly sample
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
@@ -39,6 +41,8 @@ class Detector(torch.nn.Module):
         self.width = width
         self.delx = delx
         self.dely = dely
+        self.x0 = x0
+        self.y0 = y0
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
             self.subsamples = []
@@ -78,6 +82,10 @@ def _initialize_carm(self: Detector):
     # Batch source and target
     source = source.unsqueeze(0)
     target = target.unsqueeze(0)
+
+    # Apply principal point offset
+    target[..., 2] -= self.x0
+    target[..., 1] -= self.y0
 
     if self.n_subsample is not None:
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]

@@ -2,7 +2,8 @@
 
 # %% auto 0
 __all__ = ['rotation_10d_to_quaternion', 'quaternion_to_rotation_10d', 'quaternion_adjugate_to_quaternion',
-           'quaternion_to_quaternion_adjugate', 'convert']
+           'quaternion_to_quaternion_adjugate', 'convert', 'get_focal_length', 'get_principal_point',
+           'parse_intrinsic_matrix']
 
 # %% ../notebooks/api/06_utils.ipynb 4
 import torch
@@ -13,9 +14,9 @@ PARAMETERIZATIONS = [
     "euler_angles",
     "matrix",
     "quaternion",
+    "quaternion_adjugate",
     "rotation_6d",
     "rotation_10d",
-    "quaternion_adjugate",
 ]
 
 # %% ../notebooks/api/06_utils.ipynb 6
@@ -153,3 +154,37 @@ def _convert_from_rotation_matrix(matrix, parameterization, convention=None):
             f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
         )
     return rotation
+
+# %% ../notebooks/api/06_utils.ipynb 13
+def get_focal_length(
+    intrinsic,  # Intrinsic matrix (3 x 3 tensor)
+    delx: float,  # X-direction spacing (in units length)
+    dely: float,  # Y-direction spacing (in units length)
+) -> float:  # Focal length (in units length)
+    fx = intrinsic[0, 0]
+    fy = intrinsic[1, 1]
+    return abs((fx * delx) + (fy * delx)).item() / 2.0
+
+# %% ../notebooks/api/06_utils.ipynb 14
+def get_principal_point(
+    intrinsic,  # Intrinsic matrix (3 x 3 tensor)
+    height: int,  # Y-direction length
+    width: int,  # X-direction length
+    delx: float,  # X-direction spacing (in units length)
+    dely: float,  # Y-direction spacing (in units length)
+):
+    x0 = delx * (width / 2 - intrinsic[0, 2])
+    y0 = dely * (height / 2 - intrinsic[1, 2])
+    return x0.item(), y0.item()
+
+# %% ../notebooks/api/06_utils.ipynb 15
+def parse_intrinsic_matrix(
+    intrinsic,  # Intrinsic matrix (3 x 3 tensor)
+    height: int,  # Y-direction length
+    width: int,  # X-direction length
+    delx: float,  # X-direction spacing (in units length)
+    dely: float,  # Y-direction spacing (in units length)
+):
+    focal_length = get_focal_length(intrinsic, delx, dely)
+    x0, y0 = get_principal_point(intrinsic, height, width, delx, dely)
+    return focal_length, x0, y0
