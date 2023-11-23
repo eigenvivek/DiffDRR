@@ -17,6 +17,7 @@ PARAMETERIZATIONS = [
     "quaternion_adjugate",
     "rotation_6d",
     "rotation_10d",
+    "so3_log_map",
 ]
 
 # %% ../notebooks/api/06_utils.ipynb 6
@@ -97,10 +98,11 @@ from pytorch3d.transforms import (
     euler_angles_to_matrix,
     quaternion_to_matrix,
     rotation_6d_to_matrix,
+    so3_exp_map,
 )
 
 
-def _convert_to_rotation_matrix(rotation, parameterization, convention):
+def _convert_to_rotation_matrix(rotation, parameterization, convention, **kwargs):
     """Convert any parameterization of a rotation to a matrix representation."""
     if parameterization == "axis_angle":
         R = axis_angle_to_matrix(rotation)
@@ -116,6 +118,8 @@ def _convert_to_rotation_matrix(rotation, parameterization, convention):
         R = quaternion_to_matrix(rotation_10d_to_quaternion(rotation))
     elif parameterization == "quaternion_adjugate":
         R = quaternion_to_matrix(quaternion_adjugate_to_quaternion(rotation))
+    elif parameterization == "so3_log_map":
+        R = so3_exp_map(R, **kwargs)
     else:
         raise ValueError(
             f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
@@ -128,10 +132,11 @@ from pytorch3d.transforms import (
     matrix_to_euler_angles,
     matrix_to_quaternion,
     matrix_to_rotation_6d,
+    so3_log_map,
 )
 
 
-def _convert_from_rotation_matrix(matrix, parameterization, convention=None):
+def _convert_from_rotation_matrix(matrix, parameterization, convention=None, **kwargs):
     "Convert a rotation matrix to any allowed parameterization."
     if parameterization == "axis_angle":
         rotation = matrix_to_axis_angle(matrix)
@@ -149,6 +154,8 @@ def _convert_from_rotation_matrix(matrix, parameterization, convention=None):
     elif parameterization == "quaternion_adjugate":
         q = _convert_from_rotation_matrix(matrix, "quaternion")
         rotation = quaternion_to_quaternion_adjugate(q)
+    elif parameterization == "so3_log_map":
+        rotation = so3_log_map(R, **kwargs)
     else:
         raise ValueError(
             f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
