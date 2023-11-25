@@ -142,11 +142,11 @@ def drr_to_mesh(
 
     If using `method=="surface_nets"`, ensure you have `pyvista>=0.43` and `vtk>=9.3` installed.
 
-    If using `method=="marching_cubes"`, the mesh processing steps are:
+    The mesh processing steps are:
 
     1. Keep only largest connected components
     2. Smooth
-    3. Decimate
+    3. Decimate (if `method=="marching_cubes"`)
     4. Fill any holes
     5. Clean (remove any redundant vertices/edges)
     """
@@ -165,25 +165,6 @@ def drr_to_mesh(
             method="marching_cubes",
             progress_bar=verbose,
         )
-
-        # Process the mesh
-        mesh.extract_largest(inplace=True, progress_bar=verbose)
-        mesh.point_data.clear()
-        mesh.cell_data.clear()
-        mesh.smooth_taubin(
-            n_iter=100,
-            feature_angle=120.0,
-            boundary_smoothing=False,
-            feature_smoothing=False,
-            non_manifold_smoothing=True,
-            normalize_coordinates=True,
-            inplace=True,
-            progress_bar=verbose,
-        )
-        mesh.decimate_pro(0.25, inplace=True, progress_bar=verbose)
-        mesh.fill_holes(100, inplace=True, progress_bar=verbose)
-        mesh.clean(inplace=True, progress_bar=verbose)
-
     elif method == "surface_nets":
         grid.point_data["values"] = (
             drr.volume.cpu().numpy().flatten(order="F") > threshold
@@ -194,13 +175,29 @@ def drr_to_mesh(
             raise AttributeError(
                 f"{e}, ensure you are using pyvista>=0.43 and vtk>=9.3"
             )
-        mesh.clear_cell_data()
-
     else:
         raise ValueError(
             f"method must be `marching_cubes` or `surface_nets`, not {method}"
         )
 
+    # Process the mesh
+    mesh.extract_largest(inplace=True, progress_bar=verbose)
+    mesh.point_data.clear()
+    mesh.cell_data.clear()
+    mesh.smooth_taubin(
+        n_iter=100,
+        feature_angle=120.0,
+        boundary_smoothing=False,
+        feature_smoothing=False,
+        non_manifold_smoothing=True,
+        normalize_coordinates=True,
+        inplace=True,
+        progress_bar=verbose,
+    )
+    if method == "marching_cubes":
+        mesh.decimate_pro(0.25, inplace=True, progress_bar=verbose)
+    mesh.fill_holes(100, inplace=True, progress_bar=verbose)
+    mesh.clean(inplace=True, progress_bar=verbose)
     return mesh
 
 # %% ../notebooks/api/04_visualization.ipynb 11
