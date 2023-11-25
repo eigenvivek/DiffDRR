@@ -130,13 +130,14 @@ from .drr import DRR
 # %% ../notebooks/api/04_visualization.ipynb 10
 def drr_to_mesh(
     drr: DRR,
+    method: str,  # Either `surface_nets` or `marching_cubes`
     threshold: float = 300,  # Min value for marching cubes (Hounsfield units)
     verbose: bool = True,  # Display progress bars for mesh processing steps
 ):
     """
     Convert the CT in a DRR object into a mesh.
 
-    Mesh processing steps:
+    If using marching cubes, mesh processing steps are:
 
     1. Keep only largest connected components
     2. Smooth
@@ -150,35 +151,57 @@ def drr_to_mesh(
         spacing=drr.spacing,
         origin=(0, 0, 0),
     )
-    mesh = grid.contour(
-        isosurfaces=1,
-        scalars=drr.volume.cpu().numpy().flatten(order="F"),
-        rng=[threshold, torch.inf],
-        method="marching_cubes",
-        progress_bar=verbose,
-    )
 
-    # Process the mesh
-    mesh.extract_largest(inplace=True, progress_bar=verbose)
-    mesh.point_data.clear()
-    mesh.cell_data.clear()
-    mesh.smooth_taubin(
-        n_iter=100,
-        feature_angle=120.0,
-        boundary_smoothing=False,
-        feature_smoothing=False,
-        non_manifold_smoothing=True,
-        normalize_coordinates=True,
-        inplace=True,
-        progress_bar=verbose,
-    )
-    mesh.decimate_pro(0.25, inplace=True, progress_bar=verbose)
-    mesh.fill_holes(100, inplace=True, progress_bar=verbose)
-    mesh.clean(inplace=True, progress_bar=verbose)
+    if method == "marching_cubes":
+        mesh = grid.contour(
+            isosurfaces=1,
+            scalars=drr.volume.cpu().numpy().flatten(order="F"),
+            rng=[threshold, torch.inf],
+            method="marching_cubes",
+            progress_bar=verbose,
+        )
+
+        # Process the mesh
+        mesh.extract_largest(inplace=True, progress_bar=verbose)
+        mesh.point_data.clear()
+        mesh.cell_data.clear()
+        mesh.smooth_taubin(
+            n_iter=100,
+            feature_angle=120.0,
+            boundary_smoothing=False,
+            feature_smoothing=False,
+            non_manifold_smoothing=True,
+            normalize_coordinates=True,
+            inplace=True,
+            progress_bar=verbose,
+        )
+        mesh.decimate_pro(0.25, inplace=True, progress_bar=verbose)
+        mesh.fill_holes(100, inplace=True, progress_bar=verbose)
+        mesh.clean(inplace=True, progress_bar=verbose)
+
+    elif method == "surface_nets":
+        grid.point_data["values"] = (
+            drr.volume.cpu().numpy().flatten(order="F") > threshold
+        )
+        try:
+            mesh = grid.contour_labeled(smoothing=True, progress_bar=verbose)
+        except AttributeError as e:
+            raise AttributeError(
+                f"{e}, ensure you are using pyvista>=0.43 and vtk>=9.3"
+            )
+        mesh.clear_cell_data()
+
+    else:
+        raise ValueError(
+            f"method must be `marching_cubes` or `surface_nets`, not {method}"
+        )
+
     return mesh
 
 # %% ../notebooks/api/04_visualization.ipynb 11
-def img_to_mesh(drr: DRR, rotations, translations, parameterization, convention=None):
+def img_to_mesh(
+    drr: DRR, rotations, translations, parameterization, convention=None, **kwargs
+):
     """
     For a given pose (not batched), turn the camera and detector into a mesh.
     Additionally, render the DRR for the pose. Convert into a texture that
@@ -191,10 +214,14 @@ def img_to_mesh(drr: DRR, rotations, translations, parameterization, convention=
     img = (255.0 * img).astype(np.uint8)
     texture = pyvista.numpy_to_texture(img)
 
-    # Make a mesh for the source and detector plane
+    # Make a mesh for the camera and the principal ray
     source, target = drr.detector(rotations, translations, parameterization, convention)
-    camera = pyvista.Sphere(radius=10, center=source.squeeze().cpu().numpy())
+    source = source.squeeze().cpu().numpy()
     target = target.reshape(drr.detector.height, drr.detector.width, 3).cpu().numpy()
+    principal_ray = pyvista.Line(source, target.mean(axis=0).mean(axis=0))
+    camera = _make_camera_frustum_mesh(source, target, size=0.125)
+
+    # Make a mesh for the detector plane
     detector = pyvista.StructuredGrid(
         target[..., 0],
         target[..., 1],
@@ -209,4 +236,29 @@ def img_to_mesh(drr: DRR, rotations, translations, parameterization, convention=
         inplace=True,
     )
 
-    return camera, detector, texture
+    return camera, detector, texture, principal_ray
+
+# %% ../notebooks/api/04_visualization.ipynb 12
+import numpy as np
+
+
+def _make_camera_frustum_mesh(source, target, size=0.125):
+    vertices = np.stack(
+        [
+            source + size * (target[0, 0] - source),
+            source + size * (target[-1, 0] - source),
+            source + size * (target[-1, -1] - source),
+            source + size * (target[0, -1] - source),
+            source,
+        ]
+    )
+    faces = np.hstack(
+        [
+            [4, 0, 1, 2, 3],
+            [3, 0, 1, 4],
+            [3, 1, 2, 4],
+            [3, 0, 3, 4],
+            [3, 2, 3, 4],
+        ]
+    )
+    return pyvista.PolyData(vertices, faces)
