@@ -124,8 +124,11 @@ def animate(
 
 # %% ../notebooks/api/04_visualization.ipynb 9
 import pyvista
+import vtk
 
 from .drr import DRR
+
+vtk.vtkLogger.SetStderrVerbosity(vtk.vtkLogger.ConvertToVerbosity(-1))
 
 # %% ../notebooks/api/04_visualization.ipynb 10
 def drr_to_mesh(
