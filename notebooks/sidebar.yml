@@ -14,6 +14,7 @@ website:
       - section: tutorials
         contents:
           - tutorials/introduction.ipynb
+          - tutorials/visualization.ipynb
           - tutorials/metamorphasis.ipynb
           - tutorials/metrics.ipynb
           - tutorials/optimizers.ipynb
