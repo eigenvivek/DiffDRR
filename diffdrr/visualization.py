@@ -140,7 +140,9 @@ def drr_to_mesh(
     """
     Convert the CT in a DRR object into a mesh.
 
-    If using marching cubes, mesh processing steps are:
+    If using `method=="surface_nets"`, ensure you have `pyvista>=0.43` and `vtk>=9.3` installed.
+
+    If using `method=="marching_cubes"`, the mesh processing steps are:
 
     1. Keep only largest connected components
     2. Smooth
