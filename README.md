@@ -95,7 +95,7 @@ optimization runs like this:
 The full example is available at
 [`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
 
-## Development (optional)
+## Development
 
 `DiffDRR` source code, docs, and CI are all built using
 [`nbdev`](https://nbdev.fast.ai/). To get set up with `nbdev`, install
@@ -112,7 +112,9 @@ important ones are
 
 ``` zsh
 nbdev_preview  # Render docs locally and inspect in browser
-nbdev_prepare  # NECESSARY BEFORE PUSHING: builds package, tests notebooks, and builds docs in one step
+nbdev_clean    # NECESSARY BEFORE PUSHING
+nbdev_test     # tests notebooks
+nbdev_export   # builds package and builds docs
 ```
 
 For more details, follow this [in-depth
