@@ -15,8 +15,8 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
 
     def __init__(self, patch_size=None, eps=1e-5):
         super().__init__()
-        self.norm = torch.nn.InstanceNorm2d(num_features=1, eps=eps)
         self.patch_size = patch_size
+        self.eps = eps
 
     def forward(self, x1, x2):
         if self.patch_size is not None:
@@ -29,13 +29,18 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
         score /= c * h * w
         return score
 
+    def norm(self, x):
+        mu = x.mean(dim=[-1, -2], keepdim=True)
+        var = x.var(dim=[-1, -2], keepdim=True, correction=0) + self.eps
+        std = var.sqrt()
+        return (x - mu) / std
+
 
 class MultiscaleNormalizedCrossCorrelation2d(torch.nn.Module):
     """Compute Normalized Cross Correlation between two batches of images at multiple scales."""
 
     def __init__(self, patch_sizes=[None], patch_weights=[1.0], eps=1e-5):
         super().__init__()
-        self.norm = torch.nn.InstanceNorm2d(num_features=1, eps=eps)
 
         assert len(patch_sizes) == len(patch_weights), "Each scale must have a weight"
         self.nccs = [
