@@ -119,7 +119,7 @@ def _convert_to_rotation_matrix(rotation, parameterization, convention, **kwargs
     elif parameterization == "quaternion_adjugate":
         R = quaternion_to_matrix(quaternion_adjugate_to_quaternion(rotation))
     elif parameterization == "so3_log_map":
-        R = so3_exp_map(R, **kwargs)
+        R = so3_exp_map(rotation, **kwargs)
     else:
         raise ValueError(
             f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
@@ -155,7 +155,7 @@ def _convert_from_rotation_matrix(matrix, parameterization, convention=None, **k
         q = _convert_from_rotation_matrix(matrix, "quaternion")
         rotation = quaternion_to_quaternion_adjugate(q)
     elif parameterization == "so3_log_map":
-        rotation = so3_log_map(R, **kwargs)
+        rotation = so3_log_map(matrix, **kwargs)
     else:
         raise ValueError(
             f"parameterization must be in {PARAMETERIZATIONS}, not {parameterization}"
