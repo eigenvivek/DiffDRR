@@ -17,4 +17,5 @@ dependencies:
   - imageio
   - fastcore
   - pip:
-    - 'pyvista[all]'
+    - pyvista
+    - vtk
