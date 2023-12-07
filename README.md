@@ -81,10 +81,10 @@ On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 The full example is available at
 [`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).
 
-## Application: 2D-3D Registration with Gradient Descent
+## 2D/3D Registration
 
 We demonstrate the utility of our auto-differentiable DRR generator by
-solving a 6-DoF registration problem with gradient-based optimization.
+solving the 2D/3D registration problem with gradient-based optimization.
 Here, we generate two DRRs:
 
 1.  A fixed DRR from a set of ground truth parameters
