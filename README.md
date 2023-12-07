@@ -20,7 +20,7 @@ Most importantly, `DiffDRR` implements DRR synthesis as a PyTorch module, making
 
 Below is a comparison of `DiffDRR` to a real X-ray (X-rays and CTs from the [DeepFluoro dataset](https://github.com/rg2/DeepFluoroLabeling-IPCAI2020)):
 
-![`DiffDRR` rendered from the same camera pose as a real X-ray.](index_files/deepfluoro.png)
+![`DiffDRR` rendered from the same camera pose as a real X-ray.](notebooks/index_files/deepfluoro.png)
 
 ## Installation Guide
 
