@@ -98,8 +98,8 @@ from pytorch3d.transforms import (
     euler_angles_to_matrix,
     quaternion_to_matrix,
     rotation_6d_to_matrix,
-    so3_exp_map,
 )
+from pytorchse3.so3 import so3_exp_map
 
 
 def _convert_to_rotation_matrix(rotation, parameterization, convention, **kwargs):
@@ -132,8 +132,8 @@ from pytorch3d.transforms import (
     matrix_to_euler_angles,
     matrix_to_quaternion,
     matrix_to_rotation_6d,
-    so3_log_map,
 )
+from pytorchse3.so3 import so3_log_map
 
 
 def _convert_from_rotation_matrix(matrix, parameterization, convention=None, **kwargs):

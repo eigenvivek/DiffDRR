@@ -19,3 +19,4 @@ dependencies:
   - pip:
     - pyvista
     - vtk
+    - pytorchse3
