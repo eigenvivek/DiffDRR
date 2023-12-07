@@ -1,3 +1,5 @@
+🆕 *For examples running `DiffDRR` on real data, please check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose).*
+
 DiffDRR
 ================
 
