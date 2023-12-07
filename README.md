@@ -10,8 +10,6 @@ DiffDRR
 [![Docs](https://github.com/eigenvivek/DiffDRR/actions/workflows/deploy.yaml/badge.svg)](https://vivekg.dev/DiffDRR/)
 [![Code style: black](https://img.shields.io/badge/Code%20style-black-black.svg)](https://github.com/psf/black)
 
-![deepfluoro](https://github.com/eigenvivek/DiffDRR/blob/3bfad83f7c82ef5dc3d3707751e6c1e9a2701886/notebooks/index_files/%E2%80%8Edeepfluoro.png)
-
 `DiffDRR` is a PyTorch-based digitally reconstructed radiograph (DRR) generator that provides
 
 1. Auto-differentiable DRR syntheisis
@@ -19,6 +17,10 @@ DiffDRR
 3. A pure Python implementation
 
 Most importantly, `DiffDRR` implements DRR synthesis as a PyTorch module, making it interoperable in deep learning pipelines.
+
+Below is a comparison of `DiffDRR` to a real X-ray (X-rays and CTs from the [DeepFluoro dataset](https://github.com/rg2/DeepFluoroLabeling-IPCAI2020)):
+
+![`DiffDRR` rendered from the same camera pose as a real X-ray.](index_files/deepfluoro.png)
 
 ## Installation Guide
 
