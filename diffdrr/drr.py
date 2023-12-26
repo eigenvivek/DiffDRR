@@ -149,7 +149,29 @@ def set_bone_attenuation_multiplier(self: DRR, bone_attenuation_multiplier: floa
     self.density /= self.density.max()
     self.bone_attenuation_multiplier = bone_attenuation_multiplier
 
-# %% ../notebooks/api/00_drr.ipynb 13
+# %% ../notebooks/api/00_drr.ipynb 12
+@patch
+def set_intrinsics(
+    self: DRR,
+    sdr: float = None,
+    delx: float = None,
+    dely: float = None,
+    x0: float = None,
+    y0: float = None,
+):
+    self.detector = Detector(
+        sdr if sdr is not None else self.detector.sdr,
+        self.detector.height,
+        self.detector.width,
+        delx if delx is not None else self.detector.delx,
+        dely if dely is not None else self.detector.dely,
+        x0 if x0 is not None else self.detector.x0,
+        y0 if y0 is not None else self.detector.y0,
+        n_subsample=self.detector.n_subsample,
+        reverse_x_axis=self.detector.reverse_x_axis,
+    )
+
+# %% ../notebooks/api/00_drr.ipynb 14
 from .utils import convert
 
 
