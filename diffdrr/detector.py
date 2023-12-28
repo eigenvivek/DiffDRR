@@ -57,22 +57,29 @@ class Detector(torch.nn.Module):
 @patch
 def _initialize_carm(self: Detector):
     """Initialize the default position for the source and detector plane."""
-    # Initialize the source on the x-axis
-    source = torch.tensor([[self.sdr, 0.0, 0.0]])
+    try:
+        device = self.sdr.device
+    except AttributeError:
+        device = torch.device("cpu")
 
-    # Initialize the center of the detector plane on the negative x-axis
-    center = torch.tensor([[-self.sdr, 0.0, 0.0]])
+    # Initialize the source on the x-axis and the center of the detector plane on the negative x-axis
+    source = torch.tensor([[1.0, 0.0, 0.0]], device=device) * self.sdr
+    center = torch.tensor([[-1.0, 0.0, 0.0]], device=device) * self.sdr
 
     # Use the standard basis for the detector plane
-    basis = torch.tensor([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    basis = torch.tensor([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], device=device)
 
     # Construct the detector plane with different offsets for even or odd heights
     h_off = 1.0 if self.height % 2 else 0.5
     w_off = 1.0 if self.width % 2 else 0.5
 
     # Construct equally spaced points along the basis vectors
-    t = (torch.arange(-self.height // 2, self.height // 2) + h_off) * self.delx
-    s = (torch.arange(-self.width // 2, self.width // 2) + w_off) * self.dely
+    t = (
+        torch.arange(-self.height // 2, self.height // 2, device=device) + h_off
+    ) * self.delx
+    s = (
+        torch.arange(-self.width // 2, self.width // 2, device=device) + w_off
+    ) * self.dely
     if self.reverse_x_axis:
         s = -s
     coefs = torch.cartesian_prod(t, s).reshape(-1, 2)
