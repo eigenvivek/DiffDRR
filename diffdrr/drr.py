@@ -169,7 +169,7 @@ def set_intrinsics(
         y0 if y0 is not None else self.detector.y0,
         n_subsample=self.detector.n_subsample,
         reverse_x_axis=self.detector.reverse_x_axis,
-    )
+    ).to(self.volume)
 
 # %% ../notebooks/api/00_drr.ipynb 14
 from .utils import convert
