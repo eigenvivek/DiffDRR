@@ -92,9 +92,8 @@ def reshape_subsampled_drr(
     return drr
 
 # %% ../notebooks/api/00_drr.ipynb 10
-from pytorch3d.transforms import Transform3d
-
 from .detector import make_xrays
+from .utils import Transform3d
 
 
 @patch

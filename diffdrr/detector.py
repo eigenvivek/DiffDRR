@@ -10,16 +10,7 @@ from torch.nn.functional import normalize
 # %% auto 0
 __all__ = ['Detector', 'diffdrr_to_deepdrr']
 
-# %% ../notebooks/api/02_detector.ipynb 4
-try:
-    import pytorch3d
-except ModuleNotFoundError:
-    install = "https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md"
-    raise ModuleNotFoundError(
-        f"PyTorch3D is not installed, which is required to parameterize camera poses. See installation instructions here: {install}"
-    )
-
-# %% ../notebooks/api/02_detector.ipynb 6
+# %% ../notebooks/api/02_detector.ipynb 5
 class Detector(torch.nn.Module):
     """Construct a 6 DoF X-ray detector system. This model is based on a C-Arm."""
 
@@ -53,7 +44,7 @@ class Detector(torch.nn.Module):
         self.register_buffer("source", source)
         self.register_buffer("target", target)
 
-# %% ../notebooks/api/02_detector.ipynb 7
+# %% ../notebooks/api/02_detector.ipynb 6
 @patch
 def _initialize_carm(self: Detector):
     """Initialize the default position for the source and detector plane."""
@@ -100,10 +91,8 @@ def _initialize_carm(self: Detector):
         self.subsamples.append(sample.tolist())
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 8
-from pytorch3d.transforms import Transform3d
-
-from .utils import convert
+# %% ../notebooks/api/02_detector.ipynb 7
+from .utils import Transform3d, convert
 
 
 @patch
@@ -128,13 +117,13 @@ def forward(
     source, target = make_xrays(t, self.source, self.target)
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 9
+# %% ../notebooks/api/02_detector.ipynb 8
 def make_xrays(t: Transform3d, source: torch.Tensor, target: torch.Tensor):
     source = t.transform_points(source)
     target = t.transform_points(target)
     return source, target
 
-# %% ../notebooks/api/02_detector.ipynb 10
+# %% ../notebooks/api/02_detector.ipynb 9
 def diffdrr_to_deepdrr(euler_angles):
     alpha, beta, gamma = euler_angles.unbind(-1)
     return torch.stack([beta, alpha, gamma], dim=1)
