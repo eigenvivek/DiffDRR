@@ -2,13 +2,11 @@ name: diffdrr
 channels:
   - conda-forge
   - pytorch
-  - pytorch3d
   - nvidia
 dependencies:
   - pip
   - pytorch
   - torchvision
-  - pytorch3d
   - einops
   - pydicom
   - matplotlib
@@ -19,4 +17,3 @@ dependencies:
   - pip:
     - pyvista
     - vtk
-    - pytorchse3
