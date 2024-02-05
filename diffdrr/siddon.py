@@ -15,7 +15,7 @@ def siddon_raycast(
     eps: float = 1e-8,
 ):
     """An auto-differentiable implementation of the raycasting algorithm known as Siddon's method."""
-    dims = torch.tensor(volume.shape) + 1
+    dims = torch.tensor(volume.shape).to(source) + 1
     alphas, maxidx = _get_alphas(source, target, spacing, dims, eps)
     alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
     voxels = _get_voxel(alphamid, source, target, volume, spacing, dims, maxidx, eps)
