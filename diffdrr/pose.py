@@ -41,7 +41,7 @@ class RigidTransform(torch.nn.Module):
         return RigidTransform(matrix)
 
     def compose(self, T):
-        matrix = torch.einsum("bij, bjk -> bik", self.matrix, self.matrix)
+        matrix = torch.einsum("bij, bjk -> bik", T.matrix, self.matrix)
         return RigidTransform(matrix)
 
     def convert(self, parameterization, convention=None):
