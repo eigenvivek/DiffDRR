@@ -62,8 +62,8 @@ from scipy.spatial.transform import Rotation
 
 def random_rigid_transform(batch_size):
     """Helper function for testing implementations."""
-    R = torch.from_numpy(Rotation.random(batch_size).as_matrix()).cuda()
-    t = 100 * torch.randn((batch_size, 3)).cuda()
+    R = torch.from_numpy(Rotation.random(batch_size).as_matrix()).to(torch.float32)
+    t = 100 * torch.randn((batch_size, 3))
     return RigidTransform(make_matrix(R, t))
 
 # %% ../notebooks/api/06_pose.ipynb 7
