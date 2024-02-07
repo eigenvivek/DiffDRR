@@ -19,7 +19,7 @@ class RigidTransform(torch.nn.Module):
 
     def __init__(self, matrix):
         super().__init__()
-        if specimen.extrinsic.matrix.dim() == 2:
+        if matrix.dim() == 2:
             matrix = matrix.unsqueeze(0)
         self.register_buffer("matrix", matrix)
 
@@ -39,7 +39,7 @@ class RigidTransform(torch.nn.Module):
         t = self.matrix[..., :3, 3]
         Rinv = R.mT
         tinv = -torch.einsum("bij, bj -> bi", Rinv, t)
-        make_matrix(Rinv, tinv)
+        matrix = make_matrix(Rinv, tinv)
         return RigidTransform(matrix)
 
     def compose(self, T):
