@@ -202,23 +202,24 @@ def drr_to_mesh(
     return mesh
 
 # %% ../notebooks/api/04_visualization.ipynb 11
-def img_to_mesh(
-    drr: DRR, rotations, translations, parameterization, convention=None, **kwargs
-):
+from .pose import RigidTransform
+
+
+def img_to_mesh(drr: DRR, pose: RigidTransform, **kwargs):
     """
     For a given pose (not batched), turn the camera and detector into a mesh.
     Additionally, render the DRR for the pose. Convert into a texture that
     can be applied to the detector mesh.
     """
     # Turn DRR img into a texture that can be applied to a mesh
-    img = drr(rotations, translations, parameterization, convention)
+    img = drr(pose)
     img = img.detach().cpu().squeeze().numpy()
     img = (img - img.min()) / (img.max() - img.min())
     img = (255.0 * img).astype(np.uint8)
     texture = pyvista.numpy_to_texture(img)
 
     # Make a mesh for the camera and the principal ray
-    source, target = drr.detector(rotations, translations, parameterization, convention)
+    source, target = drr.detector(pose)
     source = source.squeeze().cpu().numpy()
     target = target.reshape(drr.detector.height, drr.detector.width, 3).cpu().numpy()
     principal_ray = pyvista.Line(source, target.mean(axis=0).mean(axis=0))
