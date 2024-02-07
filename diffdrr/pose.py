@@ -41,26 +41,26 @@ class RigidTransform(torch.nn.Module):
         return RigidTransform(matrix)
 
     def compose(self, T):
-        matrix = torch.einsum("bij, bjk -> bik", T.matrix, self.matrix)
+        matrix = torch.einsum("bij, bjk -> bik", self.matrix, self.matrix)
         return RigidTransform(matrix)
 
     def convert(self, parameterization, convention=None):
-        translation = T.matrix[..., :3, 3]
+        translation = self.matrix[..., :3, 3]
         if parameterization == "axis_angle":
-            rotation = matrix_to_axis_angle(T.matrix[..., :3, :3])
+            rotation = matrix_to_axis_angle(self.matrix[..., :3, :3])
         elif parameterization == "euler_angles":
-            rotation = matrix_to_euler_angles(T.matrix[..., :3, :3], convention)
+            rotation = matrix_to_euler_angles(self.matrix[..., :3, :3], convention)
         elif parameterization == "matrix":
-            rotation = T.matrix[..., :3, :3]
+            rotation = self.matrix[..., :3, :3]
         elif parameterization == "quaternion":
-            rotation = matrix_to_quaternion(T.matrix[..., :3, :3])
+            rotation = matrix_to_quaternion(self.matrix[..., :3, :3])
         elif parameterization == "quaternion_adjugate":
-            quaternion = matrix_to_quaternion(T.matrix[..., :3, :3])
+            quaternion = matrix_to_quaternion(self.matrix[..., :3, :3])
             rotation = quaternion_to_quaternion_adjugate(quaternion)
         elif parameterization == "rotation_6d":
-            rotation = matrix_to_rotation_6d(T.matrix[..., :3, :3])
+            rotation = matrix_to_rotation_6d(self.matrix[..., :3, :3])
         elif parameterization == "rotation_10d":
-            quaternion = matrix_to_quaternion(T.matrix[..., :3, :3])
+            quaternion = matrix_to_quaternion(self.matrix[..., :3, :3])
             rotation = quaternion_to_rotation_10d(quaternion)
         elif parameterization == "se3_log_map":
             rotation, translation = self.get_se3_log()
