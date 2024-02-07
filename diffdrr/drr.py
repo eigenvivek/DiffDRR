@@ -12,7 +12,7 @@ from .detector import Detector
 from .siddon import siddon_raycast
 
 # %% auto 0
-__all__ = ['DRR', 'Registration']
+__all__ = ['DRR']
 
 # %% ../notebooks/api/00_drr.ipynb 7
 class DRR(nn.Module):
@@ -92,18 +92,16 @@ def reshape_subsampled_drr(
     return drr
 
 # %% ../notebooks/api/00_drr.ipynb 10
-from .detector import make_xrays
-from .utils import Transform3d
+# from diffdrr.se3 import RigidTransform, convert
+from .pose import convert
 
 
 @patch
 def forward(
     self: DRR,
-    rotation: torch.Tensor,
-    translation: torch.Tensor,
-    parameterization: str,
-    convention: str = None,
-    pose: Transform3d = None,  # If you have a preformed pose, can pass it directly
+    *args,  # Some batched representation of SE(3)
+    parameterization: str = None,  # Specifies the representation of the rotation
+    convention: str = None,  # If parameterization is Euler angles, specify convention
     bone_attenuation_multiplier: float = None,  # Contrast ratio of bone to soft tissue
 ):
     """Generate DRR with rotational and translational parameters."""
@@ -112,18 +110,11 @@ def forward(
     if bone_attenuation_multiplier is not None:
         self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
 
-    if pose is None:
-        assert len(rotation) == len(translation)
-        batch_size = len(rotation)
-        source, target = self.detector(
-            rotation=rotation,
-            translation=translation,
-            parameterization=parameterization,
-            convention=convention,
-        )
+    if parameterization is None:
+        pose = args[0]
     else:
-        batch_size = len(pose)
-        source, target = make_xrays(pose, self.detector.source, self.detector.target)
+        pose = convert(*args, parameterization=parameterization, convention=convention)
+    source, target = self.detector(pose)
 
     if self.patch_size is not None:
         n_points = target.shape[1] // self.n_patches
@@ -135,7 +126,7 @@ def forward(
         img = torch.cat(img, dim=1)
     else:
         img = siddon_raycast(source, target, self.density, self.spacing)
-    return self.reshape_transform(img, batch_size=batch_size)
+    return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
 @patch
@@ -169,52 +160,3 @@ def set_intrinsics(
         n_subsample=self.detector.n_subsample,
         reverse_x_axis=self.detector.reverse_x_axis,
     ).to(self.volume)
-
-# %% ../notebooks/api/00_drr.ipynb 14
-from .utils import convert
-
-
-class Registration(nn.Module):
-    """Perform automatic 2D-to-3D registration using differentiable rendering."""
-
-    def __init__(
-        self,
-        drr: DRR,
-        rotation: torch.Tensor,
-        translation: torch.Tensor,
-        parameterization: str,
-        input_convention: str = None,
-        output_convention: str = "ZYX",
-    ):
-        super().__init__()
-        self.drr = drr
-        self.rotation = nn.Parameter(rotation)
-        self.translation = nn.Parameter(translation)
-        self.parameterization = parameterization
-        self.input_convention = input_convention
-        self.output_convention = output_convention
-
-    def forward(self):
-        return self.drr(
-            self.rotation,
-            self.translation,
-            self.parameterization,
-            self.input_convention,
-        )
-
-    def get_rotation(self):
-        return (
-            convert(
-                self.rotation,
-                input_parameterization=self.parameterization,
-                output_parameterization="euler_angles",
-                input_convention=self.input_convention,
-                output_convention=self.output_convention,
-            )
-            .clone()
-            .detach()
-            .cpu()
-        )
-
-    def get_translation(self):
-        return self.translation.clone().detach().cpu()
