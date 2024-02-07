@@ -25,16 +25,14 @@ class DRR(nn.Module):
         sdr: float,  # Source-to-detector radius for the C-arm (half of the source-to-detector distance)
         height: int,  # Height of the rendered DRR
         delx: float,  # X-axis pixel size
-        width: int
-        | None = None,  # Width of the rendered DRR (if not provided, set to `height`)
+        width: int | None = None,  # Width of the rendered DRR (default to `height`)
         dely: float | None = None,  # Y-axis pixel size (if not provided, set to `delx`)
         x0: float = 0.0,  # Principal point X-offset
         y0: float = 0.0,  # Principal point Y-offset
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
-        patch_size: int
-        | None = None,  # If the entire DRR can't fit in memory, render patches of the DRR in series
+        patch_size: int | None = None,  # Render patches of the DRR in series
         bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
     ):
         super().__init__()
