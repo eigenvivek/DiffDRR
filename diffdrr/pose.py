@@ -111,7 +111,9 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
         quaternion = rotation_10d_to_quaternion(rotation)
         return convert(quaternion, translation, parameterization="quaternion")
     elif parameterization == "se3_log_map":
-        matrix = se3_exp_map(args[0]).mT
+        rotation, translation = args
+        params = torch.concat([translation, rotation], axis=-1)
+        matrix = se3_exp_map(params).mT
     else:
         raise ValueError(f"Must be in {PARAMETERIZATIONS}, not {parameterization}")
 
