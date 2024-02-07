@@ -19,6 +19,8 @@ class RigidTransform(torch.nn.Module):
 
     def __init__(self, matrix):
         super().__init__()
+        if specimen.extrinsic.matrix.dim() == 2:
+            matrix = matrix.unsqueeze(0)
         self.register_buffer("matrix", matrix)
 
     def __len__(self):
