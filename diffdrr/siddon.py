@@ -15,8 +15,9 @@ def siddon_raycast(
     eps: float = 1e-8,
 ):
     """An auto-differentiable implementation of the raycasting algorithm known as Siddon's method."""
+    maxidx = volume.numel() - 1
     dims = torch.tensor(volume.shape).to(source) + 1
-    alphas, maxidx = _get_alphas(source, target, spacing, dims, eps)
+    alphas = _get_alphas(source, target, spacing, dims, eps)
     alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
     voxels = _get_voxel(alphamid, source, target, volume, spacing, dims, maxidx, eps)
 
@@ -35,7 +36,6 @@ def _get_alphas(source, target, spacing, dims, eps):
     # Get the CT sizing and spacing parameters
     dx, dy, dz = spacing
     nx, ny, nz = dims
-    maxidx = ((nx - 1) * (ny - 1) * (nz - 1)).int().item() - 1
 
     # Get the alpha at each plane intersection
     sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
@@ -61,7 +61,7 @@ def _get_alphas(source, target, spacing, dims, eps):
     # Drop indices where alphas for all rays are nan
     alphas = torch.sort(alphas, dim=-1).values
     alphas = alphas[..., ~alphas.isnan().all(dim=0).all(dim=0)]
-    return alphas, maxidx
+    return alphas
 
 
 def _get_alpha_minmax(source, target, spacing, dims, eps):
