@@ -54,6 +54,7 @@ class RigidTransform(torch.nn.Module):
             rotation = self.matrix[..., :3, :3]
         elif parameterization == "quaternion":
             rotation = matrix_to_quaternion(self.matrix[..., :3, :3])
+            rotation = standardize_quaternion(rotation)
         elif parameterization == "quaternion_adjugate":
             quaternion = matrix_to_quaternion(self.matrix[..., :3, :3])
             rotation = quaternion_to_quaternion_adjugate(quaternion)
@@ -63,16 +64,15 @@ class RigidTransform(torch.nn.Module):
             quaternion = matrix_to_quaternion(self.matrix[..., :3, :3])
             rotation = quaternion_to_rotation_10d(quaternion)
         elif parameterization == "se3_log_map":
-            rotation, translation = self.get_se3_log()
+            params = self.get_se3_log()
+            rotation = params[..., 3:]
+            translation = params[..., :3]
         else:
             raise ValueError(f"Must be in {PARAMETERIZATIONS}, not {parameterization}")
         return rotation, translation
 
     def get_se3_log(self):
-        params = se3_log_map(self.matrix.mT)
-        rotation = params[..., 3:]
-        translation = params[..., :3]
-        return rotation, translation
+        return se3_log_map(self.matrix.mT)
 
 # %% ../notebooks/api/06_pose.ipynb 5
 def make_matrix(R, t):
