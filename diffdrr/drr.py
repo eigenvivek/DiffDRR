@@ -12,7 +12,7 @@ from .detector import Detector
 from .siddon import siddon_raycast
 
 # %% auto 0
-__all__ = ['DRR']
+__all__ = ['DRR', 'Registration']
 
 # %% ../notebooks/api/00_drr.ipynb 7
 class DRR(nn.Module):
@@ -158,3 +158,36 @@ def set_intrinsics(
         n_subsample=self.detector.n_subsample,
         reverse_x_axis=self.detector.reverse_x_axis,
     ).to(self.volume)
+
+# %% ../notebooks/api/00_drr.ipynb 14
+class Registration(nn.Module):
+    """Perform automatic 2D-to-3D registration using differentiable rendering."""
+
+    def __init__(
+        self,
+        drr: DRR,
+        rotation: torch.Tensor,
+        translation: torch.Tensor,
+        parameterization: str,
+        convention: str = None,
+    ):
+        super().__init__()
+        self.drr = drr
+        self.rotation = nn.Parameter(rotation)
+        self.translation = nn.Parameter(translation)
+        self.parameterization = parameterization
+        self.convention = convention
+
+    def forward(self):
+        return self.drr(
+            self.rotation,
+            self.translation,
+            parameterization=self.parameterization,
+            convention=self.convention,
+        )
+
+    def get_rotation(self):
+        return self.rotation.clone().detach().cpu()
+
+    def get_translation(self):
+        return self.translation.clone().detach().cpu()

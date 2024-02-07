@@ -64,6 +64,7 @@ def animate(
     convention: str = None,
     ground_truth: torch.Tensor | None = None,
     verbose: bool = True,
+    dtype=torch.float32,
     device="cpu",
     **kwargs,  # To pass to imageio.v3.imwrite
 ):
@@ -104,12 +105,19 @@ def animate(
             rotations = (
                 torch.tensor(row[["alpha", "beta", "gamma"]].values)
                 .unsqueeze(0)
-                .to(device)
+                .to(device=device, dtype=dtype)
             )
             translations = (
-                torch.tensor(row[["bx", "by", "bz"]].values).unsqueeze(0).to(device)
+                torch.tensor(row[["bx", "by", "bz"]].values)
+                .unsqueeze(0)
+                .to(device=device, dtype=dtype)
             )
-            itr = drr(rotations, translations, parameterization, convention)
+            itr = drr(
+                rotations,
+                translations,
+                parameterization=parameterization,
+                convention=convention,
+            )
             _ = plot_drr(itr, axs=ax_opt)
             ax_opt.set(xlabel=f"Moving DRR (loss = {row['loss']:.3f})")
             fig.savefig(f"{tmpdir}/{idx}.png")
