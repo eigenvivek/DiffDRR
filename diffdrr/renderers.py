@@ -23,6 +23,8 @@ class Siddon(torch.nn.Module):
     @volume.setter
     def volume(self, volume):
         self._volume = volume
+        self.device = volume.device
+        self.dtype = volume.dtype
 
     @property
     def spacing(self):
@@ -161,6 +163,24 @@ class Trilinear(torch.nn.Module):
         self.mode = mode
         self.device = volume.device
         self.dtype = volume.dtype
+
+    @property
+    def volume(self):
+        return self._volume
+
+    @volume.setter
+    def volume(self, volume):
+        self._volume = volume
+        self.device = volume.device
+        self.dtype = volume.dtype
+
+    @property
+    def spacing(self):
+        return self._spacing
+
+    @spacing.setter
+    def spacing(self, spacing):
+        self._spacing = spacing
 
     @property
     def dims(self):
