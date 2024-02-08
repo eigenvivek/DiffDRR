@@ -92,38 +92,20 @@ def _initialize_carm(self: Detector):
     return source, target
 
 # %% ../notebooks/api/02_detector.ipynb 7
-from .utils import Transform3d, convert
+from .pose import RigidTransform
 
 
 @patch
 def forward(
     self: Detector,
-    rotation: torch.Tensor,  # Some (batched) representation of a rotation
-    translation: torch.Tensor,  # Batch of C-arm translation (bx, by, bz)
-    parameterization: str,  # Specifies the representation of the rotation
-    convention: str,  # If parameterization is Euler angles, specify convention
+    pose: RigidTransform,
 ):
     """Create source and target points for X-rays to trace through the volume."""
-    if parameterization == "euler_angles" and convention is None:
-        raise ValueError(
-            "convention for Euler angles must be specified as a 3 letter combination of [X, Y, Z]"
-        )
-
-    # Convert rotation representation to a rotation matrix, R
-    # Transpose R to convert to right-handed convention for PyTorch3D
-    R = convert(rotation, parameterization, "matrix", input_convention=convention)
-    R = R.transpose(-1, -2)
-    t = Transform3d(device=rotation.device).rotate(R).translate(translation)
-    source, target = make_xrays(t, self.source, self.target)
+    source = pose(self.source)
+    target = pose(self.target)
     return source, target
 
 # %% ../notebooks/api/02_detector.ipynb 8
-def make_xrays(t: Transform3d, source: torch.Tensor, target: torch.Tensor):
-    source = t.transform_points(source)
-    target = t.transform_points(target)
-    return source, target
-
-# %% ../notebooks/api/02_detector.ipynb 9
 def diffdrr_to_deepdrr(euler_angles):
     alpha, beta, gamma = euler_angles.unbind(-1)
     return torch.stack([beta, alpha, gamma], dim=1)
