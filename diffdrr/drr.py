@@ -9,7 +9,7 @@ import torch.nn as nn
 from fastcore.basics import patch
 
 from .detector import Detector
-from .renderers import Siddon
+from .renderers import Siddon, Trilinear
 
 # %% auto 0
 __all__ = ['DRR', 'Registration']
@@ -73,6 +73,8 @@ class DRR(nn.Module):
         # Initialize the renderer
         if renderer == "siddon":
             self.renderer = Siddon(self.volume, self.spacing)
+        elif renderer == "trilinear":
+            self.renderer = Trilinear(self.volume, self.spacing)
         else:
             raise ValueError(f"renderer must be 'siddon', not {renderer}")
 
