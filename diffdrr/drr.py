@@ -29,12 +29,13 @@ class DRR(nn.Module):
         dely: float | None = None,  # Y-axis pixel size (if not provided, set to `delx`)
         x0: float = 0.0,  # Principal point X-offset
         y0: float = 0.0,  # Principal point Y-offset
-        renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
         patch_size: int | None = None,  # Render patches of the DRR in series
         bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
+        renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
+        **renderer_kwargs,  # Kwargs for the renderer
     ):
         super().__init__()
 
@@ -72,9 +73,9 @@ class DRR(nn.Module):
 
         # Initialize the renderer
         if renderer == "siddon":
-            self.renderer = Siddon(self.volume, self.spacing)
+            self.renderer = Siddon(**renderer_kwargs)
         elif renderer == "trilinear":
-            self.renderer = Trilinear(self.volume, self.spacing)
+            self.renderer = Trilinear(**renderer_kwargs)
         else:
             raise ValueError(f"renderer must be 'siddon', not {renderer}")
 
@@ -128,26 +129,23 @@ def forward(
         img = []
         for idx in range(self.n_patches):
             t = target[:, idx * n_points : (idx + 1) * n_points]
-            partial = self.renderer(source, t)
+            partial = self.renderer(self.density, self.spacing, source, t)
             img.append(partial)
         img = torch.cat(img, dim=1)
     else:
-        img = self.renderer(source, target)
+        img = self.renderer(self.density, self.spacing, source, target)
     return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
 @patch
 def set_bone_attenuation_multiplier(self: DRR, bone_attenuation_multiplier: float):
-    density = torch.empty_like(self.volume)
-    density[self.air] = self.volume[self.soft_tissue].min()
-    density[self.soft_tissue] = self.volume[self.soft_tissue]
-    density[self.bone] = self.volume[self.bone] * bone_attenuation_multiplier
-    density -= density.min()
-    density /= density.max()
+    self.density = torch.empty_like(self.volume)
+    self.density[self.air] = self.volume[self.soft_tissue].min()
+    self.density[self.soft_tissue] = self.volume[self.soft_tissue]
+    self.density[self.bone] = self.volume[self.bone] * bone_attenuation_multiplier
+    self.density -= self.density.min()
+    self.density /= self.density.max()
     self.bone_attenuation_multiplier = bone_attenuation_multiplier
-
-    self.renderer.volume = density
-    self.renderer.spacing = self.spacing
 
 # %% ../notebooks/api/00_drr.ipynb 12
 @patch

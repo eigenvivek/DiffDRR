@@ -8,54 +8,24 @@ import torch
 
 # %% ../notebooks/api/01_renderers.ipynb 6
 class Siddon(torch.nn.Module):
-    def __init__(self, volume: torch.Tensor, spacing: torch.Tensor, eps=1e-8):
+    def __init__(self, eps=1e-8):
         super().__init__()
-        self._volume = volume
-        self._spacing = spacing
         self.eps = eps
-        self.device = volume.device
-        self.dtype = volume.dtype
 
-    @property
-    def volume(self):
-        return self._volume
+    def dims(self, volume):
+        return torch.tensor(volume.shape).to(volume) + 1
 
-    @volume.setter
-    def volume(self, volume):
-        self._volume = volume
-        self.device = volume.device
-        self.dtype = volume.dtype
+    def maxidx(self, volume):
+        return volume.numel() - 1
 
-    @property
-    def spacing(self):
-        return self._spacing
+    def forward(self, volume, spacing, source, target):
+        dims = self.dims(volume)
+        maxidx = self.maxidx(volume)
 
-    @spacing.setter
-    def spacing(self, spacing):
-        self._spacing = spacing
-
-    @property
-    def dims(self):
-        return (
-            torch.tensor(self._volume.shape, device=self.device, dtype=self.dtype) + 1
-        )
-
-    @property
-    def maxidx(self):
-        return self._volume.numel() - 1
-
-    def forward(self, source, target):
-        alphas = _get_alphas(source, target, self._spacing, self.dims, self.eps)
+        alphas = _get_alphas(source, target, spacing, dims, self.eps)
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
         voxels = _get_voxel(
-            alphamid,
-            source,
-            target,
-            self._volume,
-            self._spacing,
-            self.dims,
-            self.maxidx,
-            self.eps,
+            alphamid, source, target, volume, spacing, dims, maxidx, self.eps
         )
 
         # Step length for alphas out of range will be nan
@@ -145,8 +115,6 @@ from torch.nn.functional import grid_sample
 class Trilinear(torch.nn.Module):
     def __init__(
         self,
-        volume: torch.Tensor,
-        spacing: torch.Tensor,
         n_points=100,
         near=0.0,
         far=1.0,
@@ -154,56 +122,30 @@ class Trilinear(torch.nn.Module):
         mode="bilinear",
     ):
         super().__init__()
-        self.volume = volume
-        self.spacing = spacing
         self.n_points = n_points
         self.near = near
         self.far = far
         self.eps = eps
         self.mode = mode
-        self.device = volume.device
-        self.dtype = volume.dtype
 
-    @property
-    def volume(self):
-        return self._volume
+    def dims(self, volume):
+        return torch.tensor(volume.shape).to(volume) + 1
 
-    @volume.setter
-    def volume(self, volume):
-        self._volume = volume
-        self.device = volume.device
-        self.dtype = volume.dtype
-
-    @property
-    def spacing(self):
-        return self._spacing
-
-    @spacing.setter
-    def spacing(self, spacing):
-        self._spacing = spacing
-
-    @property
-    def dims(self):
-        return torch.tensor(self.volume.shape, device=self.device, dtype=self.dtype) + 1
-
-    def forward(self, source: torch.Tensor, target: torch.Tensor):
+    def forward(self, volume, spacing, source, target):
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1)
         source = source[:, None, :, None, :]
         target = target[:, None, :, None, :]
 
         # Sample points along the rays and rescale to [-1, 1]
-        # TODO: Make near and far plane instead of 0 and 1
-        alphas = torch.linspace(
-            self.near, self.far, self.n_points, device=self.device, dtype=self.dtype
-        )
+        alphas = torch.linspace(self.near, self.far, self.n_points).to(volume)
         alphas = alphas[None, None, None, :, None]
         rays = source + alphas * (target - source)
-        rays = 2 * rays / (self.spacing * self.dims) - 1  # Rescale to [-1, 1]
+        rays = 2 * rays / (spacing * self.dims(volume)) - 1
 
         # Render the DRR
         batch_size = len(rays)
-        vol = self.volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1)
+        vol = volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1)
         drr = grid_sample(vol, rays, mode=self.mode, align_corners=False)
         drr = drr[:, 0, 0].sum(dim=-1)
         drr *= raylength
