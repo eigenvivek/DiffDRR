@@ -111,6 +111,7 @@ def forward(
     parameterization: str = None,  # Specifies the representation of the rotation
     convention: str = None,  # If parameterization is Euler angles, specify convention
     bone_attenuation_multiplier: float = None,  # Contrast ratio of bone to soft tissue
+    **kwargs,  # Passed to the renderer
 ):
     """Generate DRR with rotational and translational parameters."""
     if not hasattr(self, "density"):
@@ -129,11 +130,11 @@ def forward(
         img = []
         for idx in range(self.n_patches):
             t = target[:, idx * n_points : (idx + 1) * n_points]
-            partial = self.renderer(self.density, self.spacing, source, t)
+            partial = self.renderer(self.density, self.spacing, source, t, **kwargs)
             img.append(partial)
         img = torch.cat(img, dim=1)
     else:
-        img = self.renderer(self.density, self.spacing, source, target)
+        img = self.renderer(self.density, self.spacing, source, target, **kwargs)
     return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
