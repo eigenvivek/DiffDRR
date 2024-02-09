@@ -132,10 +132,6 @@ class Trilinear(torch.nn.Module):
     def forward(
         self, volume, spacing, source, target, n_points=100, align_corners=True
     ):
-        # Reorder array to match torch conventions
-        volume = volume.permute(2, 1, 0)
-        spacing = spacing[[2, 1, 0]]
-
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1)
         source = source[:, None, :, None, :]
@@ -146,6 +142,9 @@ class Trilinear(torch.nn.Module):
         alphas = alphas[None, None, None, :, None]
         rays = source + alphas * (target - source)
         rays = 2 * rays / (spacing * self.dims(volume)) - 1
+
+        # Reorder array to match torch conventions
+        volume = volume.permute(2, 1, 0)
 
         # Render the DRR
         batch_size = len(rays)
