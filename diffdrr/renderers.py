@@ -127,10 +127,10 @@ class Trilinear(torch.nn.Module):
         self.mode = mode
 
     def dims(self, volume):
-        return torch.tensor(volume.shape).to(volume) + 1
+        return torch.tensor(volume.shape).to(volume) - 1
 
     def forward(
-        self, volume, spacing, source, target, n_points=100, align_corners=True
+        self, volume, spacing, source, target, n_points=250, align_corners=True
     ):
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1)
@@ -151,5 +151,5 @@ class Trilinear(torch.nn.Module):
         vol = volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1)
         drr = grid_sample(vol, rays, mode=self.mode, align_corners=align_corners)
         drr = drr[:, 0, 0].sum(dim=-1)
-        drr *= raylength
+        drr *= raylength / n_points
         return drr
