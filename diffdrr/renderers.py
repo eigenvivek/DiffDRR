@@ -115,14 +115,12 @@ from torch.nn.functional import grid_sample
 class Trilinear(torch.nn.Module):
     def __init__(
         self,
-        n_points=100,
         near=0.0,
         far=1.0,
         eps=1e-8,
         mode="bilinear",
     ):
         super().__init__()
-        self.n_points = n_points
         self.near = near
         self.far = far
         self.eps = eps
@@ -131,14 +129,20 @@ class Trilinear(torch.nn.Module):
     def dims(self, volume):
         return torch.tensor(volume.shape).to(volume) + 1
 
-    def forward(self, volume, spacing, source, target):
+    def forward(
+        self, volume, spacing, source, target, n_points=100, align_corners=True
+    ):
+        # Reorder array to match torch conventions
+        volume = volume.permute(2, 1, 0)
+        spacing = spacing[[2, 1, 0]]
+
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1)
         source = source[:, None, :, None, :]
         target = target[:, None, :, None, :]
 
         # Sample points along the rays and rescale to [-1, 1]
-        alphas = torch.linspace(self.near, self.far, self.n_points).to(volume)
+        alphas = torch.linspace(self.near, self.far, n_points).to(volume)
         alphas = alphas[None, None, None, :, None]
         rays = source + alphas * (target - source)
         rays = 2 * rays / (spacing * self.dims(volume)) - 1
@@ -146,7 +150,7 @@ class Trilinear(torch.nn.Module):
         # Render the DRR
         batch_size = len(rays)
         vol = volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1)
-        drr = grid_sample(vol, rays, mode=self.mode, align_corners=False)
+        drr = grid_sample(vol, rays, mode=self.mode, align_corners=align_corners)
         drr = drr[:, 0, 0].sum(dim=-1)
         drr *= raylength
         return drr
