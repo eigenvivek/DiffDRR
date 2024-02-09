@@ -9,7 +9,7 @@ import torch.nn as nn
 from fastcore.basics import patch
 
 from .detector import Detector
-from .siddon import siddon_raycast
+from .renderers import Siddon, Trilinear
 
 # %% auto 0
 __all__ = ['DRR', 'Registration']
@@ -34,6 +34,8 @@ class DRR(nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
         patch_size: int | None = None,  # Render patches of the DRR in series
         bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
+        renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
+        **renderer_kwargs,  # Kwargs for the renderer
     ):
         super().__init__()
 
@@ -69,6 +71,14 @@ class DRR(nn.Module):
         self.bone = torch.where(350 < self.volume)
         self.bone_attenuation_multiplier = bone_attenuation_multiplier
 
+        # Initialize the renderer
+        if renderer == "siddon":
+            self.renderer = Siddon(**renderer_kwargs)
+        elif renderer == "trilinear":
+            self.renderer = Trilinear(**renderer_kwargs)
+        else:
+            raise ValueError(f"renderer must be 'siddon', not {renderer}")
+
     def reshape_transform(self, img, batch_size):
         if self.reshape:
             if self.detector.n_subsample is None:
@@ -101,6 +111,7 @@ def forward(
     parameterization: str = None,  # Specifies the representation of the rotation
     convention: str = None,  # If parameterization is Euler angles, specify convention
     bone_attenuation_multiplier: float = None,  # Contrast ratio of bone to soft tissue
+    **kwargs,  # Passed to the renderer
 ):
     """Generate DRR with rotational and translational parameters."""
     if not hasattr(self, "density"):
@@ -119,11 +130,11 @@ def forward(
         img = []
         for idx in range(self.n_patches):
             t = target[:, idx * n_points : (idx + 1) * n_points]
-            partial = siddon_raycast(source, t, self.density, self.spacing)
+            partial = self.renderer(self.density, self.spacing, source, t, **kwargs)
             img.append(partial)
         img = torch.cat(img, dim=1)
     else:
-        img = siddon_raycast(source, target, self.density, self.spacing)
+        img = self.renderer(self.density, self.spacing, source, target, **kwargs)
     return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
