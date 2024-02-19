@@ -6,8 +6,10 @@ __all__ = ['Siddon', 'Trilinear']
 # %% ../notebooks/api/01_renderers.ipynb 3
 import torch
 
-# %% ../notebooks/api/01_renderers.ipynb 6
+# %% ../notebooks/api/01_renderers.ipynb 7
 class Siddon(torch.nn.Module):
+    """Differentiable X-ray renderer implemented with Siddon's method for exact raytracing."""
+
     def __init__(self, eps=1e-8):
         super().__init__()
         self.eps = eps
@@ -113,6 +115,8 @@ from torch.nn.functional import grid_sample
 
 
 class Trilinear(torch.nn.Module):
+    """Differentiable X-ray renderer implemented with trilinear interpolation."""
+
     def __init__(
         self,
         near=0.0,
