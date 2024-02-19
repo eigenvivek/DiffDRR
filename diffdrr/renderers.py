@@ -117,14 +117,14 @@ class Trilinear(torch.nn.Module):
         self,
         near=0.0,
         far=1.0,
-        eps=1e-8,
         mode="bilinear",
+        eps=1e-8,
     ):
         super().__init__()
         self.near = near
         self.far = far
-        self.eps = eps
         self.mode = mode
+        self.eps = eps
 
     def dims(self, volume):
         return torch.tensor(volume.shape).to(volume) - 1
