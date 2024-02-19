@@ -11,7 +11,7 @@ def get_focal_length(
 ) -> float:  # Focal length (in units length)
     fx = intrinsic[0, 0]
     fy = intrinsic[1, 1]
-    return abs((fx * delx) + (fy * delx)).item() / 2.0
+    return abs((fx * delx) + (fy * dely)).item() / 2.0
 
 # %% ../notebooks/api/07_utils.ipynb 5
 def get_principal_point(
