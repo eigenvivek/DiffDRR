@@ -100,7 +100,6 @@ def reshape_subsampled_drr(
     return drr
 
 # %% ../notebooks/api/00_drr.ipynb 10
-# from diffdrr.se3 import RigidTransform, convert
 from .pose import convert
 
 
@@ -170,7 +169,52 @@ def set_intrinsics(
         reverse_x_axis=self.detector.reverse_x_axis,
     ).to(self.volume)
 
+# %% ../notebooks/api/00_drr.ipynb 13
+from .pose import RigidTransform
+
+
+@patch
+def perspective_projection(
+    self: DRR,
+    pose: RigidTransform,
+    pts: torch.Tensor,
+):
+    extrinsic = (
+        pose.inverse().compose(self.detector.translate).compose(self.detector.flip_xz)
+    )
+    x = extrinsic(pts)
+    x = torch.einsum("ij, bnj -> bni", self.detector.intrinsic, x)
+    z = x[..., -1].unsqueeze(-1).clone()
+    x = x / z
+    return x[..., :2]
+
 # %% ../notebooks/api/00_drr.ipynb 14
+from torch.nn.functional import pad
+
+
+@patch
+def inverse_projection(
+    self: DRR,
+    pose: RigidTransform,
+    pts: torch.Tensor,
+):
+    extrinsic = (
+        self.detector.flip_xz.inverse()
+        .compose(self.detector.translate.inverse())
+        .compose(pose)
+    )
+    x = (
+        -2
+        * self.detector.sdr
+        * torch.einsum(
+            "ij, bnj -> bni",
+            self.detector.intrinsic.inverse(),
+            pad(pts, (0, 1), value=1),  # Convert to homogenous coordinates
+        )
+    )
+    return extrinsic(x)
+
+# %% ../notebooks/api/00_drr.ipynb 16
 class Registration(nn.Module):
     """Perform automatic 2D-to-3D registration using differentiable rendering."""
 

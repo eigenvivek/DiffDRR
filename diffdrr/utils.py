@@ -38,19 +38,22 @@ def parse_intrinsic_matrix(
     return focal_length, x0, y0
 
 # %% ../notebooks/api/07_utils.ipynb 7
+import torch
+
+
 def make_intrinsic_matrix(
     sdr: float,  # Source-to-detector radius (in units length)
+    delx: float,  # X-direction spacing (in units length / pixel)
+    dely: float,  # Y-direction spacing (in units length / pixel)
     height: int,  # Y-direction length (in units pixels)
     width: int,  # X-direction length (in units pixels)
-    delx: float,  # X-direction spacing (in units length)
-    dely: float,  # Y-direction spacing (in units length)
     x0: float = 0.0,  # Principal point x-coordinate (in units length)
     y0: float = 0.0,  # Principal point y-coordinate (in units length)
 ):
     return torch.tensor(
         [
-            [-2 * sdr / delx, 0.0, height / 2 - x0 / delx],
-            [0.0, -2 * sdr / dely, width / 2 - y0 / dely],
+            [2 * sdr / delx, 0.0, x0 / delx - height / 2],
+            [0.0, 2 * sdr / dely, y0 / dely - width / 2],
             [0.0, 0.0, 1.0],
         ]
     )
