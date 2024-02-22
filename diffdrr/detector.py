@@ -11,6 +11,10 @@ from torch.nn.functional import normalize
 __all__ = ['Detector', 'diffdrr_to_deepdrr']
 
 # %% ../notebooks/api/02_detector.ipynb 5
+from .pose import RigidTransform
+from .utils import make_intrinsic_matrix
+
+
 class Detector(torch.nn.Module):
     """Construct a 6 DoF X-ray detector system. This model is based on a C-Arm."""
 
@@ -43,6 +47,46 @@ class Detector(torch.nn.Module):
         source, target = self._initialize_carm()
         self.register_buffer("source", source)
         self.register_buffer("target", target)
+
+        # Anatomy to world coordinates
+        flip_xz = torch.tensor(
+            [
+                [0.0, 0.0, -1.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+        translate = torch.tensor(
+            [
+                [1.0, 0.0, 0.0, -self.sdr],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+        self.register_buffer("_flip_xz", flip_xz)
+        self.register_buffer("_translate", translate)
+
+    @property
+    def intrinsic(self):
+        return make_intrinsic_matrix(
+            self.sdr,
+            self.delx,
+            self.dely,
+            self.height,
+            self.width,
+            self.x0,
+            self.y0,
+        ).to(self._flip_xz)
+
+    @property
+    def flip_xz(self):
+        return RigidTransform(self._flip_xz)
+
+    @property
+    def translate(self):
+        return RigidTransform(self._translate)
 
 # %% ../notebooks/api/02_detector.ipynb 6
 @patch
