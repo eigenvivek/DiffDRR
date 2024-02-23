@@ -221,15 +221,20 @@ def img_to_mesh(drr: DRR, pose: RigidTransform, **kwargs):
     """
     # Turn DRR img into a texture that can be applied to a mesh
     img = drr(pose)
-    img = img.detach().cpu().squeeze().numpy()
+    img = img.cpu().squeeze().detach().numpy()
     img = (img - img.min()) / (img.max() - img.min())
     img = (255.0 * img).astype(np.uint8)
     texture = pyvista.numpy_to_texture(img)
 
     # Make a mesh for the camera and the principal ray
     source, target = drr.detector(pose)
-    source = source.squeeze().cpu().numpy()
-    target = target.reshape(drr.detector.height, drr.detector.width, 3).cpu().numpy()
+    source = source.squeeze().cpu().detach().numpy()
+    target = (
+        target.reshape(drr.detector.height, drr.detector.width, 3)
+        .cpu()
+        .detach()
+        .numpy()
+    )
     principal_ray = pyvista.Line(source, target.mean(axis=0).mean(axis=0))
     camera = _make_camera_frustum_mesh(source, target, size=0.125)
 
