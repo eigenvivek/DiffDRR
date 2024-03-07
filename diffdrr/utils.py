@@ -52,8 +52,8 @@ def make_intrinsic_matrix(
 ):
     return torch.tensor(
         [
-            [2 * sdr / delx, 0.0, x0 / delx - height / 2],
-            [0.0, 2 * sdr / dely, y0 / dely - width / 2],
+            [-2 * sdr / delx, 0.0, -x0 / delx + width / 2],
+            [0.0, -2 * sdr / dely, -y0 / dely + height / 2],
             [0.0, 0.0, 1.0],
         ]
     )
