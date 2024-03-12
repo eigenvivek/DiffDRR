@@ -1,0 +1,510 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "DiffDRR",
+    "section": "",
+    "text": "Auto-differentiable DRR synthesis and optimization in PyTorch\nDiffDRR is a PyTorch-based digitally reconstructed radiograph (DRR) generator that provides\nMost importantly, DiffDRR implements DRR rendering as a PyTorch module, making it interoperable with deep learning pipelines.\nBelow is a comparison of DiffDRR to a real X-ray (X-rays and CTs from the DeepFluoro dataset):",
+    "crumbs": [
+      "DiffDRR"
+    ]
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "DiffDRR",
+    "section": "Install",
+    "text": "Install\nTo install DiffDRR from PyPI:\npip install diffdrr",
+    "crumbs": [
+      "DiffDRR"
+    ]
+  },
+  {
+    "objectID": "index.html#usage",
+    "href": "index.html#usage",
+    "title": "DiffDRR",
+    "section": "Usage",
+    "text": "Usage\nThe following minimal example specifies the geometry of the projectional radiograph imaging system and traces rays through a CT volume:\n\nimport matplotlib.pyplot as plt\nimport torch\n\nfrom diffdrr.drr import DRR\nfrom diffdrr.data import load_example_ct\nfrom diffdrr.visualization import plot_drr\n\n# Read in the volume and get the isocenter\nvolume, spacing = load_example_ct()\nbx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2\n\n# Initialize the DRR module for generating synthetic X-rays\ndevice = \"cuda\" if torch.cuda.is_available() else \"cpu\"\ndrr = DRR(\n    volume,      # The CT volume as a numpy array\n    spacing,     # Voxel dimensions of the CT\n    sdr=300.0,   # Source-to-detector radius (half of the source-to-detector distance)\n    height=200,  # Height of the DRR (if width is not seperately provided, the generated image is square)\n    delx=4.0,    # Pixel spacing (in mm)\n).to(device)\n\n# Set the camera pose with rotation (yaw, pitch, roll) and translation (x, y, z)\nrotation = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)\ntranslation = torch.tensor([[bx, by, bz]], device=device)\n\n# 📸 Also note that DiffDRR can take many representations of SO(3) 📸\n# For example, quaternions, rotation matrix, axis-angle, etc...\nimg = drr(rotation, translation, parameterization=\"euler_angles\", convention=\"ZYX\")\nplot_drr(img, ticks=False)\nplt.show()\n\n\n\n\n\n\n\n\nOn a single NVIDIA RTX 2080 Ti GPU, producing such an image takes\n\n\n\n33.6 ms ± 27.8 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n\n\nThe full example is available at introduction.ipynb.",
+    "crumbs": [
+      "DiffDRR"
+    ]
+  },
+  {
+    "objectID": "index.html#d3d-registration",
+    "href": "index.html#d3d-registration",
+    "title": "DiffDRR",
+    "section": "2D/3D Registration",
+    "text": "2D/3D Registration\nWe demonstrate the utility of our auto-differentiable DRR generator by solving the 2D/3D registration problem with gradient-based optimization. Here, we generate two DRRs:\n\nA fixed DRR from a set of ground truth parameters\nA moving DRR from randomly initialized parameters\n\nTo solve the registration problem, we use gradient descent to maximize an image loss similarity metric between the two DRRs. This produces optimization runs like this:\n\nThe full example is available at optimizers.ipynb.",
+    "crumbs": [
+      "DiffDRR"
+    ]
+  },
+  {
+    "objectID": "index.html#development",
+    "href": "index.html#development",
+    "title": "DiffDRR",
+    "section": "Development",
+    "text": "Development\nDiffDRR source code, docs, and CI are all built using nbdev. To get set up with nbdev, install the following\nmamba install jupyterlab nbdev -c fastai -c conda-forge \nnbdev_install_quarto  # To build docs\nnbdev_install_hooks   # Make notebooks git-friendly\nRunning nbdev_help will give you the full list of options. The most important ones are\nnbdev_preview  # Render docs locally and inspect in browser\nnbdev_clean    # NECESSARY BEFORE PUSHING\nnbdev_test     # tests notebooks\nnbdev_export   # builds package and builds docs\nFor more details, follow this in-depth tutorial.",
+    "crumbs": [
+      "DiffDRR"
+    ]
+  },
+  {
+    "objectID": "index.html#how-does-diffdrr-work",
+    "href": "index.html#how-does-diffdrr-work",
+    "title": "DiffDRR",
+    "section": "How does DiffDRR work?",
+    "text": "How does DiffDRR work?\nDiffDRR reformulates Siddon’s method,1 the canonical algorithm for calculating the radiologic path of an X-ray through a volume, as a series of vectorized tensor operations. This version of the algorithm is easily implemented in tensor algebra libraries like PyTorch to achieve a fast auto-differentiable DRR generator.",
+    "crumbs": [
+      "DiffDRR"
+    ]
+  },
+  {
+    "objectID": "index.html#citing-diffdrr",
+    "href": "index.html#citing-diffdrr",
+    "title": "DiffDRR",
+    "section": "Citing DiffDRR",
+    "text": "Citing DiffDRR\nIf you find DiffDRR useful in your work, please cite our paper (or the freely accessible arXiv version):\n@inproceedings{gopalakrishnanDiffDRR2022,\n    author    = {Gopalakrishnan, Vivek and Golland, Polina},\n    title     = {Fast Auto-Differentiable Digitally Reconstructed Radiographs for Solving Inverse Problems in Intraoperative Imaging},\n    year      = {2022},\n    booktitle = {Clinical Image-based Procedures: 11th International Workshop, CLIP 2022, Held in Conjunction with MICCAI 2022, Singapore, Proceedings},\n    series    = {Lecture Notes in Computer Science},\n    publisher = {Springer},\n    doi       = {https://doi.org/10.1007/978-3-031-23179-7_1},\n}",
+    "crumbs": [
+      "DiffDRR"
+    ]
+  },
+  {
+    "objectID": "index.html#footnotes",
+    "href": "index.html#footnotes",
+    "title": "DiffDRR",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nSiddon RL. Fast calculation of the exact radiological path for a three-dimensional CT array. Medical Physics, 2(12):252–5, 1985.↩︎",
+    "crumbs": [
+      "DiffDRR"
+    ]
+  },
+  {
+    "objectID": "api/detector.html",
+    "href": "api/detector.html",
+    "title": "detector",
+    "section": "",
+    "text": "Tip\n\n\n\nThe Detector is usually initialized in the DRR module and shouldn’t need to be called directly.\n\n\n\nsource\n\nDetector\n\n Detector (sdr:float, height:int, width:int, delx:float, dely:float,\n           x0:float, y0:float, n_subsample:int|None=None,\n           reverse_x_axis:bool=False)\n\nConstruct a 6 DoF X-ray detector system. This model is based on a C-Arm.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nsdr\nfloat\n\nSource-to-detector radius (half of the source-to-detector distance)\n\n\nheight\nint\n\nHeight of the X-ray detector\n\n\nwidth\nint\n\nWidth of the X-ray detector\n\n\ndelx\nfloat\n\nPixel spacing in the X-direction\n\n\ndely\nfloat\n\nPixel spacing in the Y-direction\n\n\nx0\nfloat\n\nPrincipal point X-offset\n\n\ny0\nfloat\n\nPrincipal point Y-offset\n\n\nn_subsample\nint | None\nNone\nNumber of target points to randomly sample\n\n\nreverse_x_axis\nbool\nFalse\nIf pose includes reflection (in E(3) not SE(3)), reverse x-axis\n\n\n\n\nsource\n\n\nDetector.forward\n\n Detector.forward (pose:diffdrr.pose.RigidTransform)\n\nCreate source and target points for X-rays to trace through the volume.\n\nsource\n\n\ndiffdrr_to_deepdrr\n\n diffdrr_to_deepdrr (euler_angles)",
+    "crumbs": [
+      "api",
+      "detector"
+    ]
+  },
+  {
+    "objectID": "api/drr.html",
+    "href": "api/drr.html",
+    "title": "DRR",
+    "section": "",
+    "text": "DRR is a PyTorch module that compues differentiable digitally reconstructed radiographs. The viewing angle for the DRR (known generally in computer graphics as the camera pose) is parameterized by the following parameters:\n\nSDR : Source-to-Detector radius (half of the source-to-detector distance)\n\\(\\mathbf R \\in \\mathrm{SO}(3)\\) : a rotation\n\\(\\mathbf t \\in \\mathbb R^3\\) : a translation\n\n\n\n\n\n\n\nTip\n\n\n\nDiffDRR can take a rotation parameterized in any of the following forms to move the detector plane:\n\naxis_angle\neuler_angles (note: also need to specify the convention for the Euler angles)\nmatrix\nquaternion\nquaternion_adjugate (Hanson and Hanson, 2022)\nrotation_6d (Zhou et al., 2019)\nrotation_10d (Peretroukhin et al., 2021)`\nse3_log_map\n\n\n\nIf using Euler angles, the parameters are\n\nalpha : Azimuthal angle\nbeta : Polar angle\ngamma : Plane rotation angle\nbx : X-dir translation\nby : Y-dir translation\nbz : Z-dir translation\nconvention : Order of angles (e.g., ZYX)\n\n(bx, by, bz) are translational parameters and (alpha, beta, gamma) are rotational parameters. The rotational parameters are detailed in Spherical Coordiantes Tutorial.\n\nsource\n\n\n\n DRR (volume:numpy.ndarray, spacing:numpy.ndarray, sdr:float, height:int,\n      delx:float, width:int|None=None, dely:float|None=None, x0:float=0.0,\n      y0:float=0.0, p_subsample:float|None=None, reshape:bool=True,\n      reverse_x_axis:bool=False, patch_size:int|None=None,\n      bone_attenuation_multiplier:float=1.0, renderer:str='siddon',\n      **renderer_kwargs)\n\nPyTorch module that computes differentiable digitally reconstructed radiographs.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nvolume\nnp.ndarray\n\nCT volume\n\n\nspacing\nnp.ndarray\n\nDimensions of voxels in the CT volume\n\n\nsdr\nfloat\n\nSource-to-detector radius for the C-arm (half of the source-to-detector distance)\n\n\nheight\nint\n\nHeight of the rendered DRR\n\n\ndelx\nfloat\n\nX-axis pixel size\n\n\nwidth\nint | None\nNone\nWidth of the rendered DRR (default to height)\n\n\ndely\nfloat | None\nNone\nY-axis pixel size (if not provided, set to delx)\n\n\nx0\nfloat\n0.0\nPrincipal point X-offset\n\n\ny0\nfloat\n0.0\nPrincipal point Y-offset\n\n\np_subsample\nfloat | None\nNone\nProportion of pixels to randomly subsample\n\n\nreshape\nbool\nTrue\nReturn DRR with shape (b, 1, h, w)\n\n\nreverse_x_axis\nbool\nFalse\nIf pose includes reflection (in E(3) not SE(3)), reverse x-axis\n\n\npatch_size\nint | None\nNone\nRender patches of the DRR in series\n\n\nbone_attenuation_multiplier\nfloat\n1.0\nContrast ratio of bone to soft tissue\n\n\nrenderer\nstr\nsiddon\nRendering backend, either “siddon” or “trilinear”\n\n\nrenderer_kwargs\n\n\n\n\n\n\nThe forward pass of the DRR module generated DRRs from the input CT volume. The pose parameters (i.e., viewing angles) from which the DRRs are generated are passed to the forward call.\n\nsource\n\n\n\n\n DRR.forward (*args, parameterization:str=None, convention:str=None,\n              bone_attenuation_multiplier:float=None, **kwargs)\n\nGenerate DRR with rotational and translational parameters.\n\nsource\n\n\n\n\n DRR.perspective_projection (pose:diffdrr.pose.RigidTransform,\n                             pts:torch.Tensor)\n\n\nsource\n\n\n\n\n DRR.inverse_projection (pose:diffdrr.pose.RigidTransform,\n                         pts:torch.Tensor)",
+    "crumbs": [
+      "api",
+      "DRR"
+    ]
+  },
+  {
+    "objectID": "api/drr.html#drr",
+    "href": "api/drr.html#drr",
+    "title": "DRR",
+    "section": "",
+    "text": "DRR is a PyTorch module that compues differentiable digitally reconstructed radiographs. The viewing angle for the DRR (known generally in computer graphics as the camera pose) is parameterized by the following parameters:\n\nSDR : Source-to-Detector radius (half of the source-to-detector distance)\n\\(\\mathbf R \\in \\mathrm{SO}(3)\\) : a rotation\n\\(\\mathbf t \\in \\mathbb R^3\\) : a translation\n\n\n\n\n\n\n\nTip\n\n\n\nDiffDRR can take a rotation parameterized in any of the following forms to move the detector plane:\n\naxis_angle\neuler_angles (note: also need to specify the convention for the Euler angles)\nmatrix\nquaternion\nquaternion_adjugate (Hanson and Hanson, 2022)\nrotation_6d (Zhou et al., 2019)\nrotation_10d (Peretroukhin et al., 2021)`\nse3_log_map\n\n\n\nIf using Euler angles, the parameters are\n\nalpha : Azimuthal angle\nbeta : Polar angle\ngamma : Plane rotation angle\nbx : X-dir translation\nby : Y-dir translation\nbz : Z-dir translation\nconvention : Order of angles (e.g., ZYX)\n\n(bx, by, bz) are translational parameters and (alpha, beta, gamma) are rotational parameters. The rotational parameters are detailed in Spherical Coordiantes Tutorial.\n\nsource\n\n\n\n DRR (volume:numpy.ndarray, spacing:numpy.ndarray, sdr:float, height:int,\n      delx:float, width:int|None=None, dely:float|None=None, x0:float=0.0,\n      y0:float=0.0, p_subsample:float|None=None, reshape:bool=True,\n      reverse_x_axis:bool=False, patch_size:int|None=None,\n      bone_attenuation_multiplier:float=1.0, renderer:str='siddon',\n      **renderer_kwargs)\n\nPyTorch module that computes differentiable digitally reconstructed radiographs.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nvolume\nnp.ndarray\n\nCT volume\n\n\nspacing\nnp.ndarray\n\nDimensions of voxels in the CT volume\n\n\nsdr\nfloat\n\nSource-to-detector radius for the C-arm (half of the source-to-detector distance)\n\n\nheight\nint\n\nHeight of the rendered DRR\n\n\ndelx\nfloat\n\nX-axis pixel size\n\n\nwidth\nint | None\nNone\nWidth of the rendered DRR (default to height)\n\n\ndely\nfloat | None\nNone\nY-axis pixel size (if not provided, set to delx)\n\n\nx0\nfloat\n0.0\nPrincipal point X-offset\n\n\ny0\nfloat\n0.0\nPrincipal point Y-offset\n\n\np_subsample\nfloat | None\nNone\nProportion of pixels to randomly subsample\n\n\nreshape\nbool\nTrue\nReturn DRR with shape (b, 1, h, w)\n\n\nreverse_x_axis\nbool\nFalse\nIf pose includes reflection (in E(3) not SE(3)), reverse x-axis\n\n\npatch_size\nint | None\nNone\nRender patches of the DRR in series\n\n\nbone_attenuation_multiplier\nfloat\n1.0\nContrast ratio of bone to soft tissue\n\n\nrenderer\nstr\nsiddon\nRendering backend, either “siddon” or “trilinear”\n\n\nrenderer_kwargs\n\n\n\n\n\n\nThe forward pass of the DRR module generated DRRs from the input CT volume. The pose parameters (i.e., viewing angles) from which the DRRs are generated are passed to the forward call.\n\nsource\n\n\n\n\n DRR.forward (*args, parameterization:str=None, convention:str=None,\n              bone_attenuation_multiplier:float=None, **kwargs)\n\nGenerate DRR with rotational and translational parameters.\n\nsource\n\n\n\n\n DRR.perspective_projection (pose:diffdrr.pose.RigidTransform,\n                             pts:torch.Tensor)\n\n\nsource\n\n\n\n\n DRR.inverse_projection (pose:diffdrr.pose.RigidTransform,\n                         pts:torch.Tensor)",
+    "crumbs": [
+      "api",
+      "DRR"
+    ]
+  },
+  {
+    "objectID": "api/drr.html#registration",
+    "href": "api/drr.html#registration",
+    "title": "DRR",
+    "section": "Registration",
+    "text": "Registration\nThe Registration module uses the DRR module to perform differentiable 2D-to-3D registration. Initial guesses for the pose parameters are as stored as nn.Parameters of the module. This allows the pose parameters to be optimized with any PyTorch optimizer. Furthermore, this design choice allows DRR to be used purely as a differentiable renderer.\n\nsource\n\nRegistration\n\n Registration (drr:__main__.DRR, rotation:torch.Tensor,\n               translation:torch.Tensor, parameterization:str,\n               convention:str=None)\n\nPerform automatic 2D-to-3D registration using differentiable rendering.",
+    "crumbs": [
+      "api",
+      "DRR"
+    ]
+  },
+  {
+    "objectID": "api/data.html",
+    "href": "api/data.html",
+    "title": "data",
+    "section": "",
+    "text": "source\n\nread_dicom\n\n read_dicom (dcmdir:pathlib.Path|str)\n\nRead a directory of DICOM files and return the volume and voxel spacings.\n\nsource\n\n\nload_example_ct\n\n load_example_ct ()\n\nLoad an example chest CT for demonstration purposes.",
+    "crumbs": [
+      "api",
+      "data"
+    ]
+  },
+  {
+    "objectID": "api/renderers.html",
+    "href": "api/renderers.html",
+    "title": "renderers",
+    "section": "",
+    "text": "DRRs are generated by modeling the geometry of an idealized projectional radiography system. Let \\(\\mathbf s \\in \\mathbb R^3\\) be the X-ray source and \\(\\mathbf p \\in \\mathbb R^3\\) be a target pixel on the detector plane. Then, \\(R(\\alpha) = \\mathbf s + \\alpha (\\mathbf p - \\mathbf s)\\) is a ray that originates from \\(\\mathbf s\\) (\\(\\alpha=0\\)), passes through the imaged volume, and hits the detector plane at \\(\\mathbf p\\) (\\(\\alpha=1\\)). The proportion of energy attenuation experienced by the X-ray at the time it reaches pixel \\(\\mathbf p\\) is given by the following line integral:\n\\[\\begin{equation}\n    E(R) = \\|\\mathbf p - \\mathbf s\\|_2 \\int_0^1 \\mathbf V \\left( \\mathbf s + \\alpha (\\mathbf p - \\mathbf s) \\right) \\, \\mathrm d\\alpha \\,,\n\\end{equation}\\]\nwhere \\(\\mathbf V : \\mathbb R^3 \\mapsto \\mathbb R\\) is the imaged volume. The units term \\(\\|\\mathbf p - \\mathbf s\\|_2\\) serves to cancel out the units of \\(\\mathbf V(\\cdot)\\), reciprocal length, such that the final proportion \\(E\\) is unitless. For DRR synthesis, \\(\\mathbf V\\) is approximated by a discrete 3D CT volume, and the first equation becomes\n\\[\\begin{equation}\n    E(R) = \\|\\mathbf p - \\mathbf s\\|_2 \\sum_{m=1}^{M-1} (\\alpha_{m+1} - \\alpha_m) \\mathbf V \\left[ \\mathbf s + \\frac{\\alpha_{m+1} + \\alpha_m}{2} (\\mathbf p - \\mathbf s) \\right] \\,,\n\\end{equation}\\]\nwhere \\(\\alpha_m\\) parameterizes the locations where ray \\(R\\) intersects one of the orthogonal planes comprising the CT volume, and \\(M\\) is the number of such intersections.\n\n\n\n\n\n\nNote\n\n\n\nNote that this model does not account for patterns of reflection and scattering that are present in real X-ray systems. While these simplifications preclude synthesis of realistic X-rays, the model in Siddon’s method has been widely and successfully used in slice-to-volume registration.\n\n\nSiddon’s method provides a parametric method to identify the plane intersections \\(\\{\\alpha_m\\}_{m=1}^M\\). Let \\(\\Delta X\\) be the CT voxel size in the \\(x\\)-direction and \\(b_x\\) be the location of the \\(0\\)-th plane in this direction. Then the intersection of ray \\(R\\) with the \\(i\\)-th plane in the \\(x\\)-direction is given by \\[\\begin{equation}\n    \\alpha_x(i) = \\frac{b_x + i \\Delta X - \\mathbf s_x}{\\mathbf p_x - \\mathbf s_x} ,\n\\end{equation}\\] with analogous expressions for \\(\\alpha_y(\\cdot)\\) and \\(\\alpha_z(\\cdot)\\).\nWe can use this equation to compute the values \\(\\mathbf \\alpha_x\\) for all the intersections between \\(R\\) and the planes in the \\(x\\)-direction: \\[\\begin{equation}\n    \\mathbf\\alpha_x = \\{ \\alpha_x(i_{\\min}), \\dots, \\alpha_x(i_{\\max}) \\} ,\n\\end{equation}\\] where \\(i_{\\min}\\) and \\(i_{\\max}\\) denote the first and last intersections of \\(R\\) with the \\(x\\)-direction planes.\nDefining \\(\\mathbf\\alpha_y\\) and \\(\\mathbf\\alpha_z\\) analogously, we construct the array \\[\\begin{equation}\n    \\mathbf\\alpha = \\mathrm{sort}(\\mathbf\\alpha_x, \\mathbf\\alpha_y, \\mathbf\\alpha_z) ,\n\\end{equation}\\] which contains \\(M\\) values of \\(\\alpha\\) parameterizing the intersections between \\(R\\) and the orthogonal \\(x\\)-, \\(y\\)-, and \\(z\\)-directional planes. We substitute values in the sorted set \\(\\mathbf\\alpha\\) into the first equation to evaluate \\(E(R)\\), which corresponds to the intensity of pixel \\(\\mathbf p\\) in the synthesized DRR.\n\nsource\n\n\n\n Siddon (eps=1e-08)\n\nDifferentiable X-ray renderer implemented with Siddon’s method for exact raytracing.",
+    "crumbs": [
+      "api",
+      "renderers"
+    ]
+  },
+  {
+    "objectID": "api/renderers.html#siddons-method",
+    "href": "api/renderers.html#siddons-method",
+    "title": "renderers",
+    "section": "",
+    "text": "DRRs are generated by modeling the geometry of an idealized projectional radiography system. Let \\(\\mathbf s \\in \\mathbb R^3\\) be the X-ray source and \\(\\mathbf p \\in \\mathbb R^3\\) be a target pixel on the detector plane. Then, \\(R(\\alpha) = \\mathbf s + \\alpha (\\mathbf p - \\mathbf s)\\) is a ray that originates from \\(\\mathbf s\\) (\\(\\alpha=0\\)), passes through the imaged volume, and hits the detector plane at \\(\\mathbf p\\) (\\(\\alpha=1\\)). The proportion of energy attenuation experienced by the X-ray at the time it reaches pixel \\(\\mathbf p\\) is given by the following line integral:\n\\[\\begin{equation}\n    E(R) = \\|\\mathbf p - \\mathbf s\\|_2 \\int_0^1 \\mathbf V \\left( \\mathbf s + \\alpha (\\mathbf p - \\mathbf s) \\right) \\, \\mathrm d\\alpha \\,,\n\\end{equation}\\]\nwhere \\(\\mathbf V : \\mathbb R^3 \\mapsto \\mathbb R\\) is the imaged volume. The units term \\(\\|\\mathbf p - \\mathbf s\\|_2\\) serves to cancel out the units of \\(\\mathbf V(\\cdot)\\), reciprocal length, such that the final proportion \\(E\\) is unitless. For DRR synthesis, \\(\\mathbf V\\) is approximated by a discrete 3D CT volume, and the first equation becomes\n\\[\\begin{equation}\n    E(R) = \\|\\mathbf p - \\mathbf s\\|_2 \\sum_{m=1}^{M-1} (\\alpha_{m+1} - \\alpha_m) \\mathbf V \\left[ \\mathbf s + \\frac{\\alpha_{m+1} + \\alpha_m}{2} (\\mathbf p - \\mathbf s) \\right] \\,,\n\\end{equation}\\]\nwhere \\(\\alpha_m\\) parameterizes the locations where ray \\(R\\) intersects one of the orthogonal planes comprising the CT volume, and \\(M\\) is the number of such intersections.\n\n\n\n\n\n\nNote\n\n\n\nNote that this model does not account for patterns of reflection and scattering that are present in real X-ray systems. While these simplifications preclude synthesis of realistic X-rays, the model in Siddon’s method has been widely and successfully used in slice-to-volume registration.\n\n\nSiddon’s method provides a parametric method to identify the plane intersections \\(\\{\\alpha_m\\}_{m=1}^M\\). Let \\(\\Delta X\\) be the CT voxel size in the \\(x\\)-direction and \\(b_x\\) be the location of the \\(0\\)-th plane in this direction. Then the intersection of ray \\(R\\) with the \\(i\\)-th plane in the \\(x\\)-direction is given by \\[\\begin{equation}\n    \\alpha_x(i) = \\frac{b_x + i \\Delta X - \\mathbf s_x}{\\mathbf p_x - \\mathbf s_x} ,\n\\end{equation}\\] with analogous expressions for \\(\\alpha_y(\\cdot)\\) and \\(\\alpha_z(\\cdot)\\).\nWe can use this equation to compute the values \\(\\mathbf \\alpha_x\\) for all the intersections between \\(R\\) and the planes in the \\(x\\)-direction: \\[\\begin{equation}\n    \\mathbf\\alpha_x = \\{ \\alpha_x(i_{\\min}), \\dots, \\alpha_x(i_{\\max}) \\} ,\n\\end{equation}\\] where \\(i_{\\min}\\) and \\(i_{\\max}\\) denote the first and last intersections of \\(R\\) with the \\(x\\)-direction planes.\nDefining \\(\\mathbf\\alpha_y\\) and \\(\\mathbf\\alpha_z\\) analogously, we construct the array \\[\\begin{equation}\n    \\mathbf\\alpha = \\mathrm{sort}(\\mathbf\\alpha_x, \\mathbf\\alpha_y, \\mathbf\\alpha_z) ,\n\\end{equation}\\] which contains \\(M\\) values of \\(\\alpha\\) parameterizing the intersections between \\(R\\) and the orthogonal \\(x\\)-, \\(y\\)-, and \\(z\\)-directional planes. We substitute values in the sorted set \\(\\mathbf\\alpha\\) into the first equation to evaluate \\(E(R)\\), which corresponds to the intensity of pixel \\(\\mathbf p\\) in the synthesized DRR.\n\nsource\n\n\n\n Siddon (eps=1e-08)\n\nDifferentiable X-ray renderer implemented with Siddon’s method for exact raytracing.",
+    "crumbs": [
+      "api",
+      "renderers"
+    ]
+  },
+  {
+    "objectID": "api/renderers.html#compilier-friendly-siddon",
+    "href": "api/renderers.html#compilier-friendly-siddon",
+    "title": "renderers",
+    "section": "Compilier-friendly Siddon",
+    "text": "Compilier-friendly Siddon",
+    "crumbs": [
+      "api",
+      "renderers"
+    ]
+  },
+  {
+    "objectID": "api/renderers.html#trilinear-interpolation",
+    "href": "api/renderers.html#trilinear-interpolation",
+    "title": "renderers",
+    "section": "Trilinear interpolation",
+    "text": "Trilinear interpolation\nInstead of computing the exact line integral over the voxel grid (i.e., Siddon’s method), we can sample colors at points along the each ray using trilinear interpolation.\nNow, the rendering equation is \\[\\begin{equation}\n    E(R) = \\|\\mathbf p - \\mathbf s\\|_2\\frac{1}{M} \\sum_{m=1}^{M} \\mathbf V \\left[ \\mathbf s + \\alpha_m (\\mathbf p - \\mathbf s) \\right] \\,,\n\\end{equation}\\] where \\(\\mathbf V[\\cdot]\\) is the trilinear interpolation function and \\(M\\) is the number of points sampled per ray.\n\nsource\n\nTrilinear\n\n Trilinear (near=0.0, far=1.0, mode='bilinear', eps=1e-08)\n\nDifferentiable X-ray renderer implemented with trilinear interpolation.",
+    "crumbs": [
+      "api",
+      "renderers"
+    ]
+  },
+  {
+    "objectID": "tutorials/optimizers.html",
+    "href": "tutorials/optimizers.html",
+    "title": "2D/3D registration",
+    "section": "",
+    "text": "To perform registration with DiffDRR, we do the following:",
+    "crumbs": [
+      "tutorials",
+      "2D/3D registration"
+    ]
+  },
+  {
+    "objectID": "tutorials/optimizers.html#generate-a-target-x-ray",
+    "href": "tutorials/optimizers.html#generate-a-target-x-ray",
+    "title": "2D/3D registration",
+    "section": "1. Generate a target X-ray",
+    "text": "1. Generate a target X-ray\n\n\nCode\nimport matplotlib.pyplot as plt\nimport numpy as np\nimport pandas as pd\nimport torch\nfrom tqdm import tqdm\n\nfrom diffdrr.data import load_example_ct\nfrom diffdrr.drr import DRR, Registration\nfrom diffdrr.metrics import NormalizedCrossCorrelation2d\nfrom diffdrr.visualization import plot_drr\n\nnp.random.seed(39)\n\n# Make the ground truth X-ray\nSDR = 300.0\nHEIGHT = 100\nDELX = 8.0\n\nvolume, spacing = load_example_ct()\nbx, by, bz = np.array(volume.shape) * np.array(spacing) / 2\ntrue_params = {\n    \"sdr\": SDR,\n    \"alpha\": torch.pi,\n    \"beta\": 0,\n    \"gamma\": torch.pi / 2,\n    \"bx\": bx,\n    \"by\": by,\n    \"bz\": bz,\n}\ndevice = \"cuda\" if torch.cuda.is_available() else \"cpu\"\n\ndrr = DRR(volume, spacing, sdr=SDR, height=HEIGHT, delx=DELX).to(device)\nrotations = torch.tensor(\n    [\n        [\n            true_params[\"alpha\"],\n            true_params[\"beta\"],\n            true_params[\"gamma\"],\n        ]\n    ]\n).to(device)\ntranslations = torch.tensor(\n    [\n        [\n            true_params[\"bx\"],\n            true_params[\"by\"],\n            true_params[\"bz\"],\n        ]\n    ]\n).to(device)\nground_truth = drr(\n    rotations,\n    translations,\n    parameterization=\"euler_angles\",\n    convention=\"ZYX\",\n)\n\nplot_drr(ground_truth)\nplt.show()",
+    "crumbs": [
+      "tutorials",
+      "2D/3D registration"
+    ]
+  },
+  {
+    "objectID": "tutorials/optimizers.html#initialize-a-moving-drr-from-a-random-pose",
+    "href": "tutorials/optimizers.html#initialize-a-moving-drr-from-a-random-pose",
+    "title": "2D/3D registration",
+    "section": "2. Initialize a moving DRR from a random pose",
+    "text": "2. Initialize a moving DRR from a random pose\n\n\nCode\n# Make a random DRR\ndef get_initial_parameters(true_params):\n    alpha = true_params[\"alpha\"] + np.random.uniform(-np.pi / 4, np.pi / 4)\n    beta = true_params[\"beta\"] + np.random.uniform(-np.pi / 3, np.pi / 3)\n    gamma = true_params[\"gamma\"] + np.random.uniform(-np.pi / 3, np.pi / 3)\n    bx = true_params[\"bx\"] + np.random.uniform(-30.0, 31.0)\n    by = true_params[\"by\"] + np.random.uniform(-30.0, 31.0)\n    bz = true_params[\"bz\"] + np.random.uniform(-30.0, 31.0)\n    rotation = torch.tensor([[alpha, beta, gamma]]).to(device)\n    translation = torch.tensor([[bx, by, bz]]).to(device)\n    return rotation, translation\n\n\nrotations, translations = get_initial_parameters(true_params)\ndrr = DRR(volume, spacing, sdr=SDR, height=HEIGHT, delx=DELX).to(device)\nwith torch.no_grad():\n    est = drr(\n        rotations,\n        translations,\n        parameterization=\"euler_angles\",\n        convention=\"ZYX\",\n    )\nplot_drr(est)\nplt.show()",
+    "crumbs": [
+      "tutorials",
+      "2D/3D registration"
+    ]
+  },
+  {
+    "objectID": "tutorials/optimizers.html#measure-the-loss-between-the-target-x-ray-and-moving-drr",
+    "href": "tutorials/optimizers.html#measure-the-loss-between-the-target-x-ray-and-moving-drr",
+    "title": "2D/3D registration",
+    "section": "3. Measure the loss between the target X-ray and moving DRR",
+    "text": "3. Measure the loss between the target X-ray and moving DRR\nWe start by measuring the initial loss between the two images.\n\ncriterion = NormalizedCrossCorrelation2d()\ncriterion(ground_truth, est).item()\n\n0.5030513405799866\n\n\nIf the negative normalized cross-correlation is greater than 0.999, we say the target and moving DRR have converged.",
+    "crumbs": [
+      "tutorials",
+      "2D/3D registration"
+    ]
+  },
+  {
+    "objectID": "tutorials/optimizers.html#backpropogate-the-loss-to-the-moving-drr-parameters",
+    "href": "tutorials/optimizers.html#backpropogate-the-loss-to-the-moving-drr-parameters",
+    "title": "2D/3D registration",
+    "section": "4. Backpropogate the loss to the moving DRR parameters",
+    "text": "4. Backpropogate the loss to the moving DRR parameters\nWe also use this example to show how different optimizers affect the outcome of registration. The parameters we tweak are\n\nlr_rotations: learning rate for rotation parameters\nlr_translations: learning rate for translation parameters\nmomentum: momentum for stochastic gradient descent\ndampening: dampening for stochastic gradient descent\n\n\ndef optimize(\n    reg: Registration,\n    ground_truth,\n    lr_rotations=5.3e-2,\n    lr_translations=7.5e1,\n    momentum=0,\n    dampening=0,\n    n_itrs=250,\n    optimizer=\"sgd\",  # 'sgd' or `adam`\n):\n    criterion = NormalizedCrossCorrelation2d()\n    if optimizer == \"sgd\":\n        optimizer = torch.optim.SGD(\n            [\n                {\"params\": [reg.rotation], \"lr\": lr_rotations},\n                {\"params\": [reg.translation], \"lr\": lr_translations},\n            ],\n            momentum=momentum,\n            dampening=dampening,\n            maximize=True,\n        )\n    else:\n        optimizer = torch.optim.Adam(\n            [\n                {\"params\": [reg.rotation], \"lr\": lr_rotations},\n                {\"params\": [reg.translation], \"lr\": lr_translations},\n            ],\n            maximize=True,\n        )\n\n    params = []\n    losses = []\n    for itr in tqdm(range(n_itrs), ncols=50):\n        # Save the current set of parameters\n        alpha, beta, gamma = reg.get_rotation().squeeze().tolist()\n        bx, by, bz = reg.get_translation().squeeze().tolist()\n        params.append([i for i in [alpha, beta, gamma, bx, by, bz]])\n\n        # Run the optimization loop\n        optimizer.zero_grad()\n        estimate = reg()\n        loss = criterion(ground_truth, estimate)\n        loss.backward(retain_graph=True)\n        optimizer.step()\n        losses.append(loss.item())\n\n        if loss &gt; 0.999:\n            tqdm.write(f\"Converged in {itr} iterations\")\n            break\n\n    df = pd.DataFrame(params, columns=[\"alpha\", \"beta\", \"gamma\", \"bx\", \"by\", \"bz\"])\n    df[\"loss\"] = losses\n    return df",
+    "crumbs": [
+      "tutorials",
+      "2D/3D registration"
+    ]
+  },
+  {
+    "objectID": "tutorials/optimizers.html#run-the-optimization-algorithm",
+    "href": "tutorials/optimizers.html#run-the-optimization-algorithm",
+    "title": "2D/3D registration",
+    "section": "Run the optimization algorithm",
+    "text": "Run the optimization algorithm\n\n# Base SGD\ndrr = DRR(volume, spacing, sdr=SDR, height=HEIGHT, delx=DELX).to(device)\nreg = Registration(\n    drr,\n    rotations.clone(),\n    translations.clone(),\n    parameterization=\"euler_angles\",\n    convention=\"ZYX\",\n)\nparams_base = optimize(reg, ground_truth)\ndel drr\n\n# SGD + momentum\ndrr = DRR(volume, spacing, sdr=SDR, height=HEIGHT, delx=DELX).to(device)\nreg = Registration(\n    drr,\n    rotations.clone(),\n    translations.clone(),\n    parameterization=\"euler_angles\",\n    convention=\"ZYX\",\n)\nparams_momentum = optimize(reg, ground_truth, momentum=0.9)\ndel drr\n\n# SGD + momentum + dampening\ndrr = DRR(volume, spacing, sdr=SDR, height=HEIGHT, delx=DELX).to(device)\nreg = Registration(\n    drr,\n    rotations.clone(),\n    translations.clone(),\n    parameterization=\"euler_angles\",\n    convention=\"ZYX\",\n)\nparams_momentum_dampen = optimize(reg, ground_truth, momentum=0.9, dampening=0.1)\ndel drr\n\n# Adam\ndrr = DRR(volume, spacing, sdr=SDR, height=HEIGHT, delx=DELX).to(device)\nreg = Registration(\n    drr,\n    rotations.clone(),\n    translations.clone(),\n    parameterization=\"euler_angles\",\n    convention=\"ZYX\",\n)\nparams_adam = optimize(reg, ground_truth, 1e-1, 1e1, optimizer=\"adam\")\ndel drr\n\n 55%|██████     | 138/250 [00:03&lt;00:02, 40.28it/s]\n 24%|██▉         | 61/250 [00:01&lt;00:05, 37.73it/s]\n 26%|███         | 64/250 [00:02&lt;00:06, 30.41it/s]\n 22%|██▋         | 56/250 [00:01&lt;00:05, 34.93it/s]\n\n\nConverged in 138 iterations\nConverged in 61 iterations\nConverged in 64 iterations\nConverged in 56 iterations",
+    "crumbs": [
+      "tutorials",
+      "2D/3D registration"
+    ]
+  },
+  {
+    "objectID": "tutorials/optimizers.html#visualize-the-parameter-updates",
+    "href": "tutorials/optimizers.html#visualize-the-parameter-updates",
+    "title": "2D/3D registration",
+    "section": "Visualize the parameter updates",
+    "text": "Visualize the parameter updates\nNote that differences that between different optimization algorithms can be seen in the motion in the DRRs!\n\n\nCode\nfrom base64 import b64encode\n\nfrom IPython.display import HTML, display\n\nfrom diffdrr.visualization import animate\n\n\ndef animate_in_browser(df, max_length):\n    n = max_length - len(df)\n    df = pd.concat([df, df.iloc[[-1] * n]])\n\n    out = animate(\n        \"&lt;bytes&gt;\",\n        df,\n        drr,\n        ground_truth=ground_truth,\n        verbose=True,\n        device=device,\n        extension=\".webp\",\n        duration=30,\n        parameterization=\"euler_angles\",\n        convention=\"ZYX\",\n    )\n    display(HTML(f\"\"\"&lt;img src='{\"data:img/gif;base64,\" + b64encode(out).decode()}'&gt;\"\"\"))\n\n\ndrr = DRR(volume, spacing, sdr=SDR, height=HEIGHT, delx=DELX).to(device)\n\n\n\nanimate_in_browser(params_base, len(params_base))\n\nPrecomputing DRRs: 100%|█████████████████| 139/139 [00:25&lt;00:00,  5.53it/s]\n\n\n\n\n\n\nanimate_in_browser(params_momentum, len(params_base))\n\nPrecomputing DRRs: 100%|█████████████████| 139/139 [00:24&lt;00:00,  5.66it/s]\n\n\n\n\n\n\nanimate_in_browser(params_momentum_dampen, len(params_base))\n\nPrecomputing DRRs: 100%|█████████████████| 139/139 [00:24&lt;00:00,  5.60it/s]\n\n\n\n\n\n\nanimate_in_browser(params_adam, len(params_base))\n\nPrecomputing DRRs: 100%|█████████████████| 139/139 [00:24&lt;00:00,  5.73it/s]",
+    "crumbs": [
+      "tutorials",
+      "2D/3D registration"
+    ]
+  },
+  {
+    "objectID": "tutorials/visualization.html",
+    "href": "tutorials/visualization.html",
+    "title": "3D geometry with PyVista",
+    "section": "",
+    "text": "Visualizing the 3D geometry of the X-ray detector in DiffDRR can be a helpful sanity check and is useful for debugging. We enable visualization of the DiffDRR setup using PyVista. The dependencies are pyvista, trame, and vtk.\nThe 3D visualization functions in DiffDRR perform the following steps:\n\nExtract a mesh from your CT volume\nPlot a pyramid frustum to visualize the camera pose\nPlot the detector plane with the DRR embedded as a texture\nDraw the principal ray from the X-ray source to the detector plane\n\nWe currently support the following backends for extracting meshes from CT scans:\n\nMarchingCubes\nSurfaceNets\n\nIn the future, we plan to merge SurfaceNets with TotalSegmentator such that CT meshes can be rendered from label maps.\n\n\n\n\n\n\nTip\n\n\n\nTo use surface_nets to extract a mesh, ensure you have installed pyvista&gt;=0.43 and vtk&gt;=9.3. Otherwise, you can use marching_cubes, which is slower and produces meshes with holes.\n\n\n\nimport pyvista\n\n\n\nCode\nimport torch\n\nfrom diffdrr.data import load_example_ct\nfrom diffdrr.drr import DRR\nfrom diffdrr.pose import convert\nfrom diffdrr.visualization import drr_to_mesh, img_to_mesh\n\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\n\n# Read in the volume and get the isocenter\nvolume, spacing = load_example_ct()\nbx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2\nfocal_len = 1020.0\n\n# Initialize the DRR module for generating synthetic X-rays\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\ndrr = DRR(volume, spacing, sdr=focal_len / 2, height=200, delx=2.0).to(device)\n\n\n\n# Make a mesh from the CT volume\nct = drr_to_mesh(drr, \"surface_nets\", threshold=1150, verbose=False)\n\n# Make a mesh from the camera and detector plane\nrotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)\ntranslations = torch.tensor([[bx - focal_len / 3, by, bz]], device=device)\npose = convert(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\ncamera, detector, texture, principal_ray = img_to_mesh(drr, pose)\n\n# Make the plot\nplotter = pyvista.Plotter()\nplotter.add_mesh(ct)\nplotter.add_mesh(camera, show_edges=True, line_width=1.5)\nplotter.add_mesh(principal_ray, color=\"lime\", line_width=3)\nplotter.add_mesh(detector, texture=texture)\n\n# Render the plot\nplotter.add_axes()\nplotter.add_bounding_box()\n\n# plotter.show()  # If running Jupyter locally\n# plotter.show(jupyter_backend=\"server\")  # If running Jupyter remotely\nplotter.export_html(\"render.html\")\n\n\nfrom IPython.display import IFrame\n\nIFrame(\"render.html\", height=500, width=749)",
+    "crumbs": [
+      "tutorials",
+      "3D geometry with `PyVista`"
+    ]
+  },
+  {
+    "objectID": "tutorials/spherical.html",
+    "href": "tutorials/spherical.html",
+    "title": "Spherical coordinates",
+    "section": "",
+    "text": "import matplotlib.pyplot as plt\nimport numpy as np\nimport torch\n\nfrom diffdrr.drr import DRR\nfrom diffdrr.pose import convert",
+    "crumbs": [
+      "tutorials",
+      "Spherical coordinates"
+    ]
+  },
+  {
+    "objectID": "tutorials/spherical.html#diffdrr-camera-matrix-conventions",
+    "href": "tutorials/spherical.html#diffdrr-camera-matrix-conventions",
+    "title": "Spherical coordinates",
+    "section": "DiffDRR camera matrix conventions",
+    "text": "DiffDRR camera matrix conventions\n\n\nCode\nsdr = 1.0\nalpha, gamma, beta = 0, 0, 0\nbx, by, bz = 10, -10, -40\nrotations = torch.Tensor([[alpha, beta, gamma]])\ntranslations = torch.tensor([[bx, by, bz]])\n\ndrr = DRR(\n    volume=np.zeros([512, 512, 133]),\n    spacing=[1, 1, 1],\n    sdr=sdr,\n    height=5,\n    delx=0.75,\n).to(\"cpu\")\n\n\n\nfig = plt.figure()\nfor i in range(8):\n    alpha = (i / 8) * torch.pi\n    beta = (0 / 8) * torch.pi\n    gamma = (0 / 8) * torch.pi\n    rotations = torch.Tensor([[alpha, beta, gamma]])\n\n    pose = convert(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\n    source, rays = drr.detector(pose)\n    source_ = source.detach().cpu()\n    rays_ = rays.permute(2, 0, 1).detach().cpu()\n\n    ax = fig.add_subplot(2, 4, i+1, projection='3d')\n    ax.set(title=f\"$\\\\alpha=\\\\frac{{{i}}}{{8}}\\pi$\")\n    ax.scatter(source_[0, 0, 0]  , source_[0, 0, 1]  , source_[0, 0, 2]  , c=\"black\")\n    ax.scatter(rays_[0].flatten(), rays_[1].flatten(), rays_[2].flatten(), c=torch.arange(25), cmap=\"jet\")\n\n    xs, ys, zs = rays_.reshape(3, -1)\n    for x, y, z in zip(xs, ys, zs):\n        ax.plot([source_[0, 0, 0], x], [source_[0, 0, 1], y], [source_[0, 0, 2], z], \"k\", alpha=0.2)\n\n    ax.set(xlabel=\"x\", ylabel=\"y\", zlabel=\"z\")\n    ax.set(xlim=[8,12], ylim=[-12,-8], zlim=[-42,-38])\n\nplt.tight_layout()\nplt.show()\n\n\n\n\n\n\n\n\n\nfig = plt.figure()\nfor i in range(8):\n    alpha = (0 / 8) * torch.pi\n    beta = (i / 8) * torch.pi\n    gamma = (0 / 8) * torch.pi\n    rotations = torch.Tensor([[alpha, beta, gamma]])\n\n    pose = convert(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\n    source, rays = drr.detector(pose)\n    source_ = source.detach().cpu()\n    rays_ = rays.permute(2, 0, 1).detach().cpu()\n\n    ax = fig.add_subplot(2, 4, i+1, projection='3d')\n    ax.set(title=f\"$\\\\beta=\\\\frac{{{i}}}{{8}}\\pi$\")\n    ax.scatter(source_[0, 0, 0]  , source_[0, 0, 1]  , source_[0, 0, 2]  , c=\"black\")\n    ax.scatter(rays_[0].flatten(), rays_[1].flatten(), rays_[2].flatten(), c=torch.arange(25), cmap=\"jet\")\n\n    xs, ys, zs = rays_.reshape(3, -1)\n    for x, y, z in zip(xs, ys, zs):\n        ax.plot([source_[0, 0, 0], x], [source_[0, 0, 1], y], [source_[0, 0, 2], z], \"k\", alpha=0.2)\n\n    ax.set(xlabel=\"x\", ylabel=\"y\", zlabel=\"z\")\n    ax.set(xlim=[8,12], ylim=[-12,-8], zlim=[-42,-38])\n\nplt.tight_layout()\nplt.show()\n\n\n\n\n\n\n\n\n\nfig = plt.figure()\nfor i in range(8):\n    alpha = (0 / 8) * torch.pi\n    beta = (0 / 8) * torch.pi\n    gamma = (i / 8) * torch.pi\n    rotations = torch.Tensor([[alpha, beta, gamma]])\n\n    pose = convert(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\n    source, rays = drr.detector(pose)\n    source_ = source.detach().cpu()\n    rays_ = rays.permute(2, 0, 1).detach().cpu()\n\n    ax = fig.add_subplot(2, 4, i+1, projection='3d')\n    ax.set(title=f\"$\\\\gamma=\\\\frac{{{i}}}{{8}}\\pi$\")\n    ax.scatter(source_[0, 0, 0]  , source_[0, 0, 1]  , source_[0, 0, 2]  , label=\"Source\", c=\"black\")\n    ax.scatter(rays_[0].flatten(), rays_[1].flatten(), rays_[2].flatten(), label=\"Targets\", c=torch.arange(25), cmap=\"jet\")\n\n    xs, ys, zs = rays_.reshape(3, -1)\n    for x, y, z in zip(xs, ys, zs):\n        ax.plot([source_[0, 0, 0], x], [source_[0, 0, 1], y], [source_[0, 0, 2], z], \"k\", alpha=0.2)\n\n    ax.set(xlabel=\"x\", ylabel=\"y\", zlabel=\"z\")\n    ax.set(xlim=[8,12], ylim=[-12,-8], zlim=[-42,-38])\n\nplt.tight_layout()\nplt.show()",
+    "crumbs": [
+      "tutorials",
+      "Spherical coordinates"
+    ]
+  },
+  {
+    "objectID": "tutorials/metrics.html",
+    "href": "tutorials/metrics.html",
+    "title": "Registration loss landscapes",
+    "section": "",
+    "text": "We visualize the loss landscape by simulating a synthetic registration problem. To do this, we start by simulating a DRR from a known angle, which will serve as the target for registration.\n\n\nCode\nimport matplotlib.pyplot as plt\nimport torch\nfrom mpl_toolkits.mplot3d import Axes3D\nfrom tqdm import tqdm\n\nfrom diffdrr.data import load_example_ct\nfrom diffdrr.drr import DRR\nfrom diffdrr.metrics import NormalizedCrossCorrelation2d\nfrom diffdrr.visualization import plot_drr\n\n# Read in the volume\nvolume, spacing = load_example_ct()\ndevice = \"cuda\" if torch.cuda.is_available() else \"cpu\"\ndrr = DRR(volume, spacing, sdr=300.0, height=200, delx=4.0).to(device)\n\n# Get parameters for the detector\nalpha, beta, gamma = torch.pi, 0.0, torch.pi / 2\nbx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2\nrotations = torch.tensor([[alpha, beta, gamma]]).to(device)\ntranslations = torch.tensor([[bx, by, bz]]).to(device)\n\n# Make the DRR\ntarget_drr = drr(\n    rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\"\n)\nplot_drr(target_drr, ticks=False)\nplt.show()\n\n\n\n\n\n\n\n\n\nNext, we create a function that measures the normalized cross-correlation between the target DRR and a moving DRR, simulated by some perturbation from the true parameters of the target DRR.\n\nmetric = NormalizedCrossCorrelation2d()\n\n\ndef get_metric(alpha, beta, gamma, bx, by, bz):\n    rotations = torch.tensor([[alpha, beta, gamma]]).to(device)\n    translations = torch.tensor([[bx, by, bz]]).to(device)\n    moving_drr = drr(\n        rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\"\n    )\n    return metric(target_drr, moving_drr)\n\nFinally, we can simulate hundreds of moving DRRs and measure their cross correlation with the target. Plotting the cross correlation versus the perturbation from the true DRR parameters allows us to visualize the loss landscape for the six pose parameters. From this visualization, we see that the loss landscape is convex in this neighborhood (±15 mm and ±180 degrees).\n\n\nCode\n### NCC for the XYZs\nxs = torch.arange(-15.0, 16.0, step=2)\nys = torch.arange(-15.0, 16.0, step=2)\nzs = torch.arange(-15.0, 16.0, step=2)\n\n# Get coordinate-wise correlations\nxy_corrs = []\nfor x in tqdm(xs, desc=\"XY\", ncols=50):\n    for y in ys:\n        xcorr = get_metric(alpha, beta, gamma, bx + x, by + y, bz)\n        xy_corrs.append(-xcorr)\nXY = torch.tensor(xy_corrs).reshape(len(xs), len(ys))\n\nxz_corrs = []\nfor x in tqdm(xs, desc=\"XZ\", ncols=50):\n    for z in zs:\n        xcorr = get_metric(alpha, beta, gamma, bx + x, by, bz + z)\n        xz_corrs.append(-xcorr)\nXZ = torch.tensor(xz_corrs).reshape(len(xs), len(zs))\n\nyz_corrs = []\nfor y in tqdm(ys, desc=\"YZ\", ncols=50):\n    for z in zs:\n        xcorr = get_metric(alpha, beta, gamma, bx, by + y, bz + z)\n        yz_corrs.append(-xcorr)\nYZ = torch.tensor(yz_corrs).reshape(len(ys), len(zs))\n\n### NCC for the angles\na_angles = torch.arange(-torch.pi / 4, torch.pi / 4, step=0.1)\nb_angles = torch.arange(-torch.pi / 4, torch.pi / 4, step=0.1)\ng_angles = torch.arange(-torch.pi / 8, torch.pi / 8, step=0.1)\n\n# Get coordinate-wise correlations\ntp_corrs = []\nfor t in tqdm(a_angles, desc=\"αβ\", ncols=50):\n    for p in b_angles:\n        xcorr = get_metric(alpha + t, beta + p, gamma, bx, by, bz)\n        tp_corrs.append(-xcorr)\nTP = torch.tensor(tp_corrs).reshape(len(a_angles), len(b_angles))\n\ntg_corrs = []\nfor t in tqdm(a_angles, desc=\"αγ\", ncols=50):\n    for g in g_angles:\n        xcorr = get_metric(alpha + t, beta, gamma + g, bx, by, bz)\n        tg_corrs.append(-xcorr)\nTG = torch.tensor(tg_corrs).reshape(len(a_angles), len(g_angles))\n\npg_corrs = []\nfor p in tqdm(b_angles, desc=\"βγ\", ncols=50):\n    for g in g_angles:\n        xcorr = get_metric(alpha, beta + p, gamma + g, bx, by, bz)\n        pg_corrs.append(-xcorr)\nPG = torch.tensor(pg_corrs).reshape(len(b_angles), len(g_angles))\n\n### Make the plots\n\n# XYZ\nxyx, xyy = torch.meshgrid(xs, ys, indexing=\"ij\")\nxzx, xzz = torch.meshgrid(xs, zs, indexing=\"ij\")\nyzy, yzz = torch.meshgrid(ys, zs, indexing=\"ij\")\n\nfig = plt.figure(figsize=3 * plt.figaspect(1.2 / 1), dpi=300)\n\nax = fig.add_subplot(1, 3, 1, projection=\"3d\")\nax.contourf(xyx, xyy, XY, zdir=\"z\", offset=-1, cmap=plt.get_cmap(\"rainbow\"), alpha=0.5)\nax.plot_surface(xyx, xyy, XY, rstride=1, cstride=1, cmap=plt.get_cmap(\"rainbow\"))\nax.set_xlabel(\"ΔX (mm)\")\nax.set_ylabel(\"ΔY (mm)\")\nax.set_zlim3d(-1.0, -0.825)\n\nax = fig.add_subplot(1, 3, 2, projection=\"3d\")\nax.contourf(xzx, xzz, XZ, zdir=\"z\", offset=-1, cmap=plt.get_cmap(\"rainbow\"), alpha=0.5)\nax.plot_surface(xzx, xzz, XZ, rstride=1, cstride=1, cmap=plt.get_cmap(\"rainbow\"))\nax.set_xlabel(\"ΔX (mm)\")\nax.set_ylabel(\"ΔZ (mm)\")\nax.set_zlim3d(-1.0, -0.825)\n\nax = fig.add_subplot(1, 3, 3, projection=\"3d\")\nax.contourf(yzy, yzz, YZ, zdir=\"z\", offset=-1, cmap=plt.get_cmap(\"rainbow\"), alpha=0.5)\nax.plot_surface(yzy, yzz, YZ, rstride=1, cstride=1, cmap=plt.get_cmap(\"rainbow\"))\nax.set_xlabel(\"ΔY (mm)\")\nax.set_ylabel(\"ΔZ (mm)\")\nax.set_zlim3d(-1.0, -0.825)\n\n# Angles\nxyx, xyy = torch.meshgrid(a_angles, b_angles, indexing=\"ij\")\nxzx, xzz = torch.meshgrid(a_angles, g_angles, indexing=\"ij\")\nyzy, yzz = torch.meshgrid(b_angles, g_angles, indexing=\"ij\")\n\nax = fig.add_subplot(2, 3, 1, projection=\"3d\")\nax.contourf(xyx, xyy, TP, zdir=\"z\", offset=-1, cmap=plt.get_cmap(\"rainbow\"), alpha=0.5)\nax.plot_surface(xyx, xyy, TP, rstride=1, cstride=1, cmap=plt.get_cmap(\"rainbow\"))\nax.set_xlabel(\"Δα (radians)\")\nax.set_ylabel(\"Δβ (radians)\")\nax.set_zlim3d(-1.0, -0.4)\n\nax = fig.add_subplot(2, 3, 2, projection=\"3d\")\nax.contourf(xzx, xzz, TG, zdir=\"z\", offset=-1, cmap=plt.get_cmap(\"rainbow\"), alpha=0.5)\nax.plot_surface(xzx, xzz, TG, rstride=1, cstride=1, cmap=plt.get_cmap(\"rainbow\"))\nax.set_xlabel(\"Δα (radians)\")\nax.set_ylabel(\"Δγ (radians)\")\nax.set_zlim3d(-1.0, -0.4)\n\nax = fig.add_subplot(2, 3, 3, projection=\"3d\")\nax.contourf(yzy, yzz, PG, zdir=\"z\", offset=-1, cmap=plt.get_cmap(\"rainbow\"), alpha=0.5)\nax.plot_surface(yzy, yzz, PG, rstride=1, cstride=1, cmap=plt.get_cmap(\"rainbow\"))\nax.set_xlabel(\"Δβ (radians)\")\nax.set_ylabel(\"Δγ (radians)\")\nax.set_zlim3d(-1.0, -0.4)\n\nplt.show()\n\n\nXY: 100%|█████████| 16/16 [00:08&lt;00:00,  1.81it/s]\nXZ: 100%|█████████| 16/16 [00:08&lt;00:00,  1.82it/s]\nYZ: 100%|█████████| 16/16 [00:08&lt;00:00,  1.81it/s]\nαβ: 100%|█████████| 16/16 [00:10&lt;00:00,  1.60it/s]\nαγ: 100%|█████████| 16/16 [00:04&lt;00:00,  3.25it/s]\nβγ: 100%|█████████| 16/16 [00:04&lt;00:00,  3.50it/s]",
+    "crumbs": [
+      "tutorials",
+      "Registration loss landscapes"
+    ]
+  },
+  {
+    "objectID": "tutorials/trilinear.html",
+    "href": "tutorials/trilinear.html",
+    "title": "Trilinear rendering",
+    "section": "",
+    "text": "import matplotlib.pyplot as plt\nimport torch\nfrom IPython.core.magics.execution import _format_time\n\nfrom diffdrr.data import load_example_ct\nfrom diffdrr.drr import DRR\nfrom diffdrr.pose import convert\nfrom diffdrr.visualization import plot_drr\nvolume, spacing = load_example_ct()\nbx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\n# Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)\nrotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)\ntranslations = torch.tensor([[bx, by, bz]], device=device)\n\npose = convert(\n    rotations,\n    translations,\n    parameterization=\"euler_angles\",\n    convention=\"ZYX\",\n)"
+  },
+  {
+    "objectID": "tutorials/trilinear.html#siddons-method",
+    "href": "tutorials/trilinear.html#siddons-method",
+    "title": "Trilinear rendering",
+    "section": "Siddon’s method",
+    "text": "Siddon’s method\n\n# Initialize the DRR module for generating synthetic X-rays\ndrr = DRR(\n    volume,  # The CT volume as a numpy array\n    spacing,  # Voxel dimensions of the CT\n    sdr=300.0,  # Source-to-detector radius (half of the source-to-detector distance)\n    height=200,  # Height of the DRR (if width is not seperately provided, the generated image is square)\n    delx=4.0,  # Pixel spacing (in mm)\n).to(device)\n\nsource, target = drr.detector(pose)\n_ = drr(pose)  # Initialize drr.density\n\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose)\nplot_drr(img, title=f\"Siddon ({time})\")\nplt.show()\n\n33.2 ms ± 11.1 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)"
+  },
+  {
+    "objectID": "tutorials/trilinear.html#trilinear-interpolation",
+    "href": "tutorials/trilinear.html#trilinear-interpolation",
+    "title": "Trilinear rendering",
+    "section": "Trilinear interpolation",
+    "text": "Trilinear interpolation\n\ndrr = DRR(\n    volume,  # The CT volume as a numpy array\n    spacing,  # Voxel dimensions of the CT\n    sdr=300.0,  # Source-to-detector radius (half of the source-to-detector distance)\n    height=200,  # Height of the DRR (if width is not seperately provided, the generated image is square)\n    delx=4.0,  # Pixel spacing (in mm)\n    renderer=\"trilinear\",  # Switch the rendering mode\n).to(device)\n\nsource, target = drr.detector(pose)\n_ = drr(pose)  # Initialize drr.density\n\n\nn_points = 25\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n421 µs ± 2.79 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)\n\n\n\n\n\n\n\n\n\n\nn_points = 50\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n976 µs ± 1.66 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)\n\n\n\n\n\n\n\n\n\n\nn_points = 100\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n2.12 ms ± 662 ns per loop (mean ± std. dev. of 7 runs, 100 loops each)\n\n\n\n\n\n\n\n\n\n\nn_points = 200\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n5.47 ms ± 1.16 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)\n\n\n\n\n\n\n\n\n\n\nn_points = 250\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n7.65 ms ± 1.01 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)\n\n\n\n\n\n\n\n\n\n\nn_points = 500\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n14.3 ms ± 3.89 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)\n\n\n\n\n\n\n\n\n\n\nn_points = 1000\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n20.2 ms ± 3.92 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n\n\n\n\n\n\n\n\n\n\nn_points = 2000\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n31.9 ms ± 3.16 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n\n\n\n\n\n\n\n\n\n\nn_points = 5000\n\ntimes = %timeit -o drr.renderer(drr.density, drr.spacing, source, target, n_points)\ntime = f\"{_format_time(times.average, times._precision)} ± {_format_time(times.stdev, times._precision)}\"\n\nimg = drr(pose, n_points=n_points)\nplot_drr(img, title=f\"Trilinear with {n_points} points ({time})\")\nplt.show()\n\n71.4 ms ± 17.4 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)"
+  },
+  {
+    "objectID": "tutorials/introduction.html",
+    "href": "tutorials/introduction.html",
+    "title": "How to use DiffDRR",
+    "section": "",
+    "text": "import matplotlib.pyplot as plt\nimport torch\n\nfrom diffdrr.data import load_example_ct\nfrom diffdrr.drr import DRR\nfrom diffdrr.visualization import plot_drr",
+    "crumbs": [
+      "tutorials",
+      "How to use `DiffDRR`"
+    ]
+  },
+  {
+    "objectID": "tutorials/introduction.html#drr-generation",
+    "href": "tutorials/introduction.html#drr-generation",
+    "title": "How to use DiffDRR",
+    "section": "DRR generation",
+    "text": "DRR generation\nDiffDRR is implemented as a custom PyTorch module.\nAll raytracing operations have been formulated in a vectorized function, enabling use of PyTorch’s GPU support and autograd. This also means that DRR generation is available as a layer in deep learning frameworks.\n\n\n\n\n\n\nTip\n\n\n\nRotations can be parameterized with numerous conventions (not just Euler angles). See diffdrr.DRR for more details.\n\n\n\n# Read in the volume and get the isocenter\nvolume, spacing = load_example_ct()\nbx, by, bz = torch.tensor(volume.shape) * torch.tensor(spacing) / 2\n\n# Initialize the DRR module for generating synthetic X-rays\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\ndrr = DRR(\n    volume,      # The CT volume as a numpy array\n    spacing,     # Voxel dimensions of the CT\n    sdr=300.0,   # Source-to-detector radius (half of the source-to-detector distance)\n    height=200,  # Height of the DRR (if width is not seperately provided, the generated image is square)\n    delx=4.0,    # Pixel spacing (in mm)\n).to(device)\n\n# Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)\nrotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)\ntranslations = torch.tensor([[bx, by, bz]], device=device)\nimg = drr(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\nplot_drr(img, ticks=False)\nplt.show()\n\n\n\n\n\n\n\n\nWe demonstrate the speed of DiffDRR by timing repeated DRR synthesis. Timing results are on a single NVIDIA RTX 2080 Ti GPU.\n\n\n\n33.5 ms ± 21.2 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n\n\n\nFast rendering\nSince diffdrr.DRR is a torch.nn.Module, we can kernalize it with torch.compile. This improves the rendering time by roughly 2X.\n\ntorch._dynamo.reset()\nc_drr = torch.compile(drr)\n_ = c_drr(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\n_ = c_drr(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\n\n\n\n\n18.5 ms ± 660 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)",
+    "crumbs": [
+      "tutorials",
+      "How to use `DiffDRR`"
+    ]
+  },
+  {
+    "objectID": "tutorials/introduction.html#sparse-rendering",
+    "href": "tutorials/introduction.html#sparse-rendering",
+    "title": "How to use DiffDRR",
+    "section": "Sparse rendering",
+    "text": "Sparse rendering\nYou can also render random sparse subsets of the pixels in a DRR.\n\n\n\n\n\n\nTip\n\n\n\nSparse DRR rendering can be useful in registration and reconstruction tasks when coupled with a pixel-wise loss, such as MSE.\n\n\n\n# Make the DRR with 10% of the pixels\ndrr = DRR(\n    volume,\n    spacing,\n    sdr=300.0,\n    height=200,\n    delx=4.0,\n    p_subsample=0.1,  # Set the proportion of pixels that should be rendered\n    reshape=True,  # Map rendered pixels back to their location in true space,\n    # Useful for plotting, but can be disabled if using MSE as a loss function\n).to(device)\n\n# Make the DRR\nimg = drr(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\nplot_drr(img, ticks=False)\nplt.show()\n\n\n\n\n\n\n\n\n\n\n\n6.61 ms ± 310 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)",
+    "crumbs": [
+      "tutorials",
+      "How to use `DiffDRR`"
+    ]
+  },
+  {
+    "objectID": "tutorials/introduction.html#batched-drr-synthesis",
+    "href": "tutorials/introduction.html#batched-drr-synthesis",
+    "title": "How to use DiffDRR",
+    "section": "Batched DRR synthesis",
+    "text": "Batched DRR synthesis\nThe tensors for rotations are expected to be of the size [batch_size, c], where c is the number of components needed to represent the rotation (3, 4, 6, 10). The tensors for translations are expected to be of the size [batch_size, 3].\n\ndrr = DRR(\n    volume,\n    spacing,\n    sdr=300.0,\n    height=200,\n    delx=4.0,\n).to(device)\n\nrotations = torch.tensor(\n    [[torch.pi, 0.0, torch.pi / 2], [torch.pi, 0.0, -torch.pi / 2]], device=device\n)\ntranslations = torch.tensor([[bx, by, bz], [bx, by, bz]], device=device)\nimg = drr(rotations, translations, parameterization=\"euler_angles\", convention=\"ZYX\")\nplot_drr(img, ticks=False)\nplt.show()",
+    "crumbs": [
+      "tutorials",
+      "How to use `DiffDRR`"
+    ]
+  },
+  {
+    "objectID": "tutorials/introduction.html#increasing-drr-contrast",
+    "href": "tutorials/introduction.html#increasing-drr-contrast",
+    "title": "How to use DiffDRR",
+    "section": "Increasing DRR contrast",
+    "text": "Increasing DRR contrast\nCT scans are easily segmented using Hounsfield units. We can use this to identify which voxels are air, soft tissue, or bone. By up or downweighting voxels corresponding to bones, we can change the contrast of generated DRRs.\n\n# Completely downweight bones in CT (i.e., only soft tissue)\ndrr = DRR(\n    volume,\n    spacing,\n    sdr=300.0,\n    height=200,\n    delx=4.0,\n).to(device)\n\nrotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)\ntranslations = torch.tensor([[bx, by, bz]], device=device)\n\nimg = drr(\n    rotations,\n    translations,\n    parameterization=\"euler_angles\",\n    convention=\"ZYX\",\n    bone_attenuation_multiplier=0.0,\n)\nplot_drr(img, ticks=False)\nplt.show()",
+    "crumbs": [
+      "tutorials",
+      "How to use `DiffDRR`"
+    ]
+  },
+  {
+    "objectID": "tutorials/introduction.html#different-rendering-mode",
+    "href": "tutorials/introduction.html#different-rendering-mode",
+    "title": "How to use DiffDRR",
+    "section": "Different rendering mode",
+    "text": "Different rendering mode\nDiffDRR can also render synthetic X-rays using trilinear interpolation instead of Siddon’s method. The key argument to pay attention to is n_points, which controls how many points are sampled along each ray for interpolation. Higher values make more realistic images, at the cost of higher rendering time.\n\n# Completely downweight bones in CT (i.e., only soft tissue)\ndrr = DRR(\n    volume,\n    spacing,\n    sdr=300.0,\n    height=200,\n    delx=4.0,\n    renderer=\"trilinear\"\n).to(device)\n\nrotations = torch.tensor([[torch.pi, 0.0, torch.pi / 2]], device=device)\ntranslations = torch.tensor([[bx, by, bz]], device=device)\n\nimgs = []\nn_points = [25, 50, 100, 250]\nfor n in n_points:\n    img = drr(\n        rotations,\n        translations,\n        parameterization=\"euler_angles\",\n        convention=\"ZYX\",\n        n_points=n,\n    )\n    imgs.append(img)\n\nfig, axs = plt.subplots(1, 4, figsize=(8, 14), dpi=300, tight_layout=True)\nimg = torch.concat(imgs)\naxs = plot_drr(img, ticks=False, axs=axs)\nfor idx, n in enumerate(n_points):\n    axs[idx].set(title=f\"n_points={n}\")\nplt.show()",
+    "crumbs": [
+      "tutorials",
+      "How to use `DiffDRR`"
+    ]
+  },
+  {
+    "objectID": "tutorials/metamorphasis.html",
+    "href": "tutorials/metamorphasis.html",
+    "title": "Converting to DeepDRR",
+    "section": "",
+    "text": "from inspect import getfile\nfrom pathlib import Path\n\nimport deepdrr\nimport matplotlib.pyplot as plt\nimport numpy as np\nimport torch\nfrom deepdrr import MobileCArm, Projector, Volume, geo\nfrom deepdrr.load_dicom import load_dicom\n\nfrom diffdrr.detector import diffdrr_to_deepdrr\nfrom diffdrr.drr import DRR\nfrom diffdrr.metrics import NormalizedCrossCorrelation2d\n\n\nSDR = 400\nP = 4.0\n\n\n# Load a DICOM and extract voxel information\nexample_ct_path = str(Path(getfile(DRR)).parent / \"data/cxr\") + \"/\"\nvolume, materials, spacing = load_dicom(example_ct_path)\n\n# Make volume conventions same as DiffDR\npreprocess = lambda x: np.rot90(x, -1)[:, ::-1]\nvolume = preprocess(volume)\nfor key, value in materials.items():\n    materials[key] = preprocess(value)\n\n# Use the center of the volume as the \"world\" coordinates. The origin is the (0, 0, 0) index of the volume in the world frame.\nvol_center = (np.array(volume.shape) - 1) / 2 * spacing\norigin = geo.point(-vol_center[0], -vol_center[1], -vol_center[2])\n\n# Create the volume object with segmentation\npatient = Volume.from_parameters(\n    data=volume,\n    materials=materials,\n    origin=origin,\n    spacing=spacing,\n    anatomical_coordinate_system=\"LPS\",\n)\npatient.orient_patient(head_first=True, supine=True)\n\nUsing downloaded and verified file: /home/vivekg/datasets/DeepDRR_DATA/model_segmentation.pth.tar\n\n\n\n# defines the C-Arm device, which is a convenience class for positioning the Camera.\n# isocenter=volume.center_in_world\ncarm = MobileCArm(\n    isocenter=patient.center_in_world,\n    rotate_camera_left=False,\n    source_to_detector_distance=SDR * 2,\n    source_to_isocenter_vertical_distance=SDR,\n    pixel_size=P,\n    sensor_height=256,\n    sensor_width=256,\n    min_alpha=-720,\n    max_alpha=720,\n    min_beta=-720,\n    max_beta=720,\n)\n\n\ndef test_phantom_deepdrr(alpha, beta, gamma):\n    with Projector(\n        volume=patient,\n        carm=carm,\n    ) as projector:\n        carm.move_to(\n            alpha=np.rad2deg(alpha),\n            beta=np.rad2deg(np.pi / 2 - beta),\n            gamma=np.rad2deg(-gamma),\n            degrees=True,\n        )\n        img = (\n            projector()\n        )  # The first run doesn't use updated parameters, for some reason?\n        img = projector()[:, ::-1].copy()\n    return img\n\n\ndef test_phantom_diffdrr(alpha, beta, gamma, sdr=SDR, p=P):\n    bx, by, bz = (torch.tensor(volume.shape) - 1) * torch.tensor(spacing) / 2\n    drr = DRR(volume, spacing, sdr=SDR, height=256, delx=P, convention=\"deepdrr\")\n    img = drr(\n        diffdrr_to_deepdrr(torch.tensor([[alpha, beta, gamma]])),\n        torch.tensor([[bx, by, bz]]),\n        parameterization=\"euler_angles\",\n        convention=\"YZX\",\n    )\n    img = img / img.max()\n    return img\n\n\nfor idx in range(5):\n    alpha = np.random.uniform(-torch.pi, torch.pi)\n    beta = np.random.uniform(-torch.pi, torch.pi)\n    gamma = np.random.uniform(-torch.pi, torch.pi)\n    diff = test_phantom_diffdrr(alpha, beta, gamma).squeeze().numpy()\n    deep = test_phantom_deepdrr(alpha, beta, gamma)\n    metric = NormalizedCrossCorrelation2d()(\n        torch.tensor(diff[np.newaxis, np.newaxis, ...]),\n        torch.tensor(deep[np.newaxis, np.newaxis, ...]),\n    ).item()\n\n    plt.figure(figsize=(12, 3))\n    plt.subplot(131)\n    plt.title(\"DiffDRR\")\n    plt.imshow(diff, cmap=\"gray\")\n    plt.colorbar()\n    plt.subplot(132)\n    plt.title(\"DeepDRR\")\n    plt.imshow(deep, cmap=\"gray\")\n    plt.colorbar()\n    plt.subplot(133)\n    plt.title(f\"NCC = {metric:.5g}\")\n    plt.imshow(deep - diff, cmap=\"gray\")\n    plt.colorbar()\n    plt.tight_layout()\n    plt.show()",
+    "crumbs": [
+      "tutorials",
+      "Converting to `DeepDRR`"
+    ]
+  },
+  {
+    "objectID": "tutorials/timing.html",
+    "href": "tutorials/timing.html",
+    "title": "Timing versus DRR size",
+    "section": "",
+    "text": "import numpy as np\nimport torch\n\nfrom diffdrr.data import load_example_ct\nfrom diffdrr.drr import DRR\nfrom diffdrr.visualization import plot_drr\n\n\n# Read in the volume\nvolume, spacing = load_example_ct()\ndevice = \"cuda\" if torch.cuda.is_available() else \"cpu\"\n\n# Get parameters for the detector\nbx, by, bz = np.array(volume.shape) * np.array(spacing) / 2\ntranslations = torch.tensor([[bx, by, bz]]).to(device)\nrotations = torch.tensor([[np.pi, 0, np.pi / 2]]).to(device)\n\n\nheight = 100\n\ndrr = DRR(volume, spacing, sdr=300.0, height=height, delx=4.0).to(device)\n\ndel drr\n\n9.3 ms ± 1.31 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 200\n\ndrr = DRR(volume, spacing, sdr=300.0, height=height, delx=4.0).to(device)\n\ndel drr\n\n34.9 ms ± 326 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 300\n\ndrr = DRR(volume, spacing, sdr=300.0, height=height, delx=4.0).to(device)\n\ndel drr\n\n72.3 ms ± 158 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 400\n\ndrr = DRR(volume, spacing, sdr=300.0, height=height, delx=4.0).to(device)\n\ndel drr\n\n123 ms ± 434 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 500\n\ndrr = DRR(volume, spacing, sdr=300.0, height=height, delx=4.0).to(device)\n\ndel drr\n\n185 ms ± 666 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nMemory constraints\nUp until this point, we could compute every ray in the DRR in one go on the GPU. However, as the DRRs get bigger, we will quickly run out of memory. For example, on a 12 GB GPU, computing a 600 by 600 DRR will raise a CUDA memory error.\n\n\n\n\n\n\nTip\n\n\n\nTo render DRRs whose computation won’t fit in memory, we can compute patches of the DRR at a time. Pass patch_size to the DRR module to specify the size of the patch. Note the patch size must evenly tile (height, width).\n\n\n\nheight = 600\npatch_size = 150\n\ndrr = DRR(\n    volume, spacing, sdr=300.0, height=height, delx=4.0, patch_size=patch_size\n).to(device)\n\ndel drr\n\n186 ms ± 1.23 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 750\npatch_size = 150\n\ndrr = DRR(\n    volume, spacing, sdr=300.0, height=height, delx=4.0, patch_size=patch_size\n).to(device)\n\ndel drr\n\n262 ms ± 250 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 1000\npatch_size = 250\n\ndrr = DRR(\n    volume, spacing, sdr=300.0, height=height, delx=4.0, patch_size=patch_size\n).to(device)\n\ndel drr\n\n418 ms ± 1.64 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\n\nheight = 1500\npatch_size = 250\n\ndrr = DRR(\n    volume, spacing, sdr=300.0, height=height, delx=4.0, patch_size=patch_size\n).to(device)\n\ndel drr\n\n828 ms ± 2.89 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)\n\n\nWith patch_size, the only limitation is DRR storage, not computation.",
+    "crumbs": [
+      "tutorials",
+      "Timing versus DRR size"
+    ]
+  },
+  {
+    "objectID": "api/metrics.html",
+    "href": "api/metrics.html",
+    "title": "metrics",
+    "section": "",
+    "text": "source\n\nMultiscaleNormalizedCrossCorrelation2d\n\n MultiscaleNormalizedCrossCorrelation2d (patch_sizes=[None],\n                                         patch_weights=[1.0], eps=1e-05)\n\nCompute Normalized Cross Correlation between two batches of images at multiple scales.\n\nsource\n\n\nNormalizedCrossCorrelation2d\n\n NormalizedCrossCorrelation2d (patch_size=None, eps=1e-05)\n\nCompute Normalized Cross Correlation between two batches of images.\n\nsource\n\n\nGradientNormalizedCrossCorrelation2d\n\n GradientNormalizedCrossCorrelation2d (patch_size=None, sigma=1.0,\n                                       **kwargs)\n\nCompute Normalized Cross Correlation between the image gradients of two batches of images.\n\nx1 = torch.randn(8, 1, 128, 128)\nx2 = torch.randn(8, 1, 128, 128)\n\nncc = NormalizedCrossCorrelation2d()\nncc(x1, x2)\n\nncc = NormalizedCrossCorrelation2d(eps=1e-1)\nncc(x1, x2)\n\nncc = NormalizedCrossCorrelation2d(patch_size=9)\nncc(x1, x2)\n\nmsncc = MultiscaleNormalizedCrossCorrelation2d(patch_sizes=[9, None], patch_weights=[0.5, 0.5])\nmsncc(x1, x2)\n\ngncc = GradientNormalizedCrossCorrelation2d()\ngncc(x1, x2)\n\ngncc = GradientNormalizedCrossCorrelation2d(patch_size=9)\ngncc(x1, x2)\n\ntensor([ 0.0063, -0.0137,  0.0008, -0.0102,  0.0019, -0.0029, -0.0012,  0.0017])",
+    "crumbs": [
+      "api",
+      "metrics"
+    ]
+  },
+  {
+    "objectID": "api/pose.html",
+    "href": "api/pose.html",
+    "title": "pose",
+    "section": "",
+    "text": "We represent rigid transforms as \\(4 \\times 4\\) matrices\n\\[\\begin{equation}\n\\begin{bmatrix}\n    \\mathbf R & \\mathbf t \\\\\n    \\mathbf 0 & 1\n\\end{bmatrix}\n\\in \\mathbf{SE}(3) \\,,\n\\end{equation}\\]\nwhere \\(\\mathbf R \\in \\mathbf{SO}(3)\\) is a rotation matrix and \\(\\mathbf t\\in \\mathbb R^3\\) represents a translation.\nNote that since rotation matrices are orthogonal (\\(\\mathbf R \\mathbf R^T = \\mathbf R^T \\mathbf R = \\mathbf I_3\\)), we have a simple closed-form equation for the inverse: \\[\\begin{equation}\n\\begin{bmatrix}\n    \\mathbf R & \\mathbf t \\\\\n    \\mathbf 0 & 1\n\\end{bmatrix}^{-1} =\n\\begin{bmatrix}\n    \\mathbf R^T & -\\mathbf R^T \\mathbf t \\\\\n    \\mathbf 0 & 1\n\\end{bmatrix} \\,.\n\\end{equation}\\]\n\nsource\n\n\n\n RigidTransform (matrix)\n\nApplies rigid transforms in SE(3) to point clouds. Can handle batched rigid transforms, composition of transforms, closed-form inversion, and conversions to various representations of SE(3).",
+    "crumbs": [
+      "api",
+      "pose"
+    ]
+  },
+  {
+    "objectID": "api/pose.html#rigid-transformations",
+    "href": "api/pose.html#rigid-transformations",
+    "title": "pose",
+    "section": "",
+    "text": "We represent rigid transforms as \\(4 \\times 4\\) matrices\n\\[\\begin{equation}\n\\begin{bmatrix}\n    \\mathbf R & \\mathbf t \\\\\n    \\mathbf 0 & 1\n\\end{bmatrix}\n\\in \\mathbf{SE}(3) \\,,\n\\end{equation}\\]\nwhere \\(\\mathbf R \\in \\mathbf{SO}(3)\\) is a rotation matrix and \\(\\mathbf t\\in \\mathbb R^3\\) represents a translation.\nNote that since rotation matrices are orthogonal (\\(\\mathbf R \\mathbf R^T = \\mathbf R^T \\mathbf R = \\mathbf I_3\\)), we have a simple closed-form equation for the inverse: \\[\\begin{equation}\n\\begin{bmatrix}\n    \\mathbf R & \\mathbf t \\\\\n    \\mathbf 0 & 1\n\\end{bmatrix}^{-1} =\n\\begin{bmatrix}\n    \\mathbf R^T & -\\mathbf R^T \\mathbf t \\\\\n    \\mathbf 0 & 1\n\\end{bmatrix} \\,.\n\\end{equation}\\]\n\nsource\n\n\n\n RigidTransform (matrix)\n\nApplies rigid transforms in SE(3) to point clouds. Can handle batched rigid transforms, composition of transforms, closed-form inversion, and conversions to various representations of SE(3).",
+    "crumbs": [
+      "api",
+      "pose"
+    ]
+  },
+  {
+    "objectID": "api/pose.html#se3-conversions",
+    "href": "api/pose.html#se3-conversions",
+    "title": "pose",
+    "section": "SE(3) Conversions",
+    "text": "SE(3) Conversions\n\nsource\n\nconvert\n\n convert (*args, parameterization, convention=None)\n\n\n\n10D rotation parameterizations\nImplementations to convert rotation_10d (Peretroukhin et al., 2021) and quaternion_adjugate (Hanson and Hanson, 2022) parameterizations of SO(3) to quaternions.\n\nsource\n\n\nquaternion_to_rotation_10d\n\n quaternion_to_rotation_10d (q:torch.Tensor)\n\n\nsource\n\n\nrotation_10d_to_quaternion\n\n rotation_10d_to_quaternion (rotation:torch.Tensor)\n\nConvert a 10-vector into a symmetric matrix, whose eigenvector corresponding to the eigenvalue of minimum modulus is the resulting quaternion.\nSource: https://arxiv.org/abs/2006.01031\n\nsource\n\n\nquaternion_to_quaternion_adjugate\n\n quaternion_to_quaternion_adjugate (q:torch.Tensor)\n\n\nsource\n\n\nquaternion_adjugate_to_quaternion\n\n quaternion_adjugate_to_quaternion (rotation:torch.Tensor)\n\nConvert a 10-vector in the quaternion adjugate, a symmetric matrix whose eigenvector corresponding to the eigenvalue of maximum modulus is the (unnormalized) quaternion. Uses a fast method to solve for the eigenvector without explicity computing the eigendecomposition.\nSource: https://arxiv.org/abs/2205.09116\n\n\nPyTorch3D conversions port\nPyTorch3D has many useful conversion functions for transforming between multiple parameterizations of \\(\\mathbf{SO}(3)\\) and \\(\\mathbf{SE}(3)\\). However, installing PyTorch3D can be annoying for users not on Linux. We include the required conversion functions for PyTorch3D below. The original LICENSE from PyTorch3D is also included:\nBSD License\n\nFor PyTorch3D software\n\nCopyright (c) Meta Platforms, Inc. and affiliates. All rights reserved.\n\nRedistribution and use in source and binary forms, with or without modification,\nare permitted provided that the following conditions are met:\n\n * Redistributions of source code must retain the above copyright notice, this\n   list of conditions and the following disclaimer.\n\n * Redistributions in binary form must reproduce the above copyright notice,\n   this list of conditions and the following disclaimer in the documentation\n   and/or other materials provided with the distribution.\n\n * Neither the name Meta nor the names of its contributors may be used to\n   endorse or promote products derived from this software without specific\n   prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND\nANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\nWARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\nDISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR\nANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\nLOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON\nANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\nSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.",
+    "crumbs": [
+      "api",
+      "pose"
+    ]
+  },
+  {
+    "objectID": "api/visualization.html",
+    "href": "api/visualization.html",
+    "title": "visualization",
+    "section": "",
+    "text": "Uses matplotlib and imageio to plot DRRs and animate optimization over DRRs.\n\nsource\n\n\n\n plot_drr (img:torch.Tensor, title:str|None=None, ticks:bool|None=True,\n           axs:matplotlib.axes._axes.Axes|None=None, cmap:str='gray',\n           **imshow_kwargs)\n\nPlot an image generated by a DRR module.\n\nsource\n\n\n\n\n animate (out:str|pathlib.Path, df:pandas.core.frame.DataFrame,\n          drr:diffdrr.drr.DRR, parameterization:str, convention:str=None,\n          ground_truth:torch.Tensor|None=None, verbose:bool=True,\n          dtype=torch.float32, device='cpu', **kwargs)\n\nAnimate the optimization of a DRR.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nout\nstr | pathlib.Path\n\nSavepath\n\n\ndf\npandas.DataFrame\n\n\n\n\ndrr\nDRR\n\n\n\n\nparameterization\nstr\n\n\n\n\nconvention\nstr\nNone\n\n\n\nground_truth\ntorch.Tensor | None\nNone\n\n\n\nverbose\nbool\nTrue\n\n\n\ndtype\ndtype\ntorch.float32\n\n\n\ndevice\nstr\ncpu\n\n\n\nkwargs\n\n\n\n\n\n\ndf is a pandas.DataFrame with columns [\"alpha\", \"beta\", \"gamma\", \"bx\", \"by\", \"bz\"]. Each row in df is an iteration of optimization with the updated values for that timestep.",
+    "crumbs": [
+      "api",
+      "visualization"
+    ]
+  },
+  {
+    "objectID": "api/visualization.html#d-visualization",
+    "href": "api/visualization.html#d-visualization",
+    "title": "visualization",
+    "section": "",
+    "text": "Uses matplotlib and imageio to plot DRRs and animate optimization over DRRs.\n\nsource\n\n\n\n plot_drr (img:torch.Tensor, title:str|None=None, ticks:bool|None=True,\n           axs:matplotlib.axes._axes.Axes|None=None, cmap:str='gray',\n           **imshow_kwargs)\n\nPlot an image generated by a DRR module.\n\nsource\n\n\n\n\n animate (out:str|pathlib.Path, df:pandas.core.frame.DataFrame,\n          drr:diffdrr.drr.DRR, parameterization:str, convention:str=None,\n          ground_truth:torch.Tensor|None=None, verbose:bool=True,\n          dtype=torch.float32, device='cpu', **kwargs)\n\nAnimate the optimization of a DRR.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nout\nstr | pathlib.Path\n\nSavepath\n\n\ndf\npandas.DataFrame\n\n\n\n\ndrr\nDRR\n\n\n\n\nparameterization\nstr\n\n\n\n\nconvention\nstr\nNone\n\n\n\nground_truth\ntorch.Tensor | None\nNone\n\n\n\nverbose\nbool\nTrue\n\n\n\ndtype\ndtype\ntorch.float32\n\n\n\ndevice\nstr\ncpu\n\n\n\nkwargs\n\n\n\n\n\n\ndf is a pandas.DataFrame with columns [\"alpha\", \"beta\", \"gamma\", \"bx\", \"by\", \"bz\"]. Each row in df is an iteration of optimization with the updated values for that timestep.",
+    "crumbs": [
+      "api",
+      "visualization"
+    ]
+  },
+  {
+    "objectID": "api/visualization.html#d-visualization-1",
+    "href": "api/visualization.html#d-visualization-1",
+    "title": "visualization",
+    "section": "3D Visualization",
+    "text": "3D Visualization\nUses pyvista and trame to interactively visualize DRR geometry in 3D.\n\nsource\n\ndrr_to_mesh\n\n drr_to_mesh (drr:diffdrr.drr.DRR, method:str, threshold:float=300,\n              verbose:bool=True)\n\nConvert the CT in a DRR object into a mesh.\nIf using method==\"surface_nets\", ensure you have pyvista&gt;=0.43 and vtk&gt;=9.3 installed.\nThe mesh processing steps are:\n\nKeep only largest connected components\nSmooth\nDecimate (if method==\"marching_cubes\")\nFill any holes\nClean (remove any redundant vertices/edges)\n\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ndrr\nDRR\n\n\n\n\nmethod\nstr\n\nEither surface_nets or marching_cubes\n\n\nthreshold\nfloat\n300\nMin value for marching cubes (Hounsfield units)\n\n\nverbose\nbool\nTrue\nDisplay progress bars for mesh processing steps\n\n\n\n\nsource\n\n\nimg_to_mesh\n\n img_to_mesh (drr:diffdrr.drr.DRR, pose:diffdrr.pose.RigidTransform,\n              **kwargs)\n\nFor a given pose (not batched), turn the camera and detector into a mesh. Additionally, render the DRR for the pose. Convert into a texture that can be applied to the detector mesh.",
+    "crumbs": [
+      "api",
+      "visualization"
+    ]
+  },
+  {
+    "objectID": "api/utils.html",
+    "href": "api/utils.html",
+    "title": "utils",
+    "section": "",
+    "text": "From a calibrated camera’s intrinsic matrix, calculate the following properties:\n\nFocal length (in units length)\nPrincipal point (in units length)\n\n\nsource\n\n\n\n get_focal_length (intrinsic, delx:float, dely:float)\n\n\n\n\n\nType\nDetails\n\n\n\n\nintrinsic\n\nIntrinsic matrix (3 x 3 tensor)\n\n\ndelx\nfloat\nX-direction spacing (in units length)\n\n\ndely\nfloat\nY-direction spacing (in units length)\n\n\nReturns\nfloat\nFocal length (in units length)\n\n\n\n\nsource\n\n\n\n\n get_principal_point (intrinsic, height:int, width:int, delx:float,\n                      dely:float)\n\n\n\n\n\nType\nDetails\n\n\n\n\nintrinsic\n\nIntrinsic matrix (3 x 3 tensor)\n\n\nheight\nint\nY-direction length (in units pixels)\n\n\nwidth\nint\nX-direction length (in units pixels)\n\n\ndelx\nfloat\nX-direction spacing (in units length)\n\n\ndely\nfloat\nY-direction spacing (in units length)\n\n\n\n\nsource\n\n\n\n\n parse_intrinsic_matrix (intrinsic, height:int, width:int, delx:float,\n                         dely:float)\n\n\n\n\n\nType\nDetails\n\n\n\n\nintrinsic\n\nIntrinsic matrix (3 x 3 tensor)\n\n\nheight\nint\nY-direction length (in units pixels)\n\n\nwidth\nint\nX-direction length (in units pixels)\n\n\ndelx\nfloat\nX-direction spacing (in units length)\n\n\ndely\nfloat\nY-direction spacing (in units length)\n\n\n\n\nsource\n\n\n\n\n make_intrinsic_matrix (sdr:float, delx:float, dely:float, height:int,\n                        width:int, x0:float=0.0, y0:float=0.0)\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nsdr\nfloat\n\nSource-to-detector radius (in units length)\n\n\ndelx\nfloat\n\nX-direction spacing (in units length / pixel)\n\n\ndely\nfloat\n\nY-direction spacing (in units length / pixel)\n\n\nheight\nint\n\nY-direction length (in units pixels)\n\n\nwidth\nint\n\nX-direction length (in units pixels)\n\n\nx0\nfloat\n0.0\nPrincipal point x-coordinate (in units length)\n\n\ny0\nfloat\n0.0\nPrincipal point y-coordinate (in units length)",
+    "crumbs": [
+      "api",
+      "utils"
+    ]
+  },
+  {
+    "objectID": "api/utils.html#intrinsic-matrix-parsing",
+    "href": "api/utils.html#intrinsic-matrix-parsing",
+    "title": "utils",
+    "section": "",
+    "text": "From a calibrated camera’s intrinsic matrix, calculate the following properties:\n\nFocal length (in units length)\nPrincipal point (in units length)\n\n\nsource\n\n\n\n get_focal_length (intrinsic, delx:float, dely:float)\n\n\n\n\n\nType\nDetails\n\n\n\n\nintrinsic\n\nIntrinsic matrix (3 x 3 tensor)\n\n\ndelx\nfloat\nX-direction spacing (in units length)\n\n\ndely\nfloat\nY-direction spacing (in units length)\n\n\nReturns\nfloat\nFocal length (in units length)\n\n\n\n\nsource\n\n\n\n\n get_principal_point (intrinsic, height:int, width:int, delx:float,\n                      dely:float)\n\n\n\n\n\nType\nDetails\n\n\n\n\nintrinsic\n\nIntrinsic matrix (3 x 3 tensor)\n\n\nheight\nint\nY-direction length (in units pixels)\n\n\nwidth\nint\nX-direction length (in units pixels)\n\n\ndelx\nfloat\nX-direction spacing (in units length)\n\n\ndely\nfloat\nY-direction spacing (in units length)\n\n\n\n\nsource\n\n\n\n\n parse_intrinsic_matrix (intrinsic, height:int, width:int, delx:float,\n                         dely:float)\n\n\n\n\n\nType\nDetails\n\n\n\n\nintrinsic\n\nIntrinsic matrix (3 x 3 tensor)\n\n\nheight\nint\nY-direction length (in units pixels)\n\n\nwidth\nint\nX-direction length (in units pixels)\n\n\ndelx\nfloat\nX-direction spacing (in units length)\n\n\ndely\nfloat\nY-direction spacing (in units length)\n\n\n\n\nsource\n\n\n\n\n make_intrinsic_matrix (sdr:float, delx:float, dely:float, height:int,\n                        width:int, x0:float=0.0, y0:float=0.0)\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nsdr\nfloat\n\nSource-to-detector radius (in units length)\n\n\ndelx\nfloat\n\nX-direction spacing (in units length / pixel)\n\n\ndely\nfloat\n\nY-direction spacing (in units length / pixel)\n\n\nheight\nint\n\nY-direction length (in units pixels)\n\n\nwidth\nint\n\nX-direction length (in units pixels)\n\n\nx0\nfloat\n0.0\nPrincipal point x-coordinate (in units length)\n\n\ny0\nfloat\n0.0\nPrincipal point y-coordinate (in units length)",
+    "crumbs": [
+      "api",
+      "utils"
+    ]
+  }
+]
