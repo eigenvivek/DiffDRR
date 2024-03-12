@@ -43,14 +43,12 @@ class Siddon(torch.nn.Module):
 # %% ../notebooks/api/01_renderers.ipynb 8
 def _get_alphas(source, target, spacing, dims, eps):
     # Get the CT sizing and spacing parameters
-    dx, dy, dz = spacing
-    nx, ny, nz = dims
+    alphax = torch.arange(dims[0]).to(source) * spacing[0]
+    alphay = torch.arange(dims[1]).to(source) * spacing[1]
+    alphaz = torch.arange(dims[2]).to(source) * spacing[2]
 
     # Get the alpha at each plane intersection
     sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
-    alphax = torch.arange(nx).to(source) * dx
-    alphay = torch.arange(ny).to(source) * dy
-    alphaz = torch.arange(nz).to(source) * dz
     alphax = alphax.expand(len(source), 1, -1) - sx.unsqueeze(-1)
     alphay = alphay.expand(len(source), 1, -1) - sy.unsqueeze(-1)
     alphaz = alphaz.expand(len(source), 1, -1) - sz.unsqueeze(-1)
@@ -67,9 +65,11 @@ def _get_alphas(source, target, spacing, dims, eps):
     alphas[~good_idxs] = torch.nan
 
     # Sort the alphas by ray, putting nans at the end of the list
-    # Drop indices where alphas for all rays are nan
     alphas = torch.sort(alphas, dim=-1).values
+
+    # Drop indices where alphas for all rays are nan
     alphas = alphas[..., ~alphas.isnan().all(dim=0).all(dim=0)]
+
     return alphas
 
 
@@ -110,7 +110,7 @@ def _get_index(alpha, source, target, spacing, dims, maxidx, eps):
     idxs[idxs > maxidx] = maxidx
     return idxs
 
-# %% ../notebooks/api/01_renderers.ipynb 10
+# %% ../notebooks/api/01_renderers.ipynb 12
 from torch.nn.functional import grid_sample
 
 
