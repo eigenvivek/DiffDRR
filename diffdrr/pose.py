@@ -637,17 +637,10 @@ def axis_angle_to_quaternion(axis_angle: torch.Tensor) -> torch.Tensor:
     """
     angles = torch.norm(axis_angle, p=2, dim=-1, keepdim=True)
     half_angles = angles * 0.5
-    eps = 1e-6
     small_angles = angles.abs() < eps
-    sin_half_angles_over_angles = torch.empty_like(angles)
-    sin_half_angles_over_angles[~small_angles] = (
-        torch.sin(half_angles[~small_angles]) / angles[~small_angles]
-    )
-    # for x small, sin(x/2) is about x/2 - (x/2)^3/6
-    # so sin(x/2)/x is about 1/2 - (x*x)/48
-    sin_half_angles_over_angles[small_angles] = (
-        0.5 - (angles[small_angles] * angles[small_angles]) / 48
-    )
+    large = torch.sin(half_angles) / angles
+    small = 0.5 - (angles * angles) / 48
+    sin_half_angles_over_angles = torch.where(small_angles, small, large)
     quaternions = torch.cat(
         [torch.cos(half_angles), axis_angle * sin_half_angles_over_angles], dim=-1
     )
