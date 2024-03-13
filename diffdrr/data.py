@@ -5,18 +5,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import nibabel
+import nibabel as nib
 import numpy as np
 
 # %% auto 0
 __all__ = ['read_nifti', 'load_example_ct']
 
 # %% ../notebooks/api/03_data.ipynb 4
-def read_nifti(filename: Path | str):
+def read_nifti(filename: Path | str, return_affine=False):
     """Read a NIFTI and return the volume, affine matrix, and voxel spacings."""
-    img = nibabel.load(filename)
-    volume = img.get_fdata()
+    img = nib.load(filename)
     affine = img.affine
+    volume = img.get_fdata()
     spacing = img.header.get_zooms()
 
     # If affine matrix has negative spacing, flip axis
@@ -28,7 +28,10 @@ def read_nifti(filename: Path | str):
     # Get the origin in world coordinates from the affine matrix
     origin = tuple(affine[:3, 3])
 
-    return volume, origin, spacing
+    if return_affine:
+        return volume, origin, spacing, affine
+    else:
+        return volume, origin, spacing
 
 # %% ../notebooks/api/03_data.ipynb 5
 def load_example_ct():
