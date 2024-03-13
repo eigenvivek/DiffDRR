@@ -7,7 +7,6 @@ from pathlib import Path
 
 import nibabel
 import numpy as np
-from pydicom import dcmread
 
 # %% auto 0
 __all__ = ['read_nifti', 'load_example_ct']
