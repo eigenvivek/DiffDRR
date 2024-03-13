@@ -26,7 +26,7 @@ def read_nifti(filename: Path | str):
     volume = np.copy(volume)
 
     # Get the origin in world coordinates from the affine matrix
-    origin = list(affine[:3, 3])
+    origin = tuple(affine[:3, 3])
 
     return volume, origin, spacing
 
