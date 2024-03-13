@@ -27,7 +27,7 @@ class Siddon(torch.nn.Module):
         alphas = _get_alphas(source, target, origin, spacing, dims, self.eps)
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
         voxels = _get_voxel(
-            alphamid, source, target, volume, spacing, origin, dims, maxidx, self.eps
+            alphamid, source, target, volume, origin, spacing, dims, maxidx, self.eps
         )
 
         # Step length for alphas out of range will be nan
@@ -60,7 +60,7 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
     alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
     # Get the alphas within the range [alphamin, alphamax]
-    alphamin, alphamax = _get_alpha_minmax(source, target, spacing, origin, dims, eps)
+    alphamin, alphamax = _get_alpha_minmax(source, target, origin, spacing, dims, eps)
     good_idxs = torch.logical_and(alphas >= alphamin, alphas <= alphamax)
     alphas[~good_idxs] = torch.nan
 
@@ -73,7 +73,7 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
     return alphas
 
 
-def _get_alpha_minmax(source, target, spacing, origin, dims, eps):
+def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
     sdd = target - source + eps
     planes = torch.zeros(3).to(source)
     alpha0 = (planes * spacing + origin - source) / sdd
@@ -89,12 +89,12 @@ def _get_alpha_minmax(source, target, spacing, origin, dims, eps):
     return alphamin, alphamax
 
 
-def _get_voxel(alpha, source, target, volume, spacing, origin, dims, maxidx, eps):
-    idxs = _get_index(alpha, source, target, spacing, origin, dims, maxidx, eps)
+def _get_voxel(alpha, source, target, volume, origin, spacing, dims, maxidx, eps):
+    idxs = _get_index(alpha, source, target, origin, spacing, dims, maxidx, eps)
     return torch.take(volume, idxs)
 
 
-def _get_index(alpha, source, target, spacing, origin, dims, maxidx, eps):
+def _get_index(alpha, source, target, origin, spacing, dims, maxidx, eps):
     sdd = target - source + eps
     idxs = source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)
     idxs = (idxs - origin) / spacing
@@ -134,7 +134,7 @@ class Trilinear(torch.nn.Module):
         return torch.tensor(volume.shape).to(volume) - 1
 
     def forward(
-        self, volume, spacing, origin, source, target, n_points=250, align_corners=True
+        self, volume, origin, spacing, source, target, n_points=250, align_corners=True
     ):
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1)
