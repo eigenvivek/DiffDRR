@@ -163,7 +163,7 @@ def drr_to_mesh(
     grid = pyvista.ImageData(
         dimensions=drr.volume.shape,
         spacing=drr.spacing,
-        origin=(0, 0, 0),
+        origin=drr.origin,
     )
 
     if method == "marching_cubes":

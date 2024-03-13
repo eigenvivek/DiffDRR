@@ -21,7 +21,8 @@ class DRR(nn.Module):
     def __init__(
         self,
         volume: np.ndarray,  # CT volume
-        spacing: np.ndarray,  # Dimensions of voxels in the CT volume
+        origin: list,  # Origin of the CT volume
+        spacing: list,  # Voxel dimensions in the CT volume
         sdr: float,  # Source-to-detector radius for the C-arm (half of the source-to-detector distance)
         height: int,  # Height of the rendered DRR
         delx: float,  # X-axis pixel size
@@ -31,7 +32,7 @@ class DRR(nn.Module):
         y0: float = 0.0,  # Principal point Y-offset
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
-        reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
+        reverse_x_axis: bool = False,  # If pose includes reflection (i.e., E(3), not SE(3)), reverse x-axis
         patch_size: int | None = None,  # Render patches of the DRR in series
         bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
         renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
@@ -58,8 +59,9 @@ class DRR(nn.Module):
         )
 
         # Initialize the volume
+        self.register_buffer("volume", torch.tensor(volume))
+        self.register_buffer("origin", torch.tensor(origin))
         self.register_buffer("spacing", torch.tensor(spacing))
-        self.register_buffer("volume", torch.tensor(volume).flip([0]))
         self.reshape = reshape
         self.patch_size = patch_size
         if self.patch_size is not None:
@@ -129,11 +131,15 @@ def forward(
         img = []
         for idx in range(self.n_patches):
             t = target[:, idx * n_points : (idx + 1) * n_points]
-            partial = self.renderer(self.density, self.spacing, source, t, **kwargs)
+            partial = self.renderer(
+                self.density, self.origin, self.spacing, source, t, **kwargs
+            )
             img.append(partial)
         img = torch.cat(img, dim=1)
     else:
-        img = self.renderer(self.density, self.spacing, source, target, **kwargs)
+        img = self.renderer(
+            self.density, self.origin, self.spacing, source, target, **kwargs
+        )
     return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
