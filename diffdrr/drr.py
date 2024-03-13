@@ -21,8 +21,8 @@ class DRR(nn.Module):
     def __init__(
         self,
         volume: np.ndarray,  # CT volume
-        origin: list,  # Origin of the CT volume
-        spacing: list,  # Voxel dimensions in the CT volume
+        origin: tuple,  # Origin of the CT volume in world coordinates
+        spacing: tuple,  # Dimensions in the CT volume in world coordinates
         sdr: float,  # Source-to-detector radius for the C-arm (half of the source-to-detector distance)
         height: int,  # Height of the rendered DRR
         delx: float,  # X-axis pixel size
@@ -35,6 +35,7 @@ class DRR(nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (i.e., E(3), not SE(3)), reverse x-axis
         patch_size: int | None = None,  # Render patches of the DRR in series
         bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
+        mask: np.ndarray = None,  # Segmentation mask the same size as the CT volume
         renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
         **renderer_kwargs,  # Kwargs for the renderer
     ):
@@ -62,6 +63,8 @@ class DRR(nn.Module):
         self.register_buffer("volume", torch.tensor(volume))
         self.register_buffer("origin", torch.tensor(origin))
         self.register_buffer("spacing", torch.tensor(spacing))
+        if mask is not None:
+            self.register_buffer("mask", torch.tensor(mask).to(torch.int16))
         self.reshape = reshape
         self.patch_size = patch_size
         if self.patch_size is not None:
@@ -112,33 +115,46 @@ def forward(
     parameterization: str = None,  # Specifies the representation of the rotation
     convention: str = None,  # If parameterization is Euler angles, specify convention
     bone_attenuation_multiplier: float = None,  # Contrast ratio of bone to soft tissue
+    labels: list = None,  # Labels from the mask of structures to render
     **kwargs,  # Passed to the renderer
 ):
     """Generate DRR with rotational and translational parameters."""
+    # Initialize a density map from the volume
     if not hasattr(self, "density"):
         self.set_bone_attenuation_multiplier(self.bone_attenuation_multiplier)
     if bone_attenuation_multiplier is not None:
         self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
 
+    # Initialize the camera pose
     if parameterization is None:
         pose = args[0]
     else:
         pose = convert(*args, parameterization=parameterization, convention=convention)
     source, target = self.detector(pose)
 
+    # Apply mask
+    if labels is not None:
+        if isinstance(labels, int):
+            labels = [labels]
+        mask = torch.any(torch.stack([self.mask == idx for idx in labels]), dim=0)
+        density = self.density * mask
+    else:
+        density = self.density
+
+    # Render the drr
     if self.patch_size is not None:
         n_points = target.shape[1] // self.n_patches
         img = []
         for idx in range(self.n_patches):
             t = target[:, idx * n_points : (idx + 1) * n_points]
             partial = self.renderer(
-                self.density, self.origin, self.spacing, source, t, **kwargs
+                density, self.origin, self.spacing, source, t, **kwargs
             )
             img.append(partial)
         img = torch.cat(img, dim=1)
     else:
         img = self.renderer(
-            self.density, self.origin, self.spacing, source, target, **kwargs
+            density, self.origin, self.spacing, source, target, **kwargs
         )
     return self.reshape_transform(img, batch_size=len(pose))
 
