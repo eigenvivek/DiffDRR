@@ -16,7 +16,7 @@ def read_nifti(filename: Path | str, return_affine=False):
     """Read a NIFTI and return the volume, affine matrix, and voxel spacings."""
     img = nib.load(filename)
     affine = img.affine
-    volume = img.get_fdata()
+    volume = img.get_fdata().astype(np.float32)
     spacing = img.header.get_zooms()
 
     # If affine matrix has negative spacing, flip axis
