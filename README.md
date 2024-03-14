@@ -72,7 +72,7 @@ plt.show()
 
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
-    35.9 ms ± 15 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    35.8 ms ± 10.4 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 The full example is available at
 [`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).
