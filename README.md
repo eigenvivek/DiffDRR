@@ -47,22 +47,23 @@ from diffdrr.visualization import plot_drr
 volume, origin, spacing = load_example_ct()
 
 # Initialize the DRR module for generating synthetic X-rays
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 drr = DRR(
     volume,      # The CT volume as a numpy array
+    origin,      # Location of the voxel [0, 0, 0] in world coordinates
     spacing,     # Voxel dimensions of the CT
     sdr=510.0,   # Source-to-detector radius (half of the source-to-detector distance)
     height=200,  # Height of the DRR (if width is not seperately provided, the generated image is square)
     delx=2.0,    # Pixel spacing (in mm)
 ).to(device)
 
-# Set the camera pose with rotation (yaw, pitch, roll) and translation (x, y, z)
+# Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
 rotations = torch.tensor([[torch.pi / 2, 0.0, -torch.pi / 2]], device=device)
 translations = torch.tensor([[350.0, 325.0, -175.0]], device=device)
 
 # 📸 Also note that DiffDRR can take many representations of SO(3) 📸
 # For example, quaternions, rotation matrix, axis-angle, etc...
-img = drr(rotation, translation, parameterization="euler_angles", convention="ZYX")
+img = drr(rotations, translations, parameterization="euler_angles", convention="ZYX")
 plot_drr(img, ticks=False)
 plt.show()
 ```
