@@ -23,6 +23,7 @@ class Siddon(torch.nn.Module):
     def forward(self, volume, origin, spacing, source, target):
         dims = self.dims(volume)
         maxidx = self.maxidx(volume)
+        origin = origin.to(torch.float64)
 
         alphas = _get_alphas(source, target, origin, spacing, dims, self.eps)
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
@@ -60,7 +61,7 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
     alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
     # Get the alphas within the range [alphamin, alphamax]
-    alphamin, alphamax = _get_alpha_minmax(source, target, origin, spacing, dims, eps)
+    alphamin, alphamax = _get_alpha_minmax(sdd, source, target, origin, spacing, dims)
     good_idxs = torch.logical_and(alphas >= alphamin, alphas <= alphamax)
     alphas[~good_idxs] = torch.nan
 
@@ -73,8 +74,7 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
     return alphas
 
 
-def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
-    sdd = target - source + eps
+def _get_alpha_minmax(sdd, source, target, origin, spacing, dims):
     planes = torch.zeros(3).to(source)
     alpha0 = (planes * spacing + origin - source) / sdd
     planes = (dims - 1).to(source)
