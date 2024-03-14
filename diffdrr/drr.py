@@ -23,7 +23,7 @@ class DRR(nn.Module):
         volume: np.ndarray,  # CT volume
         origin: tuple,  # Origin of the CT volume in world coordinates
         spacing: tuple,  # Dimensions in the CT volume in world coordinates
-        sdr: float,  # Source-to-detector radius for the C-arm (half of the source-to-detector distance)
+        sdd: float,  # Source-to-detector distance (i.e., the C-arm's focal length)
         height: int,  # Height of the rendered DRR
         delx: float,  # X-axis pixel size
         width: int | None = None,  # Width of the rendered DRR (default to `height`)
@@ -48,7 +48,7 @@ class DRR(nn.Module):
             int(height * width * p_subsample) if p_subsample is not None else None
         )
         self.detector = Detector(
-            sdr,
+            sdd,
             height,
             width,
             delx,
@@ -173,14 +173,14 @@ def set_bone_attenuation_multiplier(self: DRR, bone_attenuation_multiplier: floa
 @patch
 def set_intrinsics(
     self: DRR,
-    sdr: float = None,
+    sdd: float = None,
     delx: float = None,
     dely: float = None,
     x0: float = None,
     y0: float = None,
 ):
     self.detector = Detector(
-        sdr if sdr is not None else self.detector.sdr,
+        sdd if sdd is not None else self.detector.sdd,
         self.detector.height,
         self.detector.width,
         delx if delx is not None else self.detector.delx,
@@ -201,9 +201,7 @@ def perspective_projection(
     pose: RigidTransform,
     pts: torch.Tensor,
 ):
-    extrinsic = (
-        pose.inverse().compose(self.detector.translate).compose(self.detector.flip_xz)
-    )
+    extrinsic = pose.inverse().compose(self.detector.flip_z)
     x = extrinsic(pts)
     x = torch.einsum("ij, bnj -> bni", self.detector.intrinsic, x)
     z = x[..., -1].unsqueeze(-1).clone()
@@ -225,14 +223,10 @@ def inverse_projection(
         .compose(self.detector.translate.inverse())
         .compose(pose)
     )
-    x = (
-        -2
-        * self.detector.sdr
-        * torch.einsum(
-            "ij, bnj -> bni",
-            self.detector.intrinsic.inverse(),
-            pad(pts, (0, 1), value=1),  # Convert to homogenous coordinates
-        )
+    x = -self.detector.sdd * torch.einsum(
+        "ij, bnj -> bni",
+        self.detector.intrinsic.inverse(),
+        pad(pts, (0, 1), value=1),  # Convert to homogenous coordinates
     )
     return extrinsic(x)
 
