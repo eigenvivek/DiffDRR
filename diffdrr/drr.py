@@ -32,7 +32,7 @@ class DRR(nn.Module):
         y0: float = 0.0,  # Principal point Y-offset
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
-        reverse_x_axis: bool = False,  # If pose includes reflection (i.e., E(3), not SE(3)), reverse x-axis
+        reverse_x_axis: bool = True,  # If pose includes reflection (i.e., E(3), not SE(3)), reverse x-axis
         patch_size: int | None = None,  # Render patches of the DRR in series
         bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
         mask: np.ndarray = None,  # Segmentation mask the same size as the CT volume

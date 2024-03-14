@@ -25,8 +25,10 @@ def read_nifti(filename: Path | str, return_affine=False):
             volume = np.flip(volume, axis)
     volume = np.copy(volume)
 
-    # Get the origin in world coordinates from the affine matrix
-    origin = tuple(affine[:3, 3].astype(np.float32))
+    # Get the origin in world coordinates from the affine matrix, correcting for negative spacings
+    corners = np.array([[0, 0, 0, 1], [*volume.shape, 1]])
+    origin = np.einsum("ij, nj -> ni", affine, corners).min(axis=0)[:3]
+    origin = tuple(origin.astype(np.float32))
 
     if return_affine:
         return volume, origin, spacing, affine
