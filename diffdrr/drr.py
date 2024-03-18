@@ -44,9 +44,6 @@ class DRR(nn.Module):
         # Initialize the X-ray detector
         width = height if width is None else width
         dely = delx if dely is None else dely
-        n_subsample = (
-            int(height * width * p_subsample) if p_subsample is not None else None
-        )
         self.detector = Detector(
             sdd,
             height,
@@ -55,8 +52,10 @@ class DRR(nn.Module):
             dely,
             x0,
             y0,
-            n_subsample=n_subsample,
             reverse_x_axis=reverse_x_axis,
+            n_subsample=int(height * width * p_subsample)
+            if p_subsample is not None
+            else None,
         )
 
         # Initialize the volume

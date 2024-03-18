@@ -8,7 +8,7 @@ from fastcore.basics import patch
 from torch.nn.functional import normalize
 
 # %% auto 0
-__all__ = ['Detector', 'diffdrr_to_deepdrr']
+__all__ = ['Detector']
 
 # %% ../notebooks/api/02_detector.ipynb 5
 from .pose import RigidTransform
@@ -28,7 +28,7 @@ class Detector(torch.nn.Module):
         x0: float,  # Principal point X-offset
         y0: float,  # Principal point Y-offset
         n_subsample: int | None = None,  # Number of target points to randomly sample
-        reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
+        reverse_x_axis: bool = True,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
         super().__init__()
         self.sdd = sdd
@@ -48,26 +48,6 @@ class Detector(torch.nn.Module):
         self.register_buffer("source", source)
         self.register_buffer("target", target)
 
-        # # Anatomy to world coordinates
-        # flip_xz = torch.tensor(
-        #     [
-        #         [0.0, 0.0, -1.0, 0.0],
-        #         [0.0, 1.0, 0.0, 0.0],
-        #         [1.0, 0.0, 0.0, 0.0],
-        #         [0.0, 0.0, 0.0, 1.0],
-        #     ]
-        # )
-        # translate = torch.tensor(
-        #     [
-        #         [1.0, 0.0, 0.0, -self.sdr],
-        #         [0.0, 1.0, 0.0, 0.0],
-        #         [0.0, 0.0, 1.0, 0.0],
-        #         [0.0, 0.0, 0.0, 1.0],
-        #     ]
-        # )
-        # self.register_buffer("_flip_xz", flip_xz)
-        # self.register_buffer("_translate", translate)
-
     @property
     def intrinsic(self):
         return make_intrinsic_matrix(
@@ -78,15 +58,7 @@ class Detector(torch.nn.Module):
             self.width,
             self.x0,
             self.y0,
-        ).to(self._flip_xz)
-
-    @property
-    def flip_xz(self):
-        return RigidTransform(self._flip_xz)
-
-    @property
-    def translate(self):
-        return RigidTransform(self._translate)
+        ).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
 @patch
@@ -140,16 +112,8 @@ from .pose import RigidTransform
 
 
 @patch
-def forward(
-    self: Detector,
-    pose: RigidTransform,
-):
+def forward(self: Detector, pose: RigidTransform):
     """Create source and target points for X-rays to trace through the volume."""
     source = pose(self.source)
     target = pose(self.target)
     return source, target
-
-# %% ../notebooks/api/02_detector.ipynb 8
-def diffdrr_to_deepdrr(euler_angles):
-    alpha, beta, gamma = euler_angles.unbind(-1)
-    return torch.stack([beta, alpha, gamma], dim=1)
