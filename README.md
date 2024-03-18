@@ -44,22 +44,20 @@ from diffdrr.data import load_example_ct
 from diffdrr.visualization import plot_drr
 
 # Read in the volume and get its origin and spacing in world coordinates
-volume, origin, spacing = load_example_ct()
+subject = load_example_ct()
 
 # Initialize the DRR module for generating synthetic X-rays
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 drr = DRR(
-    volume,      # The CT volume as a numpy array
-    origin,      # Location of the voxel [0, 0, 0] in world coordinates
-    spacing,     # Voxel dimensions of the CT
-    sdr=510.0,   # Source-to-detector radius (half of the source-to-detector distance)
+    subject,     # An object storing the CT volume, origin, and voxel spacing
+    sdd=1020.0,  # Source-to-detector radius (half of the source-to-detector distance)
     height=200,  # Height of the DRR (if width is not seperately provided, the generated image is square)
     delx=2.0,    # Pixel spacing (in mm)
 ).to(device)
 
 # Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
-rotations = torch.tensor([[torch.pi / 2, 0.0, -torch.pi / 2]], device=device)
-translations = torch.tensor([[350.0, 325.0, -175.0]], device=device)
+rotations = torch.tensor([[0.0, torch.pi / 2, torch.pi / 2]], device=device)
+translations = torch.tensor([[-10.0, 850.0, -175.0]], device=device)
 
 # 📸 Also note that DiffDRR can take many representations of SO(3) 📸
 # For example, quaternions, rotation matrix, axis-angle, etc...
@@ -72,7 +70,7 @@ plt.show()
 
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
-    35.8 ms ± 10.4 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    34.9 ms ± 22.6 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 The full example is available at
 [`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).

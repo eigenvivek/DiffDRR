@@ -7,37 +7,69 @@ from pathlib import Path
 
 import nibabel as nib
 import numpy as np
+import torch
 
 # %% auto 0
-__all__ = ['read_nifti', 'load_example_ct']
+__all__ = ['load_example_ct', 'Subject']
 
 # %% ../notebooks/api/03_data.ipynb 4
-def read_nifti(filename: Path | str, return_affine=False):
-    """Read a NIFTI and return the volume, affine matrix, and voxel spacings."""
-    img = nib.load(filename)
-    affine = img.affine
-    volume = img.get_fdata().astype(np.float32)
-    spacing = img.header.get_zooms()
-
-    # If affine matrix has negative spacing, flip axis
-    for axis in range(volume.ndim):
-        if affine[axis, axis] < 0:
-            volume = np.flip(volume, axis)
-    volume = np.copy(volume)
-
-    # Get the origin in world coordinates from the affine matrix, correcting for negative spacings
-    corners = np.array([[0, 0, 0, 1], [*volume.shape, 1]])
-    origin = np.einsum("ij, nj -> ni", affine, corners).min(axis=0)[:3]
-    origin = tuple(origin.astype(np.float32))
-
-    if return_affine:
-        return volume, origin, spacing, affine
-    else:
-        return volume, origin, spacing
-
-# %% ../notebooks/api/03_data.ipynb 5
-def load_example_ct():
+def load_example_ct(bone_attenuation_multiplier=1.0):
     """Load an example chest CT for demonstration purposes."""
     datadir = Path(__file__).resolve().parent / "data"
     filename = datadir / "cxr.nii"
-    return read_nifti(filename)
+    return Subject.from_nifti(filename, bone_attenuation_multiplier)
+
+# %% ../notebooks/api/03_data.ipynb 5
+class Subject:
+    def __init__(
+        self,
+        volume,
+        affine,
+        origin,
+        spacing,
+        bone_attenuation_multiplier,
+    ):
+        self.volume = torch.from_numpy(volume)
+        self.affine = torch.from_numpy(affine)
+        self.origin = torch.tensor(origin)
+        self.spacing = torch.tensor(spacing)
+        self.density = self.parse_density(self.volume, bone_attenuation_multiplier)
+        self.bone_attenuation_multiplier = bone_attenuation_multiplier
+
+    @staticmethod
+    def parse_density(volume, bone_attenuation_multiplier):
+        volume[torch.where(350 < volume)] *= bone_attenuation_multiplier
+        density = torch.max(
+            torch.min(
+                0.001029 * volume + 1.03,
+                0.0005886 * volume + 1.03,
+            ),
+            torch.zeros_like(volume),
+        )
+        return density
+
+    @staticmethod
+    def from_nifti(filename: Path | str, bone_attenuation_multiplier=1.0):
+        # Read the NIFTI volume
+        img = nib.load(filename)
+        affine = img.affine
+        volume = img.get_fdata().astype(np.float32)
+        spacing = img.header.get_zooms()
+
+        # If affine matrix has negative spacing, flip axis
+        for axis in range(volume.ndim):
+            if affine[axis, axis] < 0:
+                volume = np.flip(volume, axis)
+        volume = np.copy(volume)
+
+        # Get the origin in world coordinates from the affine matrix, correcting for negative spacings
+        corners = np.array([[0, 0, 0, 1], [*volume.shape, 1]])
+        origin = np.einsum("ij, nj -> ni", affine, corners).min(axis=0)[:3]
+        origin = tuple(origin.astype(np.float32))
+        return Subject(volume, affine, origin, spacing, bone_attenuation_multiplier)
+
+    @staticmethod
+    def from_dicom(filename: Path | str, bone_attenuation_multiplier=1.0):
+        raise NotImplementedError(
+            "First use dcm2niix to convert your DICOM: https://github.com/rordenlab/dcm2niix"
+        )

@@ -15,14 +15,15 @@ from .renderers import Siddon, Trilinear
 __all__ = ['DRR', 'Registration']
 
 # %% ../notebooks/api/00_drr.ipynb 7
+from .data import Subject
+
+
 class DRR(nn.Module):
     """PyTorch module that computes differentiable digitally reconstructed radiographs."""
 
     def __init__(
         self,
-        volume: np.ndarray,  # CT volume
-        origin: tuple,  # Origin of the CT volume in world coordinates
-        spacing: tuple,  # Dimensions in the CT volume in world coordinates
+        subject: Subject,  # Data wrapper for the CT volume
         sdd: float,  # Source-to-detector distance (i.e., the C-arm's focal length)
         height: int,  # Height of the rendered DRR
         delx: float,  # X-axis pixel size
@@ -34,7 +35,6 @@ class DRR(nn.Module):
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         reverse_x_axis: bool = True,  # If pose includes reflection (i.e., E(3), not SE(3)), reverse x-axis
         patch_size: int | None = None,  # Render patches of the DRR in series
-        bone_attenuation_multiplier: float = 1.0,  # Contrast ratio of bone to soft tissue
         mask: np.ndarray = None,  # Segmentation mask the same size as the CT volume
         renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
         **renderer_kwargs,  # Kwargs for the renderer
@@ -60,21 +60,12 @@ class DRR(nn.Module):
         )
 
         # Initialize the volume
-        self.register_buffer("volume", torch.tensor(volume))
-        self.register_buffer("origin", torch.tensor(origin))
-        self.register_buffer("spacing", torch.tensor(spacing))
+        self.register_buffer("density", subject.density)
+        self.register_buffer("spacing", subject.spacing)
+        self.register_buffer("origin", subject.origin)
+        self.register_buffer("affine", subject.affine)
         if mask is not None:
             self.register_buffer("mask", torch.tensor(mask).to(torch.int16))
-        self.reshape = reshape
-        self.patch_size = patch_size
-        if self.patch_size is not None:
-            self.n_patches = (height * width) // (self.patch_size**2)
-
-        # Parameters for segmenting the CT volume and reweighting voxels
-        self.air = torch.where(self.volume <= -800)
-        self.soft_tissue = torch.where((-800 < self.volume) & (self.volume <= 350))
-        self.bone = torch.where(350 < self.volume)
-        self.bone_attenuation_multiplier = bone_attenuation_multiplier
 
         # Initialize the renderer
         if renderer == "siddon":
@@ -83,6 +74,10 @@ class DRR(nn.Module):
             self.renderer = Trilinear(**renderer_kwargs)
         else:
             raise ValueError(f"renderer must be 'siddon', not {renderer}")
+        self.reshape = reshape
+        self.patch_size = patch_size
+        if self.patch_size is not None:
+            self.n_patches = (height * width) // (self.patch_size**2)
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
@@ -93,11 +88,7 @@ class DRR(nn.Module):
         return img
 
 # %% ../notebooks/api/00_drr.ipynb 8
-def reshape_subsampled_drr(
-    img: torch.Tensor,
-    detector: Detector,
-    batch_size: int,
-):
+def reshape_subsampled_drr(img: torch.Tensor, detector: Detector, batch_size: int):
     n_points = detector.height * detector.width
     drr = torch.zeros(batch_size, n_points).to(img)
     drr[:, detector.subsamples[-1]] = img
@@ -114,17 +105,10 @@ def forward(
     *args,  # Some batched representation of SE(3)
     parameterization: str = None,  # Specifies the representation of the rotation
     convention: str = None,  # If parameterization is Euler angles, specify convention
-    bone_attenuation_multiplier: float = None,  # Contrast ratio of bone to soft tissue
     labels: list = None,  # Labels from the mask of structures to render
     **kwargs,  # Passed to the renderer
 ):
     """Generate DRR with rotational and translational parameters."""
-    # Initialize a density map from the volume
-    if not hasattr(self, "density"):
-        self.set_bone_attenuation_multiplier(self.bone_attenuation_multiplier)
-    if bone_attenuation_multiplier is not None:
-        self.set_bone_attenuation_multiplier(bone_attenuation_multiplier)
-
     # Initialize the camera pose
     if parameterization is None:
         pose = args[0]
@@ -141,7 +125,7 @@ def forward(
     else:
         density = self.density
 
-    # Render the drr
+    # Render the DRR
     if self.patch_size is not None:
         n_points = target.shape[1] // self.n_patches
         img = []
@@ -159,17 +143,6 @@ def forward(
     return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
-@patch
-def set_bone_attenuation_multiplier(self: DRR, bone_attenuation_multiplier: float):
-    self.density = torch.empty_like(self.volume)
-    self.density[self.air] = self.volume[self.soft_tissue].min()
-    self.density[self.soft_tissue] = self.volume[self.soft_tissue]
-    self.density[self.bone] = self.volume[self.bone] * bone_attenuation_multiplier
-    self.density -= self.density.min()
-    self.density /= self.density.max()
-    self.bone_attenuation_multiplier = bone_attenuation_multiplier
-
-# %% ../notebooks/api/00_drr.ipynb 12
 @patch
 def set_intrinsics(
     self: DRR,
@@ -191,7 +164,7 @@ def set_intrinsics(
         reverse_x_axis=self.detector.reverse_x_axis,
     ).to(self.volume)
 
-# %% ../notebooks/api/00_drr.ipynb 13
+# %% ../notebooks/api/00_drr.ipynb 12
 from .pose import RigidTransform
 
 
@@ -208,7 +181,7 @@ def perspective_projection(
     x = x / z
     return x[..., :2]
 
-# %% ../notebooks/api/00_drr.ipynb 14
+# %% ../notebooks/api/00_drr.ipynb 13
 from torch.nn.functional import pad
 
 
@@ -230,7 +203,7 @@ def inverse_projection(
     )
     return extrinsic(x)
 
-# %% ../notebooks/api/00_drr.ipynb 16
+# %% ../notebooks/api/00_drr.ipynb 15
 class Registration(nn.Module):
     """Perform automatic 2D-to-3D registration using differentiable rendering."""
 
