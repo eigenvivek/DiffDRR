@@ -59,10 +59,10 @@ class DRR(nn.Module):
         )
 
         # Initialize the volume
+        self.subject = subject
         self.register_buffer("density", subject.density)
         self.register_buffer("spacing", subject.spacing)
         self.register_buffer("origin", subject.origin)
-        self.register_buffer("affine", subject.affine)
         if mask is not None:
             self.register_buffer("mask", torch.tensor(mask).to(torch.int16))
 

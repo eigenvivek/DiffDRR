@@ -164,7 +164,7 @@ def drr_to_mesh(
     """
     # Turn the CT into a PyVista object and run marching cubes
     grid = pyvista.ImageData(
-        dimensions=drr.volume.shape,
+        dimensions=drr.subject.volume.shape,
         spacing=drr.spacing,
         origin=drr.origin,
     )
@@ -172,14 +172,14 @@ def drr_to_mesh(
     if method == "marching_cubes":
         mesh = grid.contour(
             isosurfaces=1,
-            scalars=drr.volume.cpu().numpy().flatten(order="F"),
+            scalars=drr.subject.volume.cpu().numpy().flatten(order="F"),
             rng=[threshold, torch.inf],
             method="marching_cubes",
             progress_bar=verbose,
         )
     elif method == "surface_nets":
         grid.point_data["values"] = (
-            drr.volume.cpu().numpy().flatten(order="F") > threshold
+            drr.subject.volume.cpu().numpy().flatten(order="F") > threshold
         )
         try:
             mesh = grid.contour_labeled(smoothing=True, progress_bar=verbose)
