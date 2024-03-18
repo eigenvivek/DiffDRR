@@ -27,14 +27,19 @@ class Subject:
         affine,
         origin,
         spacing,
-        bone_attenuation_multiplier,
+        bone_attenuation_multiplier=1.0,
+        convert_hu_to_density=True,  # Convert Hounsfield units to linear attenuation coefficient
     ):
         self.volume = torch.from_numpy(volume)
         self.affine = torch.from_numpy(affine)
         self.origin = torch.tensor(origin)
         self.spacing = torch.tensor(spacing)
-        self.density = self.parse_density(self.volume, bone_attenuation_multiplier)
-        self.bone_attenuation_multiplier = bone_attenuation_multiplier
+
+        # Set convert_hu_to_density=False if volume is not a CT (e.g., a segmentation or MRI)
+        if convert_hu_to_density:
+            self.density = self.parse_density(self.volume, bone_attenuation_multiplier)
+        else:
+            self.density = self.volume
 
     @staticmethod
     def parse_density(volume, bone_attenuation_multiplier):
