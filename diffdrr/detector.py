@@ -28,7 +28,7 @@ class Detector(torch.nn.Module):
         x0: float,  # Principal point X-offset
         y0: float,  # Principal point Y-offset
         n_subsample: int | None = None,  # Number of target points to randomly sample
-        reverse_x_axis: bool = True,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
+        reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
         super().__init__()
         self.sdd = sdd
@@ -47,6 +47,25 @@ class Detector(torch.nn.Module):
         source, target = self._initialize_carm()
         self.register_buffer("source", source)
         self.register_buffer("target", target)
+
+        # Create a pose to reorient the scanner
+        # Rotates the C-arm about the x-axis by 90 degrees
+        # Rotates the C-arm about the z-axis by -90 degrees
+        self.register_buffer(
+            "_reorient",
+            torch.tensor(
+                [
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [-1.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            ),
+        )
+
+    @property
+    def reorient(self):
+        return RigidTransform(self._reorient)
 
     @property
     def intrinsic(self):
@@ -114,6 +133,7 @@ from .pose import RigidTransform
 @patch
 def forward(self: Detector, pose: RigidTransform):
     """Create source and target points for X-rays to trace through the volume."""
+    pose = self.reorient.compose(pose)
     source = pose(self.source)
     target = pose(self.target)
     return source, target
