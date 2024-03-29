@@ -49,6 +49,13 @@ def read(
         **kwargs,
     )
 
+    # Canonicalize the images by converting to RAS+ and moving the
+    # Subject's isocenter to the origin in world coordinates
+    subject = canonicalize(subject)
+    return subject
+
+# %% ../notebooks/api/03_data.ipynb 6
+def canonicalize(subject):
     # Convert to RAS+ coordinate system
     subject = ToCanonical()(subject)
 
@@ -67,7 +74,7 @@ def read(
 
     return subject
 
-# %% ../notebooks/api/03_data.ipynb 6
+# %% ../notebooks/api/03_data.ipynb 7
 def transform_hu_to_density(volume):
     volume = volume.to(torch.float32)
 
