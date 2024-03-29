@@ -637,6 +637,7 @@ def axis_angle_to_quaternion(axis_angle: torch.Tensor) -> torch.Tensor:
     """
     angles = torch.norm(axis_angle, p=2, dim=-1, keepdim=True)
     half_angles = angles * 0.5
+    eps = 1e-6
     small_angles = angles.abs() < eps
     large = torch.sin(half_angles) / angles
     small = 0.5 - (angles * angles) / 48
