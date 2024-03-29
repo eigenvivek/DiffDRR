@@ -98,14 +98,14 @@ def _get_index(alpha, source, target, origin, spacing, dims, maxidx, eps):
     sdd = target - source + eps
     idxs = source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)
     idxs = (idxs - origin) / spacing
-    idxs = idxs.trunc()
+    idxs = idxs.floor()
     # Conversion to long makes nan->-inf, so temporarily replace them with 0
     # This is cancelled out later by multiplication by nan step_length
     idxs = (
         idxs[..., 0] * (dims[1] - 1) * (dims[2] - 1)
         + idxs[..., 1] * (dims[2] - 1)
         + idxs[..., 2]
-    ).long() + 1
+    ).long()
     idxs[idxs < 0] = 0
     idxs[idxs > maxidx] = maxidx
     return idxs
