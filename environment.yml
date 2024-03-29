@@ -17,4 +17,4 @@ dependencies:
   - pip:
     - pyvista
     - vtk
-    - nibabel
+    - torchio
