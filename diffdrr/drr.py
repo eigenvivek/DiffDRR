@@ -15,7 +15,7 @@ from .renderers import Siddon, Trilinear
 __all__ = ['DRR', 'Registration']
 
 # %% ../notebooks/api/00_drr.ipynb 7
-from .data import Subject
+from torchio import Subject
 
 
 class DRR(nn.Module):
@@ -23,7 +23,7 @@ class DRR(nn.Module):
 
     def __init__(
         self,
-        subject: Subject,  # Data wrapper for the CT volume
+        subject: Subject,  # TorchIO wrapper for the CT volume
         sdd: float,  # Source-to-detector distance (i.e., the C-arm's focal length)
         height: int,  # Height of the rendered DRR
         delx: float,  # X-axis pixel size
@@ -33,9 +33,8 @@ class DRR(nn.Module):
         y0: float = 0.0,  # Principal point Y-offset
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
-        reverse_x_axis: bool = True,  # If pose includes reflection (i.e., E(3), not SE(3)), reverse x-axis
+        reverse_x_axis: bool = False,  # If pose includes reflection (i.e., E(3), not SE(3)), reverse x-axis
         patch_size: int | None = None,  # Render patches of the DRR in series
-        mask: np.ndarray = None,  # Segmentation mask the same size as the CT volume
         renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
         **renderer_kwargs,  # Kwargs for the renderer
     ):
@@ -62,11 +61,16 @@ class DRR(nn.Module):
 
         # Initialize the volume
         self.subject = subject
+        self.volume = subject.volume.data.squeeze()
         self.register_buffer("density", subject.density)
-        self.register_buffer("spacing", subject.spacing)
-        self.register_buffer("origin", subject.origin)
-        if mask is not None:
-            self.register_buffer("mask", torch.tensor(mask).to(torch.int16))
+        self.register_buffer(
+            "spacing", torch.tensor(subject.volume.spacing, dtype=torch.float32)
+        )
+        self.register_buffer(
+            "origin", torch.tensor(subject.volume.origin, dtype=torch.float32)
+        )
+        if subject.mask is not None:
+            self.register_buffer("mask", subject.mask.data.squeeze())
 
         # Initialize the renderer
         if renderer == "siddon":
@@ -175,7 +179,7 @@ def perspective_projection(
     pose: RigidTransform,
     pts: torch.Tensor,
 ):
-    extrinsic = pose.inverse().compose(self.detector.flip_z)
+    extrinsic = (self.detector.reorient.compose(pose)).inverse()
     x = extrinsic(pts)
     x = torch.einsum("ij, bnj -> bni", self.detector.intrinsic, x)
     z = x[..., -1].unsqueeze(-1).clone()
@@ -192,12 +196,8 @@ def inverse_projection(
     pose: RigidTransform,
     pts: torch.Tensor,
 ):
-    extrinsic = (
-        self.detector.flip_xz.inverse()
-        .compose(self.detector.translate.inverse())
-        .compose(pose)
-    )
-    x = -self.detector.sdd * torch.einsum(
+    extrinsic = self.detector.reorient.compose(pose)
+    x = self.detector.sdd * torch.einsum(
         "ij, bnj -> bni",
         self.detector.intrinsic.inverse(),
         pad(pts, (0, 1), value=1),  # Convert to homogenous coordinates
