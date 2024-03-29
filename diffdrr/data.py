@@ -5,76 +5,81 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import nibabel as nib
 import numpy as np
 import torch
+from torchio import LabelMap, ScalarImage, Subject
+from torchio.transforms.preprocessing import ToCanonical
 
 # %% auto 0
-__all__ = ['load_example_ct', 'Subject']
+__all__ = ['load_example_ct', 'read']
 
 # %% ../notebooks/api/03_data.ipynb 4
-def load_example_ct(bone_attenuation_multiplier=1.0):
+def load_example_ct() -> Subject:
     """Load an example chest CT for demonstration purposes."""
     datadir = Path(__file__).resolve().parent / "data"
     filename = datadir / "cxr.nii"
-    return Subject.from_nifti(filename, bone_attenuation_multiplier)
+    return read(filename)
 
 # %% ../notebooks/api/03_data.ipynb 5
-class Subject:
-    def __init__(
-        self,
-        volume,
-        affine,
-        origin,
-        spacing,
-        bone_attenuation_multiplier=1.0,
-        convert_hu_to_density=True,  # Convert Hounsfield units to linear attenuation coefficient
-    ):
-        self.volume = torch.from_numpy(volume)
-        self.affine = torch.from_numpy(affine)
-        self.origin = torch.tensor(origin)
-        self.spacing = torch.tensor(spacing)
+def read(
+    filename: str | Path,  # Path to CT volume
+    labelmap: str | Path = None,  # Path to a labelmap for the CT volume
+    **kwargs,  # Any additional information to be stored in the torchio.Subject
+) -> Subject:
+    """
+    Read an image volume from a variety of formats, and optionally, any
+    given labelmap for the volume. Converts volume to a RAS+ coordinate
+    system and moves the volume isocenter to the world origin.
+    """
+    # Read the volume from a filename
+    volume = ScalarImage(filename)
+    density = transform_hu_to_density(volume.data)
 
-        # Set convert_hu_to_density=False if volume is not a CT (e.g., a segmentation or MRI)
-        if convert_hu_to_density:
-            self.density = self.parse_density(self.volume, bone_attenuation_multiplier)
-        else:
-            self.density = self.volume
+    # If a labelmap is passed, read the mask
+    if labelmap is not None:
+        mask = LabelMap(labelmap)
+    else:
+        mask = None
 
-    @staticmethod
-    def parse_density(volume, bone_attenuation_multiplier):
-        volume[torch.where(350 < volume)] *= bone_attenuation_multiplier
-        density = torch.max(
-            torch.min(
-                0.001029 * volume + 1.03,
-                0.0005886 * volume + 1.03,
-            ),
-            torch.zeros_like(volume),
-        )
-        return density
+    # Package the subject
+    subject = Subject(
+        volume=volume,
+        density=density,
+        mask=mask,
+        **kwargs,
+    )
 
-    @staticmethod
-    def from_nifti(filename: Path | str, bone_attenuation_multiplier=1.0):
-        # Read the NIFTI volume
-        img = nib.load(filename)
-        affine = img.affine
-        volume = img.get_fdata().astype(np.float32)
-        spacing = img.header.get_zooms()
+    # Convert to RAS+ coordinate system
+    subject = ToCanonical()(subject)
 
-        # If affine matrix has negative spacing, flip axis
-        for axis in range(volume.ndim):
-            if affine[axis, axis] < 0:
-                volume = np.flip(volume, axis)
-        volume = np.copy(volume)
+    # Move the Subject's isocenter to the origin in world coordinates
+    isocenter = subject.volume.get_center()
+    Tinv = np.array(
+        [
+            [1.0, 0.0, 0.0, -isocenter[0]],
+            [0.0, 1.0, 0.0, -isocenter[1]],
+            [0.0, 0.0, 1.0, -isocenter[2]],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    for image in subject.get_images(intensity_only=False):
+        image.affine = Tinv.dot(image.affine)
 
-        # Get the origin in world coordinates from the affine matrix, correcting for negative spacings
-        corners = np.array([[0, 0, 0, 1], [*volume.shape, 1]])
-        origin = np.einsum("ij, nj -> ni", affine, corners).min(axis=0)[:3]
-        origin = tuple(origin.astype(np.float32))
-        return Subject(volume, affine, origin, spacing, bone_attenuation_multiplier)
+    return subject
 
-    @staticmethod
-    def from_dicom(filename: Path | str, bone_attenuation_multiplier=1.0):
-        raise NotImplementedError(
-            "First use dcm2niix to convert your DICOM: https://github.com/rordenlab/dcm2niix"
-        )
+# %% ../notebooks/api/03_data.ipynb 6
+def transform_hu_to_density(volume):
+    volume = volume.to(torch.float32)
+
+    air = torch.where(volume <= -800)
+    soft_tissue = torch.where((-800 < volume) & (volume <= 350))
+    bone = torch.where(350 < volume)
+
+    density = torch.empty_like(volume)
+    density[air] = volume[soft_tissue].min()
+    density[soft_tissue] = volume[soft_tissue]
+    density[bone] = volume[bone]
+    density -= density.min()
+    density /= density.max()
+
+    return density.squeeze()
