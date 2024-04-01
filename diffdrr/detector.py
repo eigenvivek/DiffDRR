@@ -117,8 +117,8 @@ def _initialize_carm(self: Detector):
     target = target.unsqueeze(0)
 
     # Apply principal point offset
-    target[..., 0] -= self.x0
-    target[..., 1] -= self.y0
+    target[..., 1] -= self.x0
+    target[..., 0] -= self.y0
 
     if self.n_subsample is not None:
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]

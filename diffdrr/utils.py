@@ -21,8 +21,8 @@ def get_principal_point(
     delx: float,  # X-direction spacing (in units length)
     dely: float,  # Y-direction spacing (in units length)
 ):
-    x0 = delx * (width / 2 - intrinsic[0, 2])
-    y0 = dely * (height / 2 - intrinsic[1, 2])
+    x0 = delx * (intrinsic[0, 2] - width / 2)
+    y0 = dely * (intrinsic[1, 2] - height / 2)
     return x0.item(), y0.item()
 
 # %% ../notebooks/api/07_utils.ipynb 6
