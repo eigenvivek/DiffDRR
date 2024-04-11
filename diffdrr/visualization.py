@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 # %% auto 0
-__all__ = ['plot_drr', 'animate', 'drr_to_mesh', 'img_to_mesh']
+__all__ = ['plot_drr', 'animate', 'drr_to_mesh', 'labelmap_to_mesh', 'img_to_mesh']
 
 # %% ../notebooks/api/04_visualization.ipynb 5
 import torch
@@ -137,14 +137,13 @@ def animate(
 # %% ../notebooks/api/04_visualization.ipynb 9
 import pyvista
 import vtk
-
-from .drr import DRR
+from torchio import Subject
 
 vtk.vtkLogger.SetStderrVerbosity(vtk.vtkLogger.ConvertToVerbosity(-1))
 
 # %% ../notebooks/api/04_visualization.ipynb 10
 def drr_to_mesh(
-    drr: DRR,
+    subject: Subject,  # torchio.Subject with a `volume` attribute
     method: str,  # Either `surface_nets` or `marching_cubes`
     threshold: float = 300,  # Min value for marching cubes (Hounsfield units)
     verbose: bool = True,  # Display progress bars for mesh processing steps
@@ -162,24 +161,24 @@ def drr_to_mesh(
     4. Fill any holes
     5. Clean (remove any redundant vertices/edges)
     """
-    # Turn the CT into a PyVista object and run marching cubes
+    # Turn the CT into a PyVista object and run surface extraction
     grid = pyvista.ImageData(
-        dimensions=drr.volume.shape,
-        spacing=drr.spacing,
-        origin=drr.origin,
+        dimensions=subject.volume.shape[1:],
+        spacing=subject.volume.spacing,
+        origin=subject.volume.origin,
     )
 
     if method == "marching_cubes":
         mesh = grid.contour(
             isosurfaces=1,
-            scalars=drr.volume.cpu().numpy().flatten(order="F"),
+            scalars=subject.volume.data[0].cpu().numpy().flatten(order="F"),
             rng=[threshold, torch.inf],
             method="marching_cubes",
             progress_bar=verbose,
         )
     elif method == "surface_nets":
         grid.point_data["values"] = (
-            drr.volume.cpu().numpy().flatten(order="F") > threshold
+            subject.volume.data[0].cpu().numpy().flatten(order="F") > threshold
         )
         try:
             mesh = grid.contour_labeled(smoothing=True, progress_bar=verbose)
@@ -213,6 +212,32 @@ def drr_to_mesh(
     return mesh
 
 # %% ../notebooks/api/04_visualization.ipynb 11
+def labelmap_to_mesh(
+    subject: Subject,  # torchio.Subject with  a `mask` attribute
+    verbose: bool = True,  # Display progress bars for mesh processing steps
+):
+    # Turn the 3D labelmap into a PyVista object and run SurfaceNets
+    grid = pyvista.ImageData(
+        dimensions=subject.mask.shape[1:],
+        spacing=subject.mask.spacing,
+        origin=subject.mask.origin,
+    )
+    grid.point_data["values"] = subject.mask.data[0].numpy().flatten(order="F")
+    mesh = grid.contour_labeled(smoothing=True, progress_bar=verbose)
+    mesh.smooth_taubin(
+        n_iter=100,
+        feature_angle=120.0,
+        boundary_smoothing=False,
+        feature_smoothing=False,
+        non_manifold_smoothing=True,
+        normalize_coordinates=True,
+        inplace=True,
+        progress_bar=verbose,
+    )
+    mesh.clean(inplace=True, progress_bar=verbose)
+    return mesh
+
+# %% ../notebooks/api/04_visualization.ipynb 12
 from .pose import RigidTransform
 
 
@@ -258,7 +283,7 @@ def img_to_mesh(drr: DRR, pose: RigidTransform, **kwargs):
 
     return camera, detector, texture, principal_ray
 
-# %% ../notebooks/api/04_visualization.ipynb 12
+# %% ../notebooks/api/04_visualization.ipynb 13
 import numpy as np
 
 

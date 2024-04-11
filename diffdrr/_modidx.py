@@ -133,4 +133,6 @@ d = { 'settings': { 'branch': 'main',
                                                                               'diffdrr/visualization.py'),
                                        'diffdrr.visualization.img_to_mesh': ( 'api/visualization.html#img_to_mesh',
                                                                               'diffdrr/visualization.py'),
+                                       'diffdrr.visualization.labelmap_to_mesh': ( 'api/visualization.html#labelmap_to_mesh',
+                                                                                   'diffdrr/visualization.py'),
                                        'diffdrr.visualization.plot_drr': ('api/visualization.html#plot_drr', 'diffdrr/visualization.py')}}}
