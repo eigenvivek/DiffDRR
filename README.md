@@ -59,7 +59,7 @@ For examples running `DiffDRR` on real surgical datasets, check out our latest w
 - Alignment of real X-rays and rendered DRRs
 - Sub-millimeter registration accuracy
 
-![](https://cdn.githubraw.com/eigenvivek/DiffPose/b3937c4575a0ad092a7ac5b4e661a4fb1b06fc3f/experiments/test_time_optimization.gif)
+![](https://github.com/eigenvivek/DiffPose/blob/main/experiments/test_time_optimization.gif)
 
 ### Volume Reconstruction
 
