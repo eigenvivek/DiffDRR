@@ -6,7 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-from pydicom import dcmread
+import pydicom
 
 # %% auto 0
 __all__ = ['read_dicom', 'load_example_ct']
@@ -15,25 +15,43 @@ __all__ = ['read_dicom', 'load_example_ct']
 def read_dicom(dcmdir: Path | str):
     """Read a directory of DICOM files and return the volume and voxel spacings."""
 
-    dcmfiles = Path(dcmdir).glob("*.dcm")
-    dcmfiles = list(dcmfiles)
-    dcmfiles.sort()
-    ds = dcmread(dcmfiles[0])
+    datasets = [pydicom.read_file(path) for path in Path(dcmdir).rglob("*.dcm")]
 
-    nx, ny = ds.pixel_array.shape
-    nz = len(dcmfiles)
-    del_x, del_y = ds.PixelSpacing
+    # Select any DICOM file
+    any_ds = datasets[0]
+
+    # https://dicom.innolitics.com/ciods/ct-image/image-plane/00200037
+    image_orientation_patient = np.array(
+        any_ds.ImageOrientationPatient, dtype=np.float32
+    )
+
+    row_direction = image_orientation_patient[:3]
+    col_direction = image_orientation_patient[3:]
+    normal_direction = np.cross(row_direction, col_direction)
+
+    # Sort the slices along the normal direction
+    datasets = sorted(
+        datasets, key=lambda v: np.dot(normal_direction, v.ImagePositionPatient)
+    )
+
+    nx, ny = any_ds.pixel_array.shape
+    nz = len(datasets)
+    del_x, del_y = any_ds.PixelSpacing
     del_x, del_y = float(del_x), float(del_y)
-    volume = np.zeros((nx, ny, nz)).astype(np.float32)
+    volume = np.zeros((nx, ny, nz), dtype=np.float32)
 
-    del_zs = []
-    for idx, dcm in enumerate(dcmfiles):
-        ds = dcmread(dcm)
-        volume[:, :, idx] = ds.pixel_array
-        del_zs.append(ds.ImagePositionPatient[2])
+    for idx, ds in enumerate(datasets):
+        slope = float(ds.get("RescaleSlope", 1.0))
+        intercept = float(ds.get("RescaleIntercept", 0.0))
+        volume[:, :, idx] = (
+            slope * np.array(ds.pixel_array, dtype=np.float32) + intercept
+        )
 
-    del_zs = np.diff(del_zs)
-    del_z = float(np.abs(np.unique(del_zs)[0]))
+    # Use average slice distance
+    first_position = np.array(datasets[0].ImagePositionPatient, dtype=np.float32)
+    last_position = np.array(datasets[-1].ImagePositionPatient, dtype=np.float32)
+    del_z = np.linalg.norm(first_position - last_position) / (len(datasets) - 1)
+
     spacing = [del_x, del_y, del_z]
 
     return volume, spacing
