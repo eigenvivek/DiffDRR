@@ -62,6 +62,12 @@ For examples running `DiffDRR` on real surgical datasets, check out our latest w
 
 ![](https://github.com/eigenvivek/DiffPose/blob/main/experiments/test_time_optimization.gif)
 
+### Segmentation
+
+`DiffDRR` can project 3D labelmaps into 2D simply using perspective geometry:
+
+![](notebooks/index_files/segmentation.png)
+
 ### Volume Reconstruction
 
 `DiffDRR` is differentiable with respect to the 3D volume as well as camera poses.
