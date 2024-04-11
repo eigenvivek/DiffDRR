@@ -63,9 +63,10 @@ This work includes a lot of real-world usecases of `DiffDRR` including
 - Alignming of real X-rays and rendered DRRs
 - Achieving sub-millimeter registration accuracy very quickly
 
-### Segmentation
+### X-ray Segmentation
 
-`DiffDRR` can project 3D labelmaps into 2D simply using perspective geometry, helping identify particular structures in simulated X-rays:
+`DiffDRR` can project 3D labelmaps into 2D simply using perspective geometry, helping identify particular structures in simulated X-rays
+(these labels come from the [TotalSegmentator v2 dataset](https://github.com/wasserth/TotalSegmentator)):
 
 ![](notebooks/index_files/segmentation.png)
 
