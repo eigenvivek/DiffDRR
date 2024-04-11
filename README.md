@@ -19,7 +19,6 @@ DiffDRR
 Most importantly, `DiffDRR` implements DRR rendering as a PyTorch module, making it interoperable in deep learning pipelines.
 
 ## Install
-=======
 
 ```zsh
 pip install diffdrr
