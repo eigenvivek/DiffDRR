@@ -59,7 +59,7 @@ For examples running `DiffDRR` on real surgical datasets, check out our latest w
 - Alignment of real X-rays and rendered DRRs
 - Sub-millimeter registration accuracy
 
-![](https://github.com/eigenvivek/DiffPose/blob/main/experiments/test_time_optimization.gif)
+![](https://cdn.githubraw.com/eigenvivek/DiffPose/b3937c4575a0ad092a7ac5b4e661a4fb1b06fc3f/experiments/test_time_optimization.gif)
 
 ### Volume Reconstruction
 
@@ -107,7 +107,7 @@ plt.show()
 
 On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
-    38.6 ms ± 22.6 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    37.9 ms ± 19.6 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 The full example is available at
 [`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).
