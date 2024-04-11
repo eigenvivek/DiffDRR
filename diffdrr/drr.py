@@ -218,21 +218,44 @@ class Registration(nn.Module):
     ):
         super().__init__()
         self.drr = drr
-        self.rotation = nn.Parameter(rotation)
-        self.translation = nn.Parameter(translation)
+        self._rotation = nn.Parameter(rotation)
+        self._translation = nn.Parameter(translation)
         self.parameterization = parameterization
         self.convention = convention
 
     def forward(self):
-        return self.drr(
-            self.rotation,
-            self.translation,
+        return self.drr(self.pose)
+
+    @property
+    def pose(self):
+        R = convert(
+            self._rotation,
+            torch.tensor([[0.0, 0.0, 0.0]]).to(self._rotation),
             parameterization=self.parameterization,
             convention=self.convention,
         )
+        t = convert(
+            torch.tensor([[0.0, 0.0, 0.0]]).to(self._translation),
+            self._translation,
+            parameterization=self.parameterization,
+            convention=self.convention,
+        )
+        return t.compose(R)
 
-    def get_rotation(self):
-        return self.rotation.clone().detach().cpu()
+    @property
+    def rotation(self):
+        return (
+            self.pose.convert(self.parameterization, self.convention)[0]
+            .clone()
+            .detach()
+            .cpu()
+        )
 
-    def get_translation(self):
-        return self.translation.clone().detach().cpu()
+    @property
+    def translation(self):
+        return (
+            self.pose.convert(self.parameterization, self.convention)[1]
+            .clone()
+            .detach()
+            .cpu()
+        )
