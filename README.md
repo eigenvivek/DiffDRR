@@ -1,7 +1,7 @@
 DiffDRR
 ================
 
-> Auto-differentiable DRR synthesis and optimization in PyTorch
+> Auto-differentiable DRR rendering and optimization in PyTorch
 
 [![CI](https://github.com/eigenvivek/DiffDRR/actions/workflows/test.yaml/badge.svg)](https://github.com/eigenvivek/DiffDRR/actions/workflows/test.yaml)
 [![Paper shield](https://img.shields.io/badge/arXiv-2208.12737-red.svg)](https://arxiv.org/abs/2208.12737)
@@ -12,11 +12,11 @@ DiffDRR
 
 `DiffDRR` is a PyTorch-based digitally reconstructed radiograph (DRR) generator that provides
 
-1. Auto-differentiable DRR syntheisis
-2. GPU-accelerated rendering
+1. Differentiable X-ray rendering
+2. GPU-accelerated synthesis and optimization
 3. A pure Python implementation
 
-Most importantly, `DiffDRR` implements DRR synthesis as a PyTorch module, making it interoperable in deep learning pipelines.
+Most importantly, `DiffDRR` implements DRR rendering as a PyTorch module, making it interoperable in deep learning pipelines.
 
 ## Install
 
@@ -28,24 +28,23 @@ pip install diffdrr
 
 ### Rendering
 
-The physics-based rendering pipeline in `DiffDRR` produces photorealistic synthetic X-rays. 
-For example, compare a real X-ray to a synthetic X-ray rendered from a CT of the same patient using `DiffDRR`
+The physics-based pipeline in `DiffDRR` renders photorealistic X-rays. For example, compare 
+a real X-ray to a synthetic X-ray rendered from a CT of the same patient using `DiffDRR`
 (X-rays and CTs from the [DeepFluoro dataset](https://github.com/rg2/DeepFluoroLabeling-IPCAI2020)):
 
-![`DiffDRR` rendered from the same camera pose as a real X-ray.](notebooks/index_files/deepfluoro.png)
+![`DiffDRR` rendering from the same camera pose as a real X-ray.](notebooks/index_files/deepfluoro.png)
 
 ### 2D/3D Registration
 
 The impotus for developing `DiffDRR` was to solve 2D/3D registration
-problems with gradient-based optimization. We demonstrate `DiffDRR`'s
-utility for this usecase with the following experiment.
-Here, we generate two DRRs:
+problems with gradient-based optimization. Here, we demonstrate `DiffDRR`'s
+capabilities by generating two DRRs:
 
 1.  A fixed DRR from a set of ground truth parameters
 2.  A moving DRR from randomly initialized parameters
 
-To solve the registration problem, we use gradient descent to maximize
-an image loss similarity metric between the two DRRs. This produces
+To align the two images, we use gradient descent to maximize
+an image similarity metric between the two DRRs. This produces
 optimization runs like this:
 
 ![](experiments/registration.gif)
@@ -53,9 +52,12 @@ optimization runs like this:
 The full example is available at
 [`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html)
 
-#### *🆕 Evaluations on Real Surgical Datasets 🆕*
+#### *🆕 Examples on Real-World Data 🆕*
 
-For examples running `DiffDRR` on real data, please check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose):
+For examples running `DiffDRR` on real surgical datasets, check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose), which includes
+- Integration of `DiffDRR` into deep learning architectures
+- Alignment of real X-rays and rendered DRRs
+- Sub-millimeter registration accuracy
 
 ![](https://github.com/eigenvivek/DiffPose/blob/main/experiments/test_time_optimization.gif)
 
@@ -137,8 +139,8 @@ tutorial](https://nbdev.fast.ai/tutorials/tutorial.html).
 
 ## How does `DiffDRR` work?
 
-`DiffDRR` reformulates Siddon’s method,[^1] the
-canonical algorithm for calculating the radiologic path of an X-ray
+`DiffDRR` reformulates Siddon’s method,[^1] an exact
+algorithm for calculating the radiologic path of an X-ray
 through a volume, as a series of vectorized tensor operations. This
 version of the algorithm is easily implemented in tensor algebra
 libraries like PyTorch to achieve a fast auto-differentiable DRR
@@ -151,8 +153,7 @@ Physics, 2(12):252–5, 1985.](https://doi.org/10.1118/1.595715)
 ## Citing `DiffDRR`
 
 If you find `DiffDRR` useful in your work, please cite our
-[paper](https://doi.org/10.1007/978-3-031-23179-7_1) (or the [freely
-accessible arXiv version](https://arxiv.org/abs/2208.12737)):
+[paper](https://arxiv.org/abs/2208.12737):
 
     @inproceedings{gopalakrishnanDiffDRR2022,
         author    = {Gopalakrishnan, Vivek and Golland, Polina},
