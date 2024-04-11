@@ -1,5 +1,3 @@
-🆕 *For examples running `DiffDRR` on real data, please check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose).*
-
 DiffDRR
 ================
 
@@ -20,18 +18,52 @@ DiffDRR
 
 Most importantly, `DiffDRR` implements DRR synthesis as a PyTorch module, making it interoperable in deep learning pipelines.
 
-Below is a comparison of `DiffDRR` to a real X-ray (X-rays and CTs from the [DeepFluoro dataset](https://github.com/rg2/DeepFluoroLabeling-IPCAI2020)):
-
-![`DiffDRR` rendered from the same camera pose as a real X-ray.](notebooks/index_files/deepfluoro.png)
-
 ## Install
 
-Install `DiffDRR` from PyPI:
 ```zsh
 pip install diffdrr
 ```
 
 ## Usage
+
+### Rendering
+
+The physics-based rendering pipeline in `DiffDRR` produces photorealistic synthetic X-rays. 
+For example, see a comparison of `DiffDRR` to a real X-ray (X-rays and CTs from the [DeepFluoro dataset](https://github.com/rg2/DeepFluoroLabeling-IPCAI2020)):
+
+![`DiffDRR` rendered from the same camera pose as a real X-ray.](notebooks/index_files/deepfluoro.png)
+
+
+### 2D/3D Registration
+
+The impotus for developing `DiffDRR` was to solve 2D/3D registration
+problems with gradient-based optimization. We demonstrate `DiffDRR`'s
+utility for this usecase with the following experiment.
+Here, we generate two DRRs:
+
+1.  A fixed DRR from a set of ground truth parameters
+2.  A moving DRR from randomly initialized parameters
+
+To solve the registration problem, we use gradient descent to maximize
+an image loss similarity metric between the two DRRs. This produces
+optimization runs like this:
+
+![](experiments/registration.gif)
+
+The full example is available at
+[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
+
+🆕 *For examples running `DiffDRR` on real data, please check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose).*
+
+![](https://github.com/eigenvivek/DiffPose/experiments/test_time_optimization.gif)
+
+### Volume Reconstruction
+
+`DiffDRR` is differentiable with respect to the 3D volume as well as camera poses.
+Therefore, it could (in theory) be used for volume reconstruction. However, this
+feature has not been robustly tested and is currently under active development!
+
+### Hello, World!
 
 The following minimal example specifies the geometry of the projectional radiograph imaging system and traces rays through a CT volume:
 
@@ -74,24 +106,6 @@ On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
 
 The full example is available at
 [`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).
-
-## 2D/3D Registration
-
-We demonstrate the utility of our auto-differentiable DRR generator by
-solving the 2D/3D registration problem with gradient-based optimization.
-Here, we generate two DRRs:
-
-1.  A fixed DRR from a set of ground truth parameters
-2.  A moving DRR from randomly initialized parameters
-
-To solve the registration problem, we use gradient descent to maximize
-an image loss similarity metric between the two DRRs. This produces
-optimization runs like this:
-
-![](experiments/registration.gif)
-
-The full example is available at
-[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
 
 ## Development
 
