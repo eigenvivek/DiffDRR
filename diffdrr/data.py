@@ -75,6 +75,11 @@ def canonicalize(subject):
     for image in subject.get_images(intensity_only=False):
         image.affine = Tinv.dot(image.affine)
 
+    try:
+        subject.mask.affine = subject.volume.affine
+    except KeyError:
+        pass
+
     return subject
 
 # %% ../notebooks/api/03_data.ipynb 7
