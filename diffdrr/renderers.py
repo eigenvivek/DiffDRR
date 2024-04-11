@@ -20,14 +20,15 @@ class Siddon(torch.nn.Module):
     def maxidx(self, volume):
         return volume.numel() - 1
 
-    def forward(self, volume, spacing, source, target):
+    def forward(self, volume, origin, spacing, source, target):
         dims = self.dims(volume)
         maxidx = self.maxidx(volume)
+        origin = origin.to(torch.float64)
 
-        alphas = _get_alphas(source, target, spacing, dims, self.eps)
+        alphas = _get_alphas(source, target, origin, spacing, dims, self.eps)
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
         voxels = _get_voxel(
-            alphamid, source, target, volume, spacing, dims, maxidx, self.eps
+            alphamid, source, target, volume, origin, spacing, dims, maxidx, self.eps
         )
 
         # Step length for alphas out of range will be nan
@@ -41,11 +42,11 @@ class Siddon(torch.nn.Module):
         return drr
 
 # %% ../notebooks/api/01_renderers.ipynb 8
-def _get_alphas(source, target, spacing, dims, eps):
+def _get_alphas(source, target, origin, spacing, dims, eps):
     # Get the CT sizing and spacing parameters
-    alphax = torch.arange(dims[0]).to(source) * spacing[0]
-    alphay = torch.arange(dims[1]).to(source) * spacing[1]
-    alphaz = torch.arange(dims[2]).to(source) * spacing[2]
+    alphax = torch.arange(dims[0]).to(source) * spacing[0] + origin[0]
+    alphay = torch.arange(dims[1]).to(source) * spacing[1] + origin[1]
+    alphaz = torch.arange(dims[2]).to(source) * spacing[2] + origin[2]
 
     # Get the alpha at each plane intersection
     sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
@@ -60,7 +61,7 @@ def _get_alphas(source, target, spacing, dims, eps):
     alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
     # Get the alphas within the range [alphamin, alphamax]
-    alphamin, alphamax = _get_alpha_minmax(source, target, spacing, dims, eps)
+    alphamin, alphamax = _get_alpha_minmax(sdd, source, target, origin, spacing, dims)
     good_idxs = torch.logical_and(alphas >= alphamin, alphas <= alphamax)
     alphas[~good_idxs] = torch.nan
 
@@ -73,12 +74,11 @@ def _get_alphas(source, target, spacing, dims, eps):
     return alphas
 
 
-def _get_alpha_minmax(source, target, spacing, dims, eps):
-    sdd = target - source + eps
+def _get_alpha_minmax(sdd, source, target, origin, spacing, dims):
     planes = torch.zeros(3).to(source)
-    alpha0 = (planes * spacing - source) / sdd
+    alpha0 = (planes * spacing + origin - source) / sdd
     planes = (dims - 1).to(source)
-    alpha1 = (planes * spacing - source) / sdd
+    alpha1 = (planes * spacing + origin - source) / sdd
     alphas = torch.stack([alpha0, alpha1]).to(source)
 
     alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
@@ -89,28 +89,28 @@ def _get_alpha_minmax(source, target, spacing, dims, eps):
     return alphamin, alphamax
 
 
-def _get_voxel(alpha, source, target, volume, spacing, dims, maxidx, eps):
-    idxs = _get_index(alpha, source, target, spacing, dims, maxidx, eps)
+def _get_voxel(alpha, source, target, volume, origin, spacing, dims, maxidx, eps):
+    idxs = _get_index(alpha, source, target, origin, spacing, dims, maxidx, eps)
     return torch.take(volume, idxs)
 
 
-def _get_index(alpha, source, target, spacing, dims, maxidx, eps):
+def _get_index(alpha, source, target, origin, spacing, dims, maxidx, eps):
     sdd = target - source + eps
     idxs = source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)
-    idxs = idxs / spacing
-    idxs = idxs.trunc()
+    idxs = (idxs - origin) / spacing
+    idxs = idxs.floor()
     # Conversion to long makes nan->-inf, so temporarily replace them with 0
     # This is cancelled out later by multiplication by nan step_length
     idxs = (
         idxs[..., 0] * (dims[1] - 1) * (dims[2] - 1)
         + idxs[..., 1] * (dims[2] - 1)
         + idxs[..., 2]
-    ).long() + 1
+    ).long()
     idxs[idxs < 0] = 0
     idxs[idxs > maxidx] = maxidx
     return idxs
 
-# %% ../notebooks/api/01_renderers.ipynb 12
+# %% ../notebooks/api/01_renderers.ipynb 10
 from torch.nn.functional import grid_sample
 
 
@@ -134,12 +134,12 @@ class Trilinear(torch.nn.Module):
         return torch.tensor(volume.shape).to(volume) - 1
 
     def forward(
-        self, volume, spacing, source, target, n_points=250, align_corners=True
+        self, volume, origin, spacing, source, target, n_points=250, align_corners=True
     ):
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1)
-        source = source[:, None, :, None, :]
-        target = target[:, None, :, None, :]
+        source = source[:, None, :, None, :] - origin
+        target = target[:, None, :, None, :] - origin
 
         # Sample points along the rays and rescale to [-1, 1]
         alphas = torch.linspace(self.near, self.far, n_points).to(volume)

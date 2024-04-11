@@ -8,7 +8,7 @@ from fastcore.basics import patch
 from torch.nn.functional import normalize
 
 # %% auto 0
-__all__ = ['Detector', 'diffdrr_to_deepdrr']
+__all__ = ['Detector']
 
 # %% ../notebooks/api/02_detector.ipynb 5
 from .pose import RigidTransform
@@ -20,7 +20,7 @@ class Detector(torch.nn.Module):
 
     def __init__(
         self,
-        sdr: float,  # Source-to-detector radius (half of the source-to-detector distance)
+        sdd: float,  # Source-to-detector distance (i.e., focal length)
         height: int,  # Height of the X-ray detector
         width: int,  # Width of the X-ray detector
         delx: float,  # Pixel spacing in the X-direction
@@ -31,7 +31,7 @@ class Detector(torch.nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
         super().__init__()
-        self.sdr = sdr
+        self.sdd = sdd
         self.height = height
         self.width = width
         self.delx = delx
@@ -48,61 +48,52 @@ class Detector(torch.nn.Module):
         self.register_buffer("source", source)
         self.register_buffer("target", target)
 
-        # Anatomy to world coordinates
-        flip_xz = torch.tensor(
-            [
-                [0.0, 0.0, -1.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
+        # Create a pose to reorient the scanner
+        # Rotates the C-arm about the x-axis by 90 degrees
+        # Rotates the C-arm about the z-axis by -90 degrees
+        self.register_buffer(
+            "_reorient",
+            torch.tensor(
+                [
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [-1.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            ),
         )
-        translate = torch.tensor(
-            [
-                [1.0, 0.0, 0.0, -self.sdr],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        )
-        self.register_buffer("_flip_xz", flip_xz)
-        self.register_buffer("_translate", translate)
+
+    @property
+    def reorient(self):
+        return RigidTransform(self._reorient)
 
     @property
     def intrinsic(self):
         return make_intrinsic_matrix(
-            self.sdr,
+            self.sdd,
             self.delx,
             self.dely,
             self.height,
             self.width,
             self.x0,
             self.y0,
-        ).to(self._flip_xz)
-
-    @property
-    def flip_xz(self):
-        return RigidTransform(self._flip_xz)
-
-    @property
-    def translate(self):
-        return RigidTransform(self._translate)
+        ).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
 @patch
 def _initialize_carm(self: Detector):
     """Initialize the default position for the source and detector plane."""
     try:
-        device = self.sdr.device
+        device = self.sdd.device
     except AttributeError:
         device = torch.device("cpu")
 
-    # Initialize the source on the x-axis and the center of the detector plane on the negative x-axis
-    source = torch.tensor([[1.0, 0.0, 0.0]], device=device) * self.sdr
-    center = torch.tensor([[-1.0, 0.0, 0.0]], device=device) * self.sdr
+    # Initialize the source at the origin and the center of the detector plane on the positive z-axis
+    source = torch.tensor([[0.0, 0.0, 0.0]], device=device)
+    center = torch.tensor([[0.0, 0.0, 1.0]], device=device) * self.sdd
 
     # Use the standard basis for the detector plane
-    basis = torch.tensor([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], device=device)
+    basis = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], device=device)
 
     # Construct the detector plane with different offsets for even or odd heights
     h_off = 1.0 if self.height % 2 else 0.5
@@ -126,8 +117,8 @@ def _initialize_carm(self: Detector):
     target = target.unsqueeze(0)
 
     # Apply principal point offset
-    target[..., 2] -= self.x0
-    target[..., 1] -= self.y0
+    target[..., 1] -= self.x0
+    target[..., 0] -= self.y0
 
     if self.n_subsample is not None:
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
@@ -140,16 +131,9 @@ from .pose import RigidTransform
 
 
 @patch
-def forward(
-    self: Detector,
-    pose: RigidTransform,
-):
+def forward(self: Detector, pose: RigidTransform):
     """Create source and target points for X-rays to trace through the volume."""
+    pose = self.reorient.compose(pose)
     source = pose(self.source)
     target = pose(self.target)
     return source, target
-
-# %% ../notebooks/api/02_detector.ipynb 8
-def diffdrr_to_deepdrr(euler_angles):
-    alpha, beta, gamma = euler_angles.unbind(-1)
-    return torch.stack([beta, alpha, gamma], dim=1)

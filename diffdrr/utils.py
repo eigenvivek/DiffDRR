@@ -21,8 +21,8 @@ def get_principal_point(
     delx: float,  # X-direction spacing (in units length)
     dely: float,  # Y-direction spacing (in units length)
 ):
-    x0 = delx * (width / 2 - intrinsic[0, 2])
-    y0 = dely * (height / 2 - intrinsic[1, 2])
+    x0 = delx * (intrinsic[0, 2] - width / 2)
+    y0 = dely * (intrinsic[1, 2] - height / 2)
     return x0.item(), y0.item()
 
 # %% ../notebooks/api/07_utils.ipynb 6
@@ -42,7 +42,7 @@ import torch
 
 
 def make_intrinsic_matrix(
-    sdr: float,  # Source-to-detector radius (in units length)
+    sdd: float,  # Source-to-detector distance (in units length)
     delx: float,  # X-direction spacing (in units length / pixel)
     dely: float,  # Y-direction spacing (in units length / pixel)
     height: int,  # Y-direction length (in units pixels)
@@ -52,8 +52,13 @@ def make_intrinsic_matrix(
 ):
     return torch.tensor(
         [
-            [-2 * sdr / delx, 0.0, -x0 / delx + width / 2],
-            [0.0, -2 * sdr / dely, -y0 / dely + height / 2],
+            [sdd / delx, 0.0, x0 / delx + width / 2],
+            [0.0, sdd / dely, y0 / dely + height / 2],
             [0.0, 0.0, 1.0],
         ]
+        # [
+        #     [sdd / delx, 0.0, -x0 / delx + width / 2],
+        #     [0.0, sdd / dely, -y0 / dely + height / 2],
+        #     [0.0, 0.0, 1.0],
+        # ]
     )

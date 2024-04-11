@@ -6,41 +6,87 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-from pydicom import dcmread
+import torch
+from torchio import LabelMap, ScalarImage, Subject
+from torchio.transforms.preprocessing import ToCanonical
 
 # %% auto 0
-__all__ = ['read_dicom', 'load_example_ct']
+__all__ = ['load_example_ct', 'read']
 
 # %% ../notebooks/api/03_data.ipynb 4
-def read_dicom(dcmdir: Path | str):
-    """Read a directory of DICOM files and return the volume and voxel spacings."""
-
-    dcmfiles = Path(dcmdir).glob("*.dcm")
-    dcmfiles = list(dcmfiles)
-    dcmfiles.sort()
-    ds = dcmread(dcmfiles[0])
-
-    nx, ny = ds.pixel_array.shape
-    nz = len(dcmfiles)
-    del_x, del_y = ds.PixelSpacing
-    del_x, del_y = float(del_x), float(del_y)
-    volume = np.zeros((nx, ny, nz)).astype(np.float32)
-
-    del_zs = []
-    for idx, dcm in enumerate(dcmfiles):
-        ds = dcmread(dcm)
-        volume[:, :, idx] = ds.pixel_array
-        del_zs.append(ds.ImagePositionPatient[2])
-
-    del_zs = np.diff(del_zs)
-    del_z = float(np.abs(np.unique(del_zs)[0]))
-    spacing = [del_x, del_y, del_z]
-
-    return volume, spacing
+def load_example_ct() -> Subject:
+    """Load an example chest CT for demonstration purposes."""
+    datadir = Path(__file__).resolve().parent / "data"
+    filename = datadir / "cxr.nii"
+    return read(filename)
 
 # %% ../notebooks/api/03_data.ipynb 5
-def load_example_ct():
-    """Load an example chest CT for demonstration purposes."""
-    currdir = Path(__file__).resolve().parent
-    dcmdir = currdir / "data/cxr"
-    return read_dicom(dcmdir)
+def read(
+    filename: str | Path,  # Path to CT volume
+    labelmap: str | Path = None,  # Path to a labelmap for the CT volume
+    **kwargs,  # Any additional information to be stored in the torchio.Subject
+) -> Subject:
+    """
+    Read an image volume from a variety of formats, and optionally, any
+    given labelmap for the volume. Converts volume to a RAS+ coordinate
+    system and moves the volume isocenter to the world origin.
+    """
+    # Read the volume from a filename
+    volume = ScalarImage(filename)
+    density = transform_hu_to_density(volume.data)
+
+    # If a labelmap is passed, read the mask
+    if labelmap is not None:
+        mask = LabelMap(labelmap)
+    else:
+        mask = None
+
+    # Package the subject
+    subject = Subject(
+        volume=volume,
+        density=density,
+        mask=mask,
+        **kwargs,
+    )
+
+    # Canonicalize the images by converting to RAS+ and moving the
+    # Subject's isocenter to the origin in world coordinates
+    subject = canonicalize(subject)
+    return subject
+
+# %% ../notebooks/api/03_data.ipynb 6
+def canonicalize(subject):
+    # Convert to RAS+ coordinate system
+    subject = ToCanonical()(subject)
+
+    # Move the Subject's isocenter to the origin in world coordinates
+    isocenter = subject.volume.get_center()
+    Tinv = np.array(
+        [
+            [1.0, 0.0, 0.0, -isocenter[0]],
+            [0.0, 1.0, 0.0, -isocenter[1]],
+            [0.0, 0.0, 1.0, -isocenter[2]],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    for image in subject.get_images(intensity_only=False):
+        image.affine = Tinv.dot(image.affine)
+
+    return subject
+
+# %% ../notebooks/api/03_data.ipynb 7
+def transform_hu_to_density(volume):
+    volume = volume.to(torch.float32)
+
+    air = torch.where(volume <= -800)
+    soft_tissue = torch.where((-800 < volume) & (volume <= 350))
+    bone = torch.where(350 < volume)
+
+    density = torch.empty_like(volume)
+    density[air] = volume[soft_tissue].min()
+    density[soft_tissue] = volume[soft_tissue]
+    density[bone] = volume[bone]
+    density -= density.min()
+    density /= density.max()
+
+    return density.squeeze()
