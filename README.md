@@ -46,16 +46,14 @@ Here, we generate two DRRs:
 
 To solve the registration problem, we use gradient descent to maximize
 an image loss similarity metric between the two DRRs. This produces
-optimization runs like this:
+optimization runs like this (full example is available at
+[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html)):
 
 ![](experiments/registration.gif)
 
-The full example is available at
-[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
-
 🆕 *For examples running `DiffDRR` on real data, please check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose).*
 
-![](https://github.com/eigenvivek/DiffPose/experiments/test_time_optimization.gif)
+![](https://github.com/eigenvivek/DiffPose/blob/main/experiments/test_time_optimization.gif)
 
 ### Volume Reconstruction
 
