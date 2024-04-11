@@ -50,20 +50,22 @@ optimization runs like this:
 ![](experiments/registration.gif)
 
 The full example is available at
-[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html)
+[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
 
 #### *🆕 Examples on Real-World Data 🆕*
 
-For examples running `DiffDRR` on real surgical datasets, check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose), which includes
-- Integration of `DiffDRR` into deep learning architectures
-- Alignment of real X-rays and rendered DRRs
-- Sub-millimeter registration accuracy
+For examples running `DiffDRR` on real surgical datasets, check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose):
 
 ![](https://github.com/eigenvivek/DiffPose/blob/main/experiments/test_time_optimization.gif)
 
+This work includes a lot of real-world usecases of `DiffDRR` including
+- Using `DiffDRR` as a layer in a deep learning architecture
+- Alignming of real X-rays and rendered DRRs
+- Achieving sub-millimeter registration accuracy very quickly
+
 ### Segmentation
 
-`DiffDRR` can project 3D labelmaps into 2D simply using perspective geometry:
+`DiffDRR` can project 3D labelmaps into 2D simply using perspective geometry, helping identify particular structures in simulated X-rays:
 
 ![](notebooks/index_files/segmentation.png)
 
