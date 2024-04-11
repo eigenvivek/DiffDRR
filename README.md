@@ -29,10 +29,10 @@ pip install diffdrr
 ### Rendering
 
 The physics-based rendering pipeline in `DiffDRR` produces photorealistic synthetic X-rays. 
-For example, see a comparison of `DiffDRR` to a real X-ray (X-rays and CTs from the [DeepFluoro dataset](https://github.com/rg2/DeepFluoroLabeling-IPCAI2020)):
+For example, compare a real X-ray to a synthetic X-ray rendered from a CT of the same patient using `DiffDRR`
+(X-rays and CTs from the [DeepFluoro dataset](https://github.com/rg2/DeepFluoroLabeling-IPCAI2020)):
 
 ![`DiffDRR` rendered from the same camera pose as a real X-ray.](notebooks/index_files/deepfluoro.png)
-
 
 ### 2D/3D Registration
 
@@ -46,22 +46,27 @@ Here, we generate two DRRs:
 
 To solve the registration problem, we use gradient descent to maximize
 an image loss similarity metric between the two DRRs. This produces
-optimization runs like this (full example is available at
-[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html)):
+optimization runs like this:
 
 ![](experiments/registration.gif)
 
-🆕 *For examples running `DiffDRR` on real data, please check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose).*
+The full example is available at
+[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html)
+
+#### *🆕 Evaluations on Real Surgical Datasets 🆕*
+
+For examples running `DiffDRR` on real data, please check out our latest work, [`DiffPose`](https://github.com/eigenvivek/DiffPose):
 
 ![](https://github.com/eigenvivek/DiffPose/blob/main/experiments/test_time_optimization.gif)
 
 ### Volume Reconstruction
 
 `DiffDRR` is differentiable with respect to the 3D volume as well as camera poses.
-Therefore, it could (in theory) be used for volume reconstruction. However, this
-feature has not been robustly tested and is currently under active development!
+Therefore, it could (in theory) be used for volume reconstruction via differentiable
+rendering. However, this feature has not been robustly tested and is currently 
+under active development!
 
-### Hello, World!
+## Hello, World!
 
 The following minimal example specifies the geometry of the projectional radiograph imaging system and traces rays through a CT volume:
 
