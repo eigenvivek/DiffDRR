@@ -19,7 +19,6 @@ DiffDRR
 Most importantly, `DiffDRR` implements DRR rendering as a PyTorch module, making it interoperable in deep learning pipelines.
 
 ## Install
-=======
 
 ```zsh
 pip install diffdrr
@@ -61,6 +60,12 @@ For examples running `DiffDRR` on real surgical datasets, check out our latest w
 - Sub-millimeter registration accuracy
 
 ![](https://github.com/eigenvivek/DiffPose/blob/main/experiments/test_time_optimization.gif)
+
+### Segmentation
+
+`DiffDRR` can project 3D labelmaps into 2D simply using perspective geometry:
+
+![](notebooks/index_files/segmentation.png)
 
 ### Volume Reconstruction
 

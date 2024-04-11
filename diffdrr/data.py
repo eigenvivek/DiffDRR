@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from torchio import LabelMap, ScalarImage, Subject
 from torchio.transforms.preprocessing import ToCanonical
+import pandas as pd
 
 # %% auto 0
 __all__ = ['load_example_ct', 'read']
@@ -17,8 +18,10 @@ __all__ = ['load_example_ct', 'read']
 def load_example_ct() -> Subject:
     """Load an example chest CT for demonstration purposes."""
     datadir = Path(__file__).resolve().parent / "data"
-    filename = datadir / "cxr.nii"
-    return read(filename)
+    filename = datadir / "cxr.nii.gz"
+    labelmap = datadir / "mask.nii.gz"
+    structures = pd.read_csv(datadir / "structures.csv")
+    return read(filename, labelmap, structures=structures)
 
 # %% ../notebooks/api/03_data.ipynb 5
 def read(
@@ -44,8 +47,8 @@ def read(
     # Package the subject
     subject = Subject(
         volume=volume,
-        density=density,
         mask=mask,
+        density=density,
         **kwargs,
     )
 
