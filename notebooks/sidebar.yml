@@ -18,6 +18,5 @@ website:
           - tutorials/optimizers.ipynb
           - tutorials/visualization.ipynb
           - tutorials/metrics.ipynb
-          - tutorials/spherical.ipynb
           - tutorials/timing.ipynb
           - tutorials/metamorphasis.ipynb
