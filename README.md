@@ -24,6 +24,50 @@ Most importantly, `DiffDRR` implements DRR rendering as a PyTorch module, making
 pip install diffdrr
 ```
 
+## Hello, World!
+
+The following minimal example specifies the geometry of the projectional radiograph imaging system and traces rays through a CT volume:
+
+``` python
+import matplotlib.pyplot as plt
+import torch
+
+from diffdrr.drr import DRR
+from diffdrr.data import load_example_ct
+from diffdrr.visualization import plot_drr
+
+# Read in the volume and get its origin and spacing in world coordinates
+subject = load_example_ct()
+
+# Initialize the DRR module for generating synthetic X-rays
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+drr = DRR(
+    subject,     # An object storing the CT volume, origin, and voxel spacing
+    sdd=1020.0,  # Source-to-detector distance (i.e., focal length)
+    height=200,  # Image height (if width is not provided, the generated DRR is square)
+    delx=2.0,    # Pixel spacing (in mm)
+).to(device)
+
+# Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
+rotations = torch.tensor([[0.0, 0.0, 0.0]], device=device)
+translations = torch.tensor([[0.0, 850.0, 0.0]], device=device)
+
+# 📸 Also note that DiffDRR can take many representations of SO(3) 📸
+# For example, quaternions, rotation matrix, axis-angle, etc...
+img = drr(rotations, translations, parameterization="euler_angles", convention="ZXY")
+plot_drr(img, ticks=False)
+plt.show()
+```
+
+![](notebooks/index_files/figure-commonmark/cell-2-output-1.png)
+
+On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
+
+    37.9 ms ± 19.6 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+The full example is available at
+[`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).
+
 ## Usage
 
 ### Rendering
@@ -76,50 +120,6 @@ This work includes a lot of real-world usecases of `DiffDRR` including
 Therefore, it could (in theory) be used for volume reconstruction via differentiable
 rendering. However, this feature has not been robustly tested and is currently 
 under active development!
-
-## Hello, World!
-
-The following minimal example specifies the geometry of the projectional radiograph imaging system and traces rays through a CT volume:
-
-``` python
-import matplotlib.pyplot as plt
-import torch
-
-from diffdrr.drr import DRR
-from diffdrr.data import load_example_ct
-from diffdrr.visualization import plot_drr
-
-# Read in the volume and get its origin and spacing in world coordinates
-subject = load_example_ct()
-
-# Initialize the DRR module for generating synthetic X-rays
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-drr = DRR(
-    subject,     # An object storing the CT volume, origin, and voxel spacing
-    sdd=1020.0,  # Source-to-detector distance (i.e., focal length)
-    height=200,  # Image height (if width is not provided, the generated DRR is square)
-    delx=2.0,    # Pixel spacing (in mm)
-).to(device)
-
-# Set the camera pose with rotations (yaw, pitch, roll) and translations (x, y, z)
-rotations = torch.tensor([[0.0, 0.0, 0.0]], device=device)
-translations = torch.tensor([[0.0, 850.0, 0.0]], device=device)
-
-# 📸 Also note that DiffDRR can take many representations of SO(3) 📸
-# For example, quaternions, rotation matrix, axis-angle, etc...
-img = drr(rotations, translations, parameterization="euler_angles", convention="ZXY")
-plot_drr(img, ticks=False)
-plt.show()
-```
-
-![](notebooks/index_files/figure-commonmark/cell-2-output-1.png)
-
-On a single NVIDIA RTX 2080 Ti GPU, producing such an image takes
-
-    37.9 ms ± 19.6 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
-
-The full example is available at
-[`introduction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/introduction.html).
 
 ## Development
 
