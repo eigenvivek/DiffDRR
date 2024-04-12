@@ -75,9 +75,10 @@ def canonicalize(subject):
     for image in subject.get_images(intensity_only=False):
         image.affine = Tinv.dot(image.affine)
 
+    # Need to manually change the affine matrix of the labelmap
     try:
         subject.mask.affine = subject.volume.affine
-    except KeyError:
+    except AttributeError:
         pass
 
     return subject
