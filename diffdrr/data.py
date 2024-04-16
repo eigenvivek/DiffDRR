@@ -15,18 +15,19 @@ import pandas as pd
 __all__ = ['load_example_ct', 'read']
 
 # %% ../notebooks/api/03_data.ipynb 4
-def load_example_ct() -> Subject:
+def load_example_ct(labels=None) -> Subject:
     """Load an example chest CT for demonstration purposes."""
     datadir = Path(__file__).resolve().parent / "data"
     filename = datadir / "cxr.nii.gz"
     labelmap = datadir / "mask.nii.gz"
     structures = pd.read_csv(datadir / "structures.csv")
-    return read(filename, labelmap, structures=structures)
+    return read(filename, labelmap, labels, structures=structures)
 
 # %% ../notebooks/api/03_data.ipynb 5
 def read(
     filename: str | Path,  # Path to CT volume
     labelmap: str | Path = None,  # Path to a labelmap for the CT volume
+    labels: int | list = None,  # Labels from the mask of structures to render
     **kwargs,  # Any additional information to be stored in the torchio.Subject
 ) -> Subject:
     """
@@ -55,6 +56,16 @@ def read(
     # Canonicalize the images by converting to RAS+ and moving the
     # Subject's isocenter to the origin in world coordinates
     subject = canonicalize(subject)
+
+    # Apply mask
+    if labels is not None:
+        if isinstance(labels, int):
+            labels = [labels]
+        mask = torch.any(
+            torch.stack([mask.data.squeeze() == idx for idx in labels]), dim=0
+        )
+        subject.density = subject.density * mask
+
     return subject
 
 # %% ../notebooks/api/03_data.ipynb 6
@@ -63,23 +74,17 @@ def canonicalize(subject):
     subject = ToCanonical()(subject)
 
     # Move the Subject's isocenter to the origin in world coordinates
-    isocenter = subject.volume.get_center()
-    Tinv = np.array(
-        [
-            [1.0, 0.0, 0.0, -isocenter[0]],
-            [0.0, 1.0, 0.0, -isocenter[1]],
-            [0.0, 0.0, 1.0, -isocenter[2]],
-            [0.0, 0.0, 0.0, 1.0],
-        ]
-    )
     for image in subject.get_images(intensity_only=False):
+        isocenter = image.get_center()
+        Tinv = np.array(
+            [
+                [1.0, 0.0, 0.0, -isocenter[0]],
+                [0.0, 1.0, 0.0, -isocenter[1]],
+                [0.0, 0.0, 1.0, -isocenter[2]],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
         image.affine = Tinv.dot(image.affine)
-
-    # Need to manually change the affine matrix of the labelmap
-    try:
-        subject.mask.affine = subject.volume.affine
-    except AttributeError:
-        pass
 
     return subject
 
