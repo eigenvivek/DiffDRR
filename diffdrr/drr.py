@@ -70,7 +70,7 @@ class DRR(nn.Module):
             "origin", torch.tensor(subject.volume.origin, dtype=torch.float32)
         )
         if subject.mask is not None:
-            self.register_buffer("mask", subject.mask.data.squeeze())
+            self.register_buffer("mask", subject.mask.data[0].to(torch.int64))
 
         # Initialize the renderer
         if renderer == "siddon":
@@ -87,7 +87,9 @@ class DRR(nn.Module):
     def reshape_transform(self, img, batch_size):
         if self.reshape:
             if self.detector.n_subsample is None:
-                img = img.view(-1, 1, self.detector.height, self.detector.width)
+                img = img.view(
+                    batch_size, -1, self.detector.height, self.detector.width
+                )
             else:
                 img = reshape_subsampled_drr(img, self.detector, batch_size)
         return img
@@ -110,7 +112,7 @@ def forward(
     *args,  # Some batched representation of SE(3)
     parameterization: str = None,  # Specifies the representation of the rotation
     convention: str = None,  # If parameterization is Euler angles, specify convention
-    labels: list = None,  # Labels from the mask of structures to render
+    mask_to_channels: bool = False,  # If True, structures from the CT mask are rendered in separate channels
     **kwargs,  # Passed to the renderer
 ):
     """Generate DRR with rotational and translational parameters."""
@@ -121,30 +123,32 @@ def forward(
         pose = convert(*args, parameterization=parameterization, convention=convention)
     source, target = self.detector(pose)
 
-    # Apply mask
-    if labels is not None:
-        if isinstance(labels, int):
-            labels = [labels]
-        mask = torch.any(torch.stack([self.mask == idx for idx in labels]), dim=0)
-        density = self.density * mask
-    else:
-        density = self.density
-
     # Render the DRR
-    if self.patch_size is not None:
+    kwargs["mask"] = self.mask if mask_to_channels else None
+    if self.patch_size is None:
+        img = self.renderer(
+            self.density,
+            self.origin,
+            self.spacing,
+            source,
+            target,
+            **kwargs,
+        )
+    else:
         n_points = target.shape[1] // self.n_patches
         img = []
         for idx in range(self.n_patches):
             t = target[:, idx * n_points : (idx + 1) * n_points]
             partial = self.renderer(
-                density, self.origin, self.spacing, source, t, **kwargs
+                self.density,
+                self.origin,
+                self.spacing,
+                source,
+                t,
+                **kwargs,
             )
             img.append(partial)
         img = torch.cat(img, dim=1)
-    else:
-        img = self.renderer(
-            density, self.origin, self.spacing, source, target, **kwargs
-        )
     return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
