@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 # %% auto 0
-__all__ = ['plot_drr', 'animate', 'drr_to_mesh', 'labelmap_to_mesh', 'img_to_mesh']
+__all__ = ['plot_drr', 'plot_mask', 'animate', 'drr_to_mesh', 'labelmap_to_mesh', 'img_to_mesh']
 
 # %% ../notebooks/api/04_visualization.ipynb 5
 import torch
@@ -50,6 +50,36 @@ def plot_drr(
             ax.set_xticks([])
             ax.set_yticks([])
     return axs
+
+
+def plot_mask(
+    img: torch.Tensor,
+    ax: matplotlib.axes._axes.Axes,
+    colors=[
+        "rgb(102,194,165)",
+        "rgb(252,141,98)",
+        "rgb(141,160,203)",
+        "rgb(231,138,195)",
+        "rgb(166,216,84)",
+        "rgb(255,217,47)",
+        "rgb(229,196,148)",
+    ],
+    return_masks=False,
+):
+    """Plot a 2D rendered segmentation mask. Meant to be called after plot_drr."""
+
+    colors = [[int(c) for c in color[4:][:-1].split(",")] for color in colors]
+    masks = (img > 0).unsqueeze(-1).expand(-1, -1, -1, -1, 4)
+    masks = masks.to(torch.uint8).cpu().detach()
+    masks[..., 3] *= 255
+    for idx, color in enumerate(colors):
+        masks[:, idx :: len(colors), ..., :3] *= torch.tensor(color)
+
+    for idx in range(masks.shape[1]):
+        ax.imshow(masks[0, idx], alpha=0.625)
+
+    if return_masks:
+        return masks
 
 # %% ../notebooks/api/04_visualization.ipynb 6
 import pathlib
