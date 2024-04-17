@@ -51,10 +51,10 @@ def plot_drr(
             ax.set_yticks([])
     return axs
 
-
+# %% ../notebooks/api/04_visualization.ipynb 6
 def plot_mask(
     img: torch.Tensor,
-    ax: matplotlib.axes._axes.Axes,
+    axs: matplotlib.axes._axes.Axes,
     colors=[
         "rgb(102,194,165)",
         "rgb(252,141,98)",
@@ -64,6 +64,7 @@ def plot_mask(
         "rgb(255,217,47)",
         "rgb(229,196,148)",
     ],
+    alpha=0.625,
     return_masks=False,
 ):
     """Plot a 2D rendered segmentation mask. Meant to be called after plot_drr."""
@@ -75,13 +76,14 @@ def plot_mask(
     for idx, color in enumerate(colors):
         masks[:, idx :: len(colors), ..., :3] *= torch.tensor(color)
 
-    for idx in range(masks.shape[1]):
-        ax.imshow(masks[0, idx], alpha=0.625)
+    for idx, ax in enumerate(axs):
+        for jdx in range(masks.shape[1]):
+            ax.imshow(masks[idx, jdx], alpha=alpha)
 
     if return_masks:
         return masks
 
-# %% ../notebooks/api/04_visualization.ipynb 6
+# %% ../notebooks/api/04_visualization.ipynb 7
 import pathlib
 
 import pandas
@@ -164,14 +166,14 @@ def animate(
     # Make the animation
     return iio.imwrite(out, frames, **kwargs)
 
-# %% ../notebooks/api/04_visualization.ipynb 9
+# %% ../notebooks/api/04_visualization.ipynb 10
 import pyvista
 import vtk
 from torchio import Subject
 
 vtk.vtkLogger.SetStderrVerbosity(vtk.vtkLogger.ConvertToVerbosity(-1))
 
-# %% ../notebooks/api/04_visualization.ipynb 10
+# %% ../notebooks/api/04_visualization.ipynb 11
 def drr_to_mesh(
     subject: Subject,  # torchio.Subject with a `volume` attribute
     method: str,  # Either `surface_nets` or `marching_cubes`
@@ -241,7 +243,7 @@ def drr_to_mesh(
     mesh.clean(inplace=True, progress_bar=verbose)
     return mesh
 
-# %% ../notebooks/api/04_visualization.ipynb 11
+# %% ../notebooks/api/04_visualization.ipynb 12
 def labelmap_to_mesh(
     subject: Subject,  # torchio.Subject with  a `mask` attribute
     verbose: bool = True,  # Display progress bars for mesh processing steps
@@ -267,7 +269,7 @@ def labelmap_to_mesh(
     mesh.clean(inplace=True, progress_bar=verbose)
     return mesh
 
-# %% ../notebooks/api/04_visualization.ipynb 12
+# %% ../notebooks/api/04_visualization.ipynb 13
 from .pose import RigidTransform
 
 
@@ -313,7 +315,7 @@ def img_to_mesh(drr: DRR, pose: RigidTransform, **kwargs):
 
     return camera, detector, texture, principal_ray
 
-# %% ../notebooks/api/04_visualization.ipynb 13
+# %% ../notebooks/api/04_visualization.ipynb 14
 import numpy as np
 
 
