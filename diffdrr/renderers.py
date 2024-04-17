@@ -46,7 +46,7 @@ class Siddon(torch.nn.Module):
             channels = torch.take(mask, idxs)  # B D N
             weighted_voxels = weighted_voxels.nan_to_num()
             B, D, N = weighted_voxels.shape
-            C = channels.max().item() + 1
+            C = mask.max().item() + 1
             img = (
                 torch.zeros(B, C, D)
                 .to(volume)
