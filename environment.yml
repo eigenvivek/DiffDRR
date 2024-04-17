@@ -10,11 +10,12 @@ dependencies:
   - einops
   - matplotlib
   - seaborn
-  - tqdm
   - imageio
   - fastcore
+  - tqdm
   - scipy
   - pip:
     - pyvista
-    - vtk
+    - timm
     - torchio
+    - vtk

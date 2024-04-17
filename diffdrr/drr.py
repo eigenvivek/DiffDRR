@@ -12,7 +12,7 @@ from .detector import Detector
 from .renderers import Siddon, Trilinear
 
 # %% auto 0
-__all__ = ['DRR', 'Registration']
+__all__ = ['DRR']
 
 # %% ../notebooks/api/00_drr.ipynb 7
 from torchio import Subject
@@ -207,59 +207,3 @@ def inverse_projection(
         pad(pts, (0, 1), value=1),  # Convert to homogenous coordinates
     )
     return extrinsic(x)
-
-# %% ../notebooks/api/00_drr.ipynb 15
-class Registration(nn.Module):
-    """Perform automatic 2D-to-3D registration using differentiable rendering."""
-
-    def __init__(
-        self,
-        drr: DRR,
-        rotation: torch.Tensor,
-        translation: torch.Tensor,
-        parameterization: str,
-        convention: str = None,
-    ):
-        super().__init__()
-        self.drr = drr
-        self._rotation = nn.Parameter(rotation)
-        self._translation = nn.Parameter(translation)
-        self.parameterization = parameterization
-        self.convention = convention
-
-    def forward(self):
-        return self.drr(self.pose)
-
-    @property
-    def pose(self):
-        R = convert(
-            self._rotation,
-            torch.tensor([[0.0, 0.0, 0.0]]).to(self._rotation),
-            parameterization=self.parameterization,
-            convention=self.convention,
-        )
-        t = convert(
-            torch.tensor([[0.0, 0.0, 0.0]]).to(self._translation),
-            self._translation,
-            parameterization=self.parameterization,
-            convention=self.convention,
-        )
-        return t.compose(R)
-
-    @property
-    def rotation(self):
-        return (
-            self.pose.convert(self.parameterization, self.convention)[0]
-            .clone()
-            .detach()
-            .cpu()
-        )
-
-    @property
-    def translation(self):
-        return (
-            self.pose.convert(self.parameterization, self.convention)[1]
-            .clone()
-            .detach()
-            .cpu()
-        )
