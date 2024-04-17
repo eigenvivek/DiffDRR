@@ -69,6 +69,9 @@ def plot_mask(
 ):
     """Plot a 2D rendered segmentation mask. Meant to be called after plot_drr."""
 
+    if len(img) == 1:
+        axs = [axs]
+
     colors = [[int(c) for c in color[4:][:-1].split(",")] for color in colors]
     masks = (img > 0).unsqueeze(-1).expand(-1, -1, -1, -1, 4)
     masks = masks.to(torch.uint8).cpu().detach()
