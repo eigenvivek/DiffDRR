@@ -4,12 +4,20 @@
 from __future__ import annotations
 
 import torch
-import torch.nn as nn
 
 # %% auto 0
-__all__ = ['NormalizedCrossCorrelation2d', 'MultiscaleNormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d']
+__all__ = ['NormalizedCrossCorrelation2d', 'MultiscaleNormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d',
+           'LogGeodesicSE3', 'DoubleGeodesicSE3']
 
-# %% ../notebooks/api/05_metrics.ipynb 4
+# %% ../notebooks/api/05_metrics.ipynb 6
+from einops import rearrange
+
+
+def to_patches(x, patch_size):
+    x = x.unfold(2, patch_size, step=1).unfold(3, patch_size, step=1).contiguous()
+    return rearrange(x, "b c p1 p2 h w -> b (c p1 p2) h w")
+
+# %% ../notebooks/api/05_metrics.ipynb 7
 class NormalizedCrossCorrelation2d(torch.nn.Module):
     """Compute Normalized Cross Correlation between two batches of images."""
 
@@ -35,7 +43,7 @@ class NormalizedCrossCorrelation2d(torch.nn.Module):
         std = var.sqrt()
         return (x - mu) / std
 
-
+# %% ../notebooks/api/05_metrics.ipynb 8
 class MultiscaleNormalizedCrossCorrelation2d(torch.nn.Module):
     """Compute Normalized Cross Correlation between two batches of images at multiple scales."""
 
@@ -54,26 +62,7 @@ class MultiscaleNormalizedCrossCorrelation2d(torch.nn.Module):
             scores.append(weight * ncc(x1, x2))
         return torch.stack(scores, dim=0).sum(dim=0)
 
-# %% ../notebooks/api/05_metrics.ipynb 5
-from einops import rearrange
-
-
-def to_patches(x, patch_size):
-    x = x.unfold(2, patch_size, step=1).unfold(3, patch_size, step=1).contiguous()
-    return rearrange(x, "b c p1 p2 h w -> b (c p1 p2) h w")
-
-# %% ../notebooks/api/05_metrics.ipynb 6
-class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
-    """Compute Normalized Cross Correlation between the image gradients of two batches of images."""
-
-    def __init__(self, patch_size=None, sigma=1.0, **kwargs):
-        super().__init__(patch_size, **kwargs)
-        self.sobel = Sobel(sigma)
-
-    def forward(self, x1, x2):
-        return super().forward(self.sobel(x1), self.sobel(x2))
-
-# %% ../notebooks/api/05_metrics.ipynb 7
+# %% ../notebooks/api/05_metrics.ipynb 9
 from torchvision.transforms.functional import gaussian_blur
 
 
@@ -99,3 +88,92 @@ class Sobel(torch.nn.Module):
         x = gaussian_blur(img, 5, self.sigma)
         x = self.filter(img)
         return x
+
+# %% ../notebooks/api/05_metrics.ipynb 10
+class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
+    """Compute Normalized Cross Correlation between the image gradients of two batches of images."""
+
+    def __init__(self, patch_size=None, sigma=1.0, **kwargs):
+        super().__init__(patch_size, **kwargs)
+        self.sobel = Sobel(sigma)
+
+    def forward(self, x1, x2):
+        return super().forward(self.sobel(x1), self.sobel(x2))
+
+# %% ../notebooks/api/05_metrics.ipynb 14
+from .pose import RigidTransform, convert, so3_log_map
+
+
+class LogGeodesicSE3(torch.nn.Module):
+    """
+    Calculate the distance between transforms in the log-space of SE(3).
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(
+        self,
+        pose_1: RigidTransform,
+        pose_2: RigidTransform,
+    ) -> Float[torch.Tensor, "b"]:
+        return pose_2.compose(pose_1.inverse()).get_se3_log().norm(dim=1)
+
+# %% ../notebooks/api/05_metrics.ipynb 16
+class GeodesicSO3(torch.nn.Module):
+    """Calculate the angular distance between two rotations in SO(3)."""
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(
+        self,
+        pose_1: RigidTransform,
+        pose_2: RigidTransform,
+    ) -> Float[torch.Tensor, "b"]:
+        r1 = pose_1.matrix[..., :3, :3]
+        r2 = pose_2.matrix[..., :3, :3]
+        rdiff = r1.transpose(-1, -2) @ r2
+        return so3_log_map(rdiff).norm(dim=-1)
+
+
+class GeodesicTranslation(torch.nn.Module):
+    """Calculate the angular distance between two translations in R^3."""
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(
+        self,
+        pose_1: RigidTransform,
+        pose_2: RigidTransform,
+    ) -> Float[torch.Tensor, "b"]:
+        t1 = pose_1.matrix[..., :3, 3]
+        t2 = pose_2.matrix[..., :3, 3]
+        return (t1 - t2).norm(dim=1)
+
+# %% ../notebooks/api/05_metrics.ipynb 18
+class DoubleGeodesicSE3(torch.nn.Module):
+    """
+    Calculate the angular and translational geodesics between two SE(3) transformation matrices.
+    """
+
+    def __init__(
+        self,
+        sdd: float,  # Source-to-detector distance
+        eps: float = 1e-4,  # Avoid overflows in sqrt
+    ):
+        super().__init__()
+        self.sdr = sdd / 2
+        self.eps = eps
+
+        self.rotation = GeodesicSO3()
+        self.translation = GeodesicTranslation()
+
+    def forward(self, pose_1: RigidTransform, pose_2: RigidTransform):
+        angular_geodesic = self.sdr * self.rotation(pose_1, pose_2)
+        translation_geodesic = self.translation(pose_1, pose_2)
+        double_geodesic = (
+            (angular_geodesic).square() + translation_geodesic.square() + self.eps
+        ).sqrt()
+        return angular_geodesic, translation_geodesic, double_geodesic
