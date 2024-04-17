@@ -5,6 +5,7 @@ website:
       - section: api
         contents:
           - api/00_drr.ipynb
+          - api/08_registration.ipynb
           - api/01_renderers.ipynb
           - api/02_detector.ipynb
           - api/03_data.ipynb
