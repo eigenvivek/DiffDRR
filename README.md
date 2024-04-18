@@ -20,8 +20,17 @@ Most importantly, `DiffDRR` implements DRR rendering as a PyTorch module, making
 
 ## Install
 
+To install the latest stable release:
+
 ```zsh
 pip install diffdrr
+```
+
+To install the development version (**recommended**):
+
+```zsh
+git clone https://github.com/eigenvivek/DiffDRR.git --depth 1
+pip install -e 'DiffDRR/[dev]'
 ```
 
 ## Hello, World!
