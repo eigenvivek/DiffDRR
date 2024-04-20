@@ -6,28 +6,35 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import torch
 from torchio import LabelMap, ScalarImage, Subject
 from torchio.transforms.preprocessing import ToCanonical
-import pandas as pd
 
 # %% auto 0
 __all__ = ['load_example_ct', 'read']
 
 # %% ../notebooks/api/03_data.ipynb 4
-def load_example_ct(labels=None) -> Subject:
+def load_example_ct(labels=None, bone_attenuation_multiplier=1.0) -> Subject:
     """Load an example chest CT for demonstration purposes."""
     datadir = Path(__file__).resolve().parent / "data"
     filename = datadir / "cxr.nii.gz"
     labelmap = datadir / "mask.nii.gz"
     structures = pd.read_csv(datadir / "structures.csv")
-    return read(filename, labelmap, labels, structures=structures)
+    return read(
+        filename,
+        labelmap,
+        labels,
+        structures=structures,
+        bone_attenuation_multiplier=bone_attenuation_multiplier,
+    )
 
 # %% ../notebooks/api/03_data.ipynb 5
 def read(
     filename: str | Path,  # Path to CT volume
     labelmap: str | Path = None,  # Path to a labelmap for the CT volume
     labels: int | list = None,  # Labels from the mask of structures to render
+    bone_attenuation_multiplier: float = 1.0,  # Scalar multiplier
     **kwargs,  # Any additional information to be stored in the torchio.Subject
 ) -> Subject:
     """
@@ -37,7 +44,7 @@ def read(
     """
     # Read the volume from a filename
     volume = ScalarImage(filename)
-    density = transform_hu_to_density(volume.data)
+    density = transform_hu_to_density(volume.data, bone_attenuation_multiplier)
 
     # If a labelmap is passed, read the mask
     if labelmap is not None:
@@ -89,7 +96,7 @@ def canonicalize(subject):
     return subject
 
 # %% ../notebooks/api/03_data.ipynb 7
-def transform_hu_to_density(volume):
+def transform_hu_to_density(volume, bone_attenuation_multiplier):
     volume = volume.to(torch.float32)
 
     air = torch.where(volume <= -800)
@@ -99,7 +106,7 @@ def transform_hu_to_density(volume):
     density = torch.empty_like(volume)
     density[air] = volume[soft_tissue].min()
     density[soft_tissue] = volume[soft_tissue]
-    density[bone] = volume[bone]
+    density[bone] = volume[bone] * bone_attenuation_multiplier
     density -= density.min()
     density /= density.max()
 
