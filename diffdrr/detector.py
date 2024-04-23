@@ -27,6 +27,7 @@ class Detector(torch.nn.Module):
         dely: float,  # Pixel spacing in the Y-direction
         x0: float,  # Principal point X-offset
         y0: float,  # Principal point Y-offset
+        reorient: torch.tensor,  # Frame-of-reference change matrix
         n_subsample: int | None = None,  # Number of target points to randomly sample
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
@@ -49,19 +50,7 @@ class Detector(torch.nn.Module):
         self.register_buffer("target", target)
 
         # Create a pose to reorient the scanner
-        # Rotates the C-arm about the x-axis by 90 degrees
-        # Rotates the C-arm about the z-axis by -90 degrees
-        self.register_buffer(
-            "_reorient",
-            torch.tensor(
-                [
-                    [0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, -1.0, 0.0],
-                    [-1.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ]
-            ),
-        )
+        self.register_buffer("_reorient", reorient)
 
     @property
     def reorient(self):

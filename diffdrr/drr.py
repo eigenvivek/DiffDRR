@@ -33,7 +33,7 @@ class DRR(nn.Module):
         y0: float = 0.0,  # Principal point Y-offset
         p_subsample: float | None = None,  # Proportion of pixels to randomly subsample
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
-        reverse_x_axis: bool = False,  # If pose includes reflection (i.e., E(3), not SE(3)), reverse x-axis
+        reverse_x_axis: bool = True,  # If True, obey radiologic convention (e.g., heart on right)
         patch_size: int | None = None,  # Render patches of the DRR in series
         renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
         **renderer_kwargs,  # Kwargs for the renderer
@@ -55,6 +55,7 @@ class DRR(nn.Module):
             dely,
             x0,
             y0,
+            subject.reorient,
             reverse_x_axis=reverse_x_axis,
             n_subsample=n_subsample,
         )
