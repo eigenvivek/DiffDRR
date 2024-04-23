@@ -15,7 +15,9 @@ from torchio.transforms.preprocessing import ToCanonical
 __all__ = ['load_example_ct', 'read']
 
 # %% ../notebooks/api/03_data.ipynb 4
-def load_example_ct(labels=None, bone_attenuation_multiplier=1.0) -> Subject:
+def load_example_ct(
+    labels=None, orientation="AP", bone_attenuation_multiplier=1.0
+) -> Subject:
     """Load an example chest CT for demonstration purposes."""
     datadir = Path(__file__).resolve().parent / "data"
     filename = datadir / "cxr.nii.gz"
@@ -25,8 +27,9 @@ def load_example_ct(labels=None, bone_attenuation_multiplier=1.0) -> Subject:
         filename,
         labelmap,
         labels,
-        structures=structures,
+        orientation=orientation,
         bone_attenuation_multiplier=bone_attenuation_multiplier,
+        structures=structures,
     )
 
 # %% ../notebooks/api/03_data.ipynb 5
@@ -34,7 +37,8 @@ def read(
     filename: str | Path,  # Path to CT volume
     labelmap: str | Path = None,  # Path to a labelmap for the CT volume
     labels: int | list = None,  # Labels from the mask of structures to render
-    bone_attenuation_multiplier: float = 1.0,  # Scalar multiplier
+    orientation: str = "AP",  # Frame-of-reference change
+    bone_attenuation_multiplier: float = 1.0,  # Scalar multiplier on density of high attenuation voxels
     **kwargs,  # Any additional information to be stored in the torchio.Subject
 ) -> Subject:
     """
@@ -44,7 +48,6 @@ def read(
     """
     # Read the volume from a filename
     volume = ScalarImage(filename)
-    density = transform_hu_to_density(volume.data, bone_attenuation_multiplier)
 
     # If a labelmap is passed, read the mask
     if labelmap is not None:
@@ -52,24 +55,64 @@ def read(
     else:
         mask = None
 
+    # Frame-of-reference change
+    if orientation == "AP":
+        # Rotates the C-arm about the x-axis by 90 degrees
+        # Rotates the C-arm about the z-axis by -90 degrees
+        reorient = torch.tensor(
+            [
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, -1.0, 0.0],
+                [-1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+    elif orientation == "PA":
+        # Rotates the C-arm about the x-axis by 90 degrees
+        # Rotates the C-arm about the z-axis by 90 degrees
+        reorient = torch.tensor(
+            [
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [-1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+    elif orientation is None:
+        # Identity transform
+        reorient = torch.tensor(
+            [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+    else:
+        raise ValueError(f"Unrecognized orientation {orientation}")
+
     # Package the subject
     subject = Subject(
         volume=volume,
         mask=mask,
-        density=density,
+        reorient=reorient,
+        density=None,  # Temporarily set to None, calculate after reorientation
         **kwargs,
     )
 
     # Canonicalize the images by converting to RAS+ and moving the
     # Subject's isocenter to the origin in world coordinates
     subject = canonicalize(subject)
+    subject.density = transform_hu_to_density(
+        subject.volume.data, bone_attenuation_multiplier
+    )
 
     # Apply mask
     if labels is not None:
         if isinstance(labels, int):
             labels = [labels]
         mask = torch.any(
-            torch.stack([mask.data.squeeze() == idx for idx in labels]), dim=0
+            torch.stack([subject.mask.data.squeeze() == idx for idx in labels]), dim=0
         )
         subject.density = subject.density * mask
 
