@@ -149,7 +149,7 @@ def forward(
                 **kwargs,
             )
             img.append(partial)
-        img = torch.cat(img, dim=1)
+        img = torch.cat(img, dim=-1)
     return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
