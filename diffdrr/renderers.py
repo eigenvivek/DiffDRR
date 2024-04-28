@@ -159,7 +159,7 @@ class Trilinear(torch.nn.Module):
         spacing,
         source,
         target,
-        n_points=250,
+        n_points=500,
         align_corners=True,
         mask=None,
     ):
