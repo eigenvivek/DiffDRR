@@ -36,7 +36,7 @@ class Siddon(torch.nn.Module):
         step_length = torch.diff(alphas, dim=-1)
         weighted_voxels = voxels * step_length
 
-        # Handle optional mapping
+        # Handle optional masking
         if mask is None:
             img = torch.nansum(weighted_voxels, dim=-1)
             img = img.unsqueeze(1)
@@ -163,10 +163,6 @@ class Trilinear(torch.nn.Module):
         align_corners=True,
         mask=None,
     ):
-        # Ensure not using mask_to_channels
-        if mask is not None:
-            raise ValueErro("mask_to_channels can only be True if renderer=='Siddon'")
-
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1)
         source = source[:, None, :, None, :] - origin
@@ -180,11 +176,36 @@ class Trilinear(torch.nn.Module):
 
         # Reorder array to match torch conventions
         volume = volume.permute(2, 1, 0)
+        if mask is not None:
+            mask = mask.permute(2, 1, 0)
 
         # Render the DRR
         batch_size = len(rays)
-        vol = volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1)
-        img = grid_sample(vol, rays, mode=self.mode, align_corners=align_corners)
-        img = img[:, 0, 0].sum(dim=-1)
+        img = grid_sample(
+            volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1),
+            rays,
+            mode=self.mode,
+            align_corners=align_corners,
+        )[:, 0, 0]
+
+        # Handle optional masking
+        if mask is None:
+            img = img.sum(dim=-1).unsqueeze(1)
+        else:
+            B, D, N = img.shape
+            C = mask.max().item() + 1
+            channels = grid_sample(
+                mask[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1).float(),
+                rays,
+                mode="nearest",
+                align_corners=align_corners,
+            ).long()[:, 0, 0]
+            img = (
+                torch.zeros(B, C, D)
+                .to(volume)
+                .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
+            )
+
+        # Multiply by raylength
         img *= raylength / n_points
         return img
