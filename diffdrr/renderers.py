@@ -164,7 +164,7 @@ class Trilinear(torch.nn.Module):
         mask=None,
     ):
         # Get the raylength and reshape sources
-        raylength = (source - target + self.eps).norm(dim=-1)
+        raylength = (source - target + self.eps).norm(dim=-1).unsqueeze(1)
         source = source[:, None, :, None, :] - origin
         target = target[:, None, :, None, :] - origin
 
