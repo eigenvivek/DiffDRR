@@ -20,11 +20,11 @@ def load_example_ct(
 ) -> Subject:
     """Load an example chest CT for demonstration purposes."""
     datadir = Path(__file__).resolve().parent / "data"
-    filename = datadir / "cxr.nii.gz"
+    volume = datadir / "cxr.nii.gz"
     labelmap = datadir / "mask.nii.gz"
     structures = pd.read_csv(datadir / "structures.csv")
     return read(
-        filename,
+        volume,
         labelmap,
         labels,
         orientation=orientation,
@@ -34,8 +34,8 @@ def load_example_ct(
 
 # %% ../notebooks/api/03_data.ipynb 5
 def read(
-    filename: str | Path,  # Path to CT volume
-    labelmap: str | Path = None,  # Path to a labelmap for the CT volume
+    volume: str | Path | ScalarImage,  # CT volume
+    labelmap: str | Path | LabelMap = None,  # Labelmap for the CT volume
     labels: int | list = None,  # Labels from the mask of structures to render
     orientation: str = "AP",  # Frame-of-reference change
     bone_attenuation_multiplier: float = 1.0,  # Scalar multiplier on density of high attenuation voxels
@@ -46,12 +46,18 @@ def read(
     given labelmap for the volume. Converts volume to a RAS+ coordinate
     system and moves the volume isocenter to the world origin.
     """
-    # Read the volume from a filename
-    volume = ScalarImage(filename)
+    # Read the volume
+    if isinstance(volume, ScalarImage):
+        pass
+    else:
+        volume = ScalarImage(volume)
 
-    # If a labelmap is passed, read the mask
+    # Read the mask if passed
     if labelmap is not None:
-        mask = LabelMap(labelmap)
+        if isinstance(labelmap, LabelMap):
+            mask = labelmap
+        else:
+            mask = LabelMap(labelmap)
     else:
         mask = None
 
