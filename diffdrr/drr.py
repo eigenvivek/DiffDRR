@@ -63,7 +63,7 @@ class DRR(nn.Module):
         # Initialize the volume
         self.subject = subject
         self.volume = subject.volume.data.squeeze()
-        self.register_buffer("density", subject.density)
+        self.register_buffer("density", subject.density.data.squeeze())
         self.register_buffer(
             "spacing", torch.tensor(subject.volume.spacing, dtype=torch.float32)
         )

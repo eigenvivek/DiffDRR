@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torchio import LabelMap, ScalarImage, Subject
+from torchio.transforms import Resample
 from torchio.transforms.preprocessing import ToCanonical
 
 # %% auto 0
@@ -51,6 +52,10 @@ def read(
         pass
     else:
         volume = ScalarImage(volume)
+
+    # Convert the volume to density
+    density = transform_hu_to_density(volume.data, bone_attenuation_multiplier)
+    density = ScalarImage(tensor=density, affine=volume.affine)
 
     # Read the mask if passed
     if labelmap is not None:
@@ -102,16 +107,13 @@ def read(
         volume=volume,
         mask=mask,
         reorient=reorient,
-        density=None,  # Temporarily set to None, calculate after reorientation
+        density=density,
         **kwargs,
     )
 
     # Canonicalize the images by converting to RAS+ and moving the
     # Subject's isocenter to the origin in world coordinates
     subject = canonicalize(subject)
-    subject.density = transform_hu_to_density(
-        subject.volume.data, bone_attenuation_multiplier
-    )
 
     # Apply mask
     if labels is not None:
@@ -159,4 +161,4 @@ def transform_hu_to_density(volume, bone_attenuation_multiplier):
     density -= density.min()
     density /= density.max()
 
-    return density.squeeze()
+    return density
