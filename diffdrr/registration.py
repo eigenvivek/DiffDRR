@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 
 from .drr import DRR
+from .pose import convert
 
 
 class Registration(nn.Module):
@@ -68,7 +69,7 @@ class Registration(nn.Module):
 # %% ../notebooks/api/08_registration.ipynb 6
 import timm
 
-from .pose import RigidTransform, convert
+from .pose import RigidTransform
 
 
 class PoseRegressor(torch.nn.Module):
@@ -84,6 +85,7 @@ class PoseRegressor(torch.nn.Module):
         parameterization,
         convention=None,
         pretrained=False,
+        height=256,
         **kwargs,
     ):
         super().__init__()
@@ -100,7 +102,7 @@ class PoseRegressor(torch.nn.Module):
             in_chans=1,
             **kwargs,
         )
-        output = self.backbone(torch.randn(1, 1, 256, 256)).shape[-1]
+        output = self.backbone(torch.randn(1, 1, height, height)).shape[-1]
         self.xyz_regression = torch.nn.Linear(output, 3)
         self.rot_regression = torch.nn.Linear(output, n_angular_components)
 
@@ -108,12 +110,7 @@ class PoseRegressor(torch.nn.Module):
         x = self.backbone(x)
         rot = self.rot_regression(x)
         xyz = self.xyz_regression(x)
-        return convert(
-            rot,
-            xyz,
-            parameterization=self.parameterization,
-            convention=self.convention,
-        )
+        return rot, xyz
 
 # %% ../notebooks/api/08_registration.ipynb 7
 N_ANGULAR_COMPONENTS = {
@@ -122,6 +119,7 @@ N_ANGULAR_COMPONENTS = {
     "se3_log_map": 3,
     "quaternion": 4,
     "rotation_6d": 6,
+    "rotation_9d": 9,
     "rotation_10d": 10,
     "quaternion_adjugate": 10,
 }
