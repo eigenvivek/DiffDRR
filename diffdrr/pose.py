@@ -128,6 +128,7 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
     elif parameterization == "quaternion":
         rotation, translation = args
         rotmat = quaternion_to_matrix(rotation)
+        matrix = make_matrix(rotmat, translation)
     elif parameterization == "quaternion_adjugate":
         rotation, translation = args
         quaternion = quaternion_adjugate_to_quaternion(rotation)
