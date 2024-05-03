@@ -160,9 +160,9 @@ def rotation_9d_to_matrix(rotation: torch.Tensor) -> torch.Tensor:
     m = rotation.view(-1, 3, 3)
     u, s, v = torch.svd(m)
     vt = v.transpose(1, 2)
-    vt[:, -1:] *= (
-        (u @ vt).det().view(-1, 1, 1)
-    )  # Scale by determinant to project onto SO(3)
+    # Scale by determinant to project onto SO(3)
+    det = (u @ vt).det().view(-1, 1, 1)
+    vt = torch.concat([vt[:, :2], det * vt[:, -1:]], dim=1)
     return u @ vt
 
 
