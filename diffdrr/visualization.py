@@ -276,21 +276,23 @@ def labelmap_to_mesh(
 from .pose import RigidTransform
 
 
-def img_to_mesh(drr: DRR, pose: RigidTransform, **kwargs):
+def img_to_mesh(
+    drr: DRR, pose: RigidTransform, calibration: RigidTransform = None, **kwargs
+):
     """
     For a given pose (not batched), turn the camera and detector into a mesh.
     Additionally, render the DRR for the pose. Convert into a texture that
     can be applied to the detector mesh.
     """
     # Turn DRR img into a texture that can be applied to a mesh
-    img = drr(pose)
+    img = drr(pose, calibration)
     img = img.cpu().squeeze().detach().numpy()
     img = (img - img.min()) / (img.max() - img.min())
     img = (255.0 * img).astype(np.uint8)
     texture = pyvista.numpy_to_texture(img)
 
     # Make a mesh for the camera and the principal ray
-    source, target = drr.detector(pose)
+    source, target = drr.detector(pose, calibration)
     source = source.squeeze().cpu().detach().numpy()
     target = (
         target.reshape(drr.detector.height, drr.detector.width, 3)
