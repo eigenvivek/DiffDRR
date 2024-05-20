@@ -122,7 +122,7 @@ def read(
         mask = torch.any(
             torch.stack([subject.mask.data.squeeze() == idx for idx in labels]), dim=0
         )
-        subject.density = subject.density * mask
+        subject.density.data = subject.density.data * mask
 
     return subject
 
