@@ -104,7 +104,7 @@ def reshape_subsampled_drr(img: torch.Tensor, detector: Detector, batch_size: in
     return drr
 
 # %% ../notebooks/api/00_drr.ipynb 10
-from .pose import convert
+from .pose import RigidTransform, convert
 
 
 @patch
@@ -176,9 +176,6 @@ def set_intrinsics(
     ).to(self.volume)
 
 # %% ../notebooks/api/00_drr.ipynb 12
-from .pose import RigidTransform
-
-
 @patch
 def perspective_projection(
     self: DRR,
