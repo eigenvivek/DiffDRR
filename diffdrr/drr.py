@@ -113,6 +113,7 @@ def forward(
     *args,  # Some batched representation of SE(3)
     parameterization: str = None,  # Specifies the representation of the rotation
     convention: str = None,  # If parameterization is Euler angles, specify convention
+    calibration: RigidTransform = None,  # Optional calibration matrix with the detector's intrinsic parameters
     mask_to_channels: bool = False,  # If True, structures from the CT mask are rendered in separate channels
     **kwargs,  # Passed to the renderer
 ):
@@ -122,7 +123,7 @@ def forward(
         pose = args[0]
     else:
         pose = convert(*args, parameterization=parameterization, convention=convention)
-    source, target = self.detector(pose)
+    source, target = self.detector(pose, calibration)
 
     # Render the DRR
     kwargs["mask"] = self.mask if mask_to_channels else None

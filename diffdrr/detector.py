@@ -32,13 +32,13 @@ class Detector(torch.nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
         super().__init__()
-        self.sdd = sdd
+        # self.sdd = sdd
         self.height = height
         self.width = width
-        self.delx = delx
-        self.dely = dely
-        self.x0 = x0
-        self.y0 = y0
+        # self.delx = delx
+        # self.dely = dely
+        # self.x0 = x0
+        # self.y0 = y0
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
             self.subsamples = []
@@ -52,20 +52,39 @@ class Detector(torch.nn.Module):
         # Create a pose to reorient the scanner
         self.register_buffer("_reorient", reorient)
 
+        # Create a calibration matrix that holds the detector's intrinsic parameters
+        self.register_buffer(
+            "_calibration",
+            torch.tensor(
+                [
+                    [delx, 0, 0, x0],
+                    [0, dely, 0, y0],
+                    [0, 0, sdd, 0],
+                    [0, 0, 0, 1],
+                ]
+            ),
+        )
+
     @property
     def reorient(self):
         return RigidTransform(self._reorient)
 
     @property
+    def calibration(self):
+        """A 4x4 matrix that rescales the detector plane to world coordinates."""
+        return RigidTransform(self._calibration)
+
+    @property
     def intrinsic(self):
+        """The 3x3 intrinsic matrix."""
         return make_intrinsic_matrix(
-            self.sdd,
-            self.delx,
-            self.dely,
+            self._calibration[2, 2].item(),
+            self._calibration[0, 0].item(),
+            self._calibration[1, 1].item(),
             self.height,
             self.width,
-            self.x0,
-            self.y0,
+            self._calibration[0, -1].item(),
+            self._calibration[1, -1].item(),
         ).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
@@ -79,7 +98,7 @@ def _initialize_carm(self: Detector):
 
     # Initialize the source at the origin and the center of the detector plane on the positive z-axis
     source = torch.tensor([[0.0, 0.0, 0.0]], device=device)
-    center = torch.tensor([[0.0, 0.0, 1.0]], device=device) * self.sdd
+    center = torch.tensor([[0.0, 0.0, 1.0]], device=device)  # * self.sdd
 
     # Use the standard basis for the detector plane
     basis = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], device=device)
@@ -91,10 +110,10 @@ def _initialize_carm(self: Detector):
     # Construct equally spaced points along the basis vectors
     t = (
         torch.arange(-self.height // 2, self.height // 2, device=device) + h_off
-    ) * self.delx
+    )  # * self.delx
     s = (
         torch.arange(-self.width // 2, self.width // 2, device=device) + w_off
-    ) * self.dely
+    )  # * self.dely
     if self.reverse_x_axis:
         s = -s
     coefs = torch.cartesian_prod(t, s).reshape(-1, 2)
@@ -105,9 +124,9 @@ def _initialize_carm(self: Detector):
     source = source.unsqueeze(0)
     target = target.unsqueeze(0)
 
-    # Apply principal point offset
-    target[..., 1] -= self.x0
-    target[..., 0] -= self.y0
+    # # Apply principal point offset
+    # target[..., 1] -= self.x0
+    # target[..., 0] -= self.y0
 
     if self.n_subsample is not None:
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
@@ -120,9 +139,13 @@ from .pose import RigidTransform
 
 
 @patch
-def forward(self: Detector, pose: RigidTransform):
+def forward(self: Detector, extrinsic: RigidTransform, calibration: RigidTransform):
     """Create source and target points for X-rays to trace through the volume."""
-    pose = self.reorient.compose(pose)
+    if calibration is None:
+        target = self.calibration(self.target)
+    else:
+        target = calibration(self.target)
+    pose = self.reorient.compose(extrinsic)
     source = pose(self.source)
-    target = pose(self.target)
+    target = pose(target)
     return source, target
