@@ -192,7 +192,7 @@ def rotation_9d_to_matrix(rotation: torch.Tensor) -> torch.Tensor:
 def matrix_to_rotation_9d(matrix: torch.Tensor) -> torch.Tensor:
     return matrix.flatten(start_dim=1)
 
-# %% ../notebooks/api/06_pose.ipynb 16
+# %% ../notebooks/api/06_pose.ipynb 15
 def _10vec_to_4x4symmetric(vec):
     """Convert a 10-vector to a symmetric 4x4 matrix."""
     b = len(vec)
@@ -202,7 +202,7 @@ def _10vec_to_4x4symmetric(vec):
     A[..., jdx, idx] = vec
     return A
 
-# %% ../notebooks/api/06_pose.ipynb 17
+# %% ../notebooks/api/06_pose.ipynb 16
 def rotation_10d_to_quaternion(rotation: torch.Tensor) -> torch.Tensor:
     """
     Convert a 10-vector into a symmetric matrix, whose eigenvector corresponding
@@ -219,7 +219,7 @@ def quaternion_to_rotation_10d(q: torch.Tensor) -> torch.Tensor:
     idx, jdx = torch.triu_indices(4, 4)
     return A[..., idx, jdx]
 
-# %% ../notebooks/api/06_pose.ipynb 18
+# %% ../notebooks/api/06_pose.ipynb 17
 def quaternion_adjugate_to_quaternion(rotation: torch.Tensor) -> torch.Tensor:
     """
     Convert a 10-vector in the quaternion adjugate, a symmetric matrix whose
@@ -240,7 +240,7 @@ def quaternion_to_quaternion_adjugate(q: torch.Tensor) -> torch.Tensor:
     idx, jdx = torch.triu_indices(4, 4)
     return A[..., idx, jdx]
 
-# %% ../notebooks/api/06_pose.ipynb 21
+# %% ../notebooks/api/06_pose.ipynb 20
 # pytorch3d/transforms/rotation_conversions.py
 
 from typing import Optional, Union
@@ -767,7 +767,7 @@ def matrix_to_rotation_6d(matrix: torch.Tensor) -> torch.Tensor:
     batch_dim = matrix.size()[:-2]
     return matrix[..., :2, :].clone().reshape(batch_dim + (6,))
 
-# %% ../notebooks/api/06_pose.ipynb 22
+# %% ../notebooks/api/06_pose.ipynb 21
 # pytorch3d/transforms/math.py
 from typing import Tuple
 
@@ -845,7 +845,7 @@ def _dacos_dx(x: float) -> float:
     """
     return (-1.0) / math.sqrt(1.0 - x * x)
 
-# %% ../notebooks/api/06_pose.ipynb 23
+# %% ../notebooks/api/06_pose.ipynb 22
 # pytorch3d/transforms/so3.py
 
 import warnings
@@ -1105,7 +1105,7 @@ def hat(v: torch.Tensor) -> torch.Tensor:
 
     return h
 
-# %% ../notebooks/api/06_pose.ipynb 24
+# %% ../notebooks/api/06_pose.ipynb 23
 # pytorch3d/transforms/se3.py
 
 
