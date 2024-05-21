@@ -15,7 +15,7 @@ from torchio.transforms.preprocessing import ToCanonical
 # %% auto 0
 __all__ = ['load_example_ct', 'read']
 
-# %% ../notebooks/api/03_data.ipynb 4
+# %% ../notebooks/api/03_data.ipynb 5
 def load_example_ct(
     labels=None,
     orientation="AP",
@@ -37,7 +37,7 @@ def load_example_ct(
         **kwargs,
     )
 
-# %% ../notebooks/api/03_data.ipynb 5
+# %% ../notebooks/api/03_data.ipynb 6
 def read(
     volume: str | Path | ScalarImage,  # CT volume
     labelmap: str | Path | LabelMap = None,  # Labelmap for the CT volume
@@ -132,7 +132,7 @@ def read(
 
     return subject
 
-# %% ../notebooks/api/03_data.ipynb 6
+# %% ../notebooks/api/03_data.ipynb 7
 from diffdrr.pose import RigidTransform
 
 
@@ -163,7 +163,7 @@ def canonicalize(subject):
         subject.fiducials = affine(subject.fiducials)
     return subject
 
-# %% ../notebooks/api/03_data.ipynb 7
+# %% ../notebooks/api/03_data.ipynb 8
 def transform_hu_to_density(volume, bone_attenuation_multiplier):
     volume = volume.to(torch.float32)
 
