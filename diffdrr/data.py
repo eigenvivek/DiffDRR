@@ -15,9 +15,12 @@ from torchio.transforms.preprocessing import ToCanonical
 # %% auto 0
 __all__ = ['load_example_ct', 'read']
 
-# %% ../notebooks/api/03_data.ipynb 4
+# %% ../notebooks/api/03_data.ipynb 5
 def load_example_ct(
-    labels=None, orientation="AP", bone_attenuation_multiplier=1.0
+    labels=None,
+    orientation="AP",
+    bone_attenuation_multiplier=1.0,
+    **kwargs,
 ) -> Subject:
     """Load an example chest CT for demonstration purposes."""
     datadir = Path(__file__).resolve().parent / "data"
@@ -31,15 +34,17 @@ def load_example_ct(
         orientation=orientation,
         bone_attenuation_multiplier=bone_attenuation_multiplier,
         structures=structures,
+        **kwargs,
     )
 
-# %% ../notebooks/api/03_data.ipynb 5
+# %% ../notebooks/api/03_data.ipynb 6
 def read(
     volume: str | Path | ScalarImage,  # CT volume
     labelmap: str | Path | LabelMap = None,  # Labelmap for the CT volume
     labels: int | list = None,  # Labels from the mask of structures to render
     orientation: str = "AP",  # Frame-of-reference change
     bone_attenuation_multiplier: float = 1.0,  # Scalar multiplier on density of high attenuation voxels
+    fiducials: torch.Tensor = None,  # 3D fiducials in world coordinates
     **kwargs,  # Any additional information to be stored in the torchio.Subject
 ) -> Subject:
     """
@@ -108,6 +113,7 @@ def read(
         mask=mask,
         reorient=reorient,
         density=density,
+        fiducials=fiducials,
         **kwargs,
     )
 
@@ -126,9 +132,13 @@ def read(
 
     return subject
 
-# %% ../notebooks/api/03_data.ipynb 6
+# %% ../notebooks/api/03_data.ipynb 7
+from diffdrr.pose import RigidTransform
+
+
 def canonicalize(subject):
     # Convert to RAS+ coordinate system
+    affine_original = torch.from_numpy(subject.volume.affine)
     subject = ToCanonical()(subject)
 
     # Move the Subject's isocenter to the origin in world coordinates
@@ -144,9 +154,16 @@ def canonicalize(subject):
         )
         image.affine = Tinv.dot(image.affine)
 
+    # If fiducials are provided (in world coordinates), reorient them
+    if subject.fiducials is not None:
+        affine_new = torch.tensor(image.affine)
+        affine = affine_new @ affine_original.inverse()
+        affine = affine.to(torch.float32)
+        affine = RigidTransform(affine)
+        subject.fiducials = affine(subject.fiducials)
     return subject
 
-# %% ../notebooks/api/03_data.ipynb 7
+# %% ../notebooks/api/03_data.ipynb 8
 def transform_hu_to_density(volume, bone_attenuation_multiplier):
     volume = volume.to(torch.float32)
 
