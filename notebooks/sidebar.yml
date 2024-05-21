@@ -16,8 +16,8 @@ website:
       - section: tutorials
         contents:
           - tutorials/introduction.ipynb
+          - tutorials/geometry.ipynb
           - tutorials/optimizers.ipynb
-          - tutorials/visualization.ipynb
           - tutorials/metrics.ipynb
           - tutorials/timing.ipynb
           - tutorials/metamorphasis.ipynb
