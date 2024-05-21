@@ -4,7 +4,7 @@
 __all__ = ['RigidTransform', 'convert', 'rotation_9d_to_matrix', 'matrix_to_rotation_9d', 'rotation_10d_to_quaternion',
            'quaternion_to_rotation_10d', 'quaternion_adjugate_to_quaternion', 'quaternion_to_quaternion_adjugate']
 
-# %% ../notebooks/api/06_pose.ipynb 4
+# %% ../notebooks/api/06_pose.ipynb 6
 import torch
 
 
@@ -32,6 +32,14 @@ class RigidTransform(torch.nn.Module):
         x_pad = torch.nn.functional.pad(x, (0, 1), value=1.0)
         return torch.einsum("bij, knj -> bni", self.matrix[:, :3], x_pad)
 
+    @property
+    def rotation(self):
+        return self.matrix[..., :3, :3]
+
+    @property
+    def translation(self):
+        return self.matrix[..., :3, 3]
+
     def inverse(self):
         R = self.matrix[..., :3, :3]
         t = self.matrix[..., :3, 3]
@@ -45,7 +53,7 @@ class RigidTransform(torch.nn.Module):
         return RigidTransform(matrix)
 
     def convert(self, parameterization, convention=None):
-        translation = self.matrix[..., :3, 3]
+        translation = -self.inverse().translation
         if parameterization == "axis_angle":
             rotation = matrix_to_axis_angle(self.matrix[..., :3, :3])
         elif parameterization == "euler_angles":
@@ -76,7 +84,7 @@ class RigidTransform(torch.nn.Module):
     def get_se3_log(self):
         return se3_log_map(self.matrix.mT)
 
-# %% ../notebooks/api/06_pose.ipynb 5
+# %% ../notebooks/api/06_pose.ipynb 7
 def make_matrix(R, t):
     assert (batch_size := len(R)) == len(t)
     matrix = torch.zeros(batch_size, 4, 4).to(R)
@@ -85,7 +93,7 @@ def make_matrix(R, t):
     matrix[..., -1, -1] = 1.0
     return matrix
 
-# %% ../notebooks/api/06_pose.ipynb 6
+# %% ../notebooks/api/06_pose.ipynb 8
 from scipy.spatial.transform import Rotation
 
 
@@ -95,7 +103,7 @@ def random_rigid_transform(batch_size=1):
     t = 100 * torch.randn((batch_size, 3))
     return RigidTransform(make_matrix(R, t))
 
-# %% ../notebooks/api/06_pose.ipynb 8
+# %% ../notebooks/api/06_pose.ipynb 10
 PARAMETERIZATIONS = [
     "axis_angle",
     "euler_angles",
@@ -108,7 +116,7 @@ PARAMETERIZATIONS = [
     "se3_log_map",
 ]
 
-# %% ../notebooks/api/06_pose.ipynb 9
+# %% ../notebooks/api/06_pose.ipynb 11
 def convert(*args, parameterization, convention=None) -> RigidTransform:
     if parameterization == "euler_angles" and convention is None:
         raise ValueError(
@@ -118,17 +126,26 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
     if parameterization == "axis_angle":
         rotation, translation = args
         rotmat = axis_angle_to_matrix(rotation)
-        matrix = make_matrix(rotmat, translation)
+        camera_center = camera_center = torch.einsum(
+            "bij, bj -> bi", rotmat, translation
+        )
+        matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "euler_angles":
         rotation, translation = args
         rotmat = euler_angles_to_matrix(rotation, convention)
-        matrix = make_matrix(rotmat, translation)
+        camera_center = camera_center = torch.einsum(
+            "bij, bj -> bi", rotmat, translation
+        )
+        matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "matrix":
         return RigidTransform(args[0])
     elif parameterization == "quaternion":
         rotation, translation = args
         rotmat = quaternion_to_matrix(rotation)
-        matrix = make_matrix(rotmat, translation)
+        camera_center = camera_center = torch.einsum(
+            "bij, bj -> bi", rotmat, translation
+        )
+        matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "quaternion_adjugate":
         rotation, translation = args
         quaternion = quaternion_adjugate_to_quaternion(rotation)
@@ -136,11 +153,17 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
     elif parameterization == "rotation_6d":
         rotation, translation = args
         rotmat = rotation_6d_to_matrix(rotation)
-        matrix = make_matrix(rotmat, translation)
+        camera_center = camera_center = torch.einsum(
+            "bij, bj -> bi", rotmat, translation
+        )
+        matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "rotation_9d":
         rotation, translation = args
         rotmat = rotation_9d_to_matrix(rotation)
-        matrix = make_matrix(rotmat, translation)
+        camera_center = camera_center = torch.einsum(
+            "bij, bj -> bi", rotmat, translation
+        )
+        matrix = make_matrix(rotmat, camera_center)
     elif parameterization in ["rotation_10d"]:
         rotation, translation = args
         quaternion = rotation_10d_to_quaternion(rotation)
@@ -154,7 +177,7 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
 
     return convert(matrix, parameterization="matrix")
 
-# %% ../notebooks/api/06_pose.ipynb 11
+# %% ../notebooks/api/06_pose.ipynb 13
 def rotation_9d_to_matrix(rotation: torch.Tensor) -> torch.Tensor:
     """Convert a 9-vector to a symmetrically orthogonalized rotation matrix via SVD."""
     m = rotation.view(-1, 3, 3)
@@ -169,7 +192,7 @@ def rotation_9d_to_matrix(rotation: torch.Tensor) -> torch.Tensor:
 def matrix_to_rotation_9d(matrix: torch.Tensor) -> torch.Tensor:
     return matrix.flatten(start_dim=1)
 
-# %% ../notebooks/api/06_pose.ipynb 14
+# %% ../notebooks/api/06_pose.ipynb 15
 def _10vec_to_4x4symmetric(vec):
     """Convert a 10-vector to a symmetric 4x4 matrix."""
     b = len(vec)
@@ -179,7 +202,7 @@ def _10vec_to_4x4symmetric(vec):
     A[..., jdx, idx] = vec
     return A
 
-# %% ../notebooks/api/06_pose.ipynb 15
+# %% ../notebooks/api/06_pose.ipynb 16
 def rotation_10d_to_quaternion(rotation: torch.Tensor) -> torch.Tensor:
     """
     Convert a 10-vector into a symmetric matrix, whose eigenvector corresponding
@@ -196,7 +219,7 @@ def quaternion_to_rotation_10d(q: torch.Tensor) -> torch.Tensor:
     idx, jdx = torch.triu_indices(4, 4)
     return A[..., idx, jdx]
 
-# %% ../notebooks/api/06_pose.ipynb 16
+# %% ../notebooks/api/06_pose.ipynb 17
 def quaternion_adjugate_to_quaternion(rotation: torch.Tensor) -> torch.Tensor:
     """
     Convert a 10-vector in the quaternion adjugate, a symmetric matrix whose
@@ -217,7 +240,7 @@ def quaternion_to_quaternion_adjugate(q: torch.Tensor) -> torch.Tensor:
     idx, jdx = torch.triu_indices(4, 4)
     return A[..., idx, jdx]
 
-# %% ../notebooks/api/06_pose.ipynb 19
+# %% ../notebooks/api/06_pose.ipynb 20
 # pytorch3d/transforms/rotation_conversions.py
 
 from typing import Optional, Union
@@ -744,7 +767,7 @@ def matrix_to_rotation_6d(matrix: torch.Tensor) -> torch.Tensor:
     batch_dim = matrix.size()[:-2]
     return matrix[..., :2, :].clone().reshape(batch_dim + (6,))
 
-# %% ../notebooks/api/06_pose.ipynb 20
+# %% ../notebooks/api/06_pose.ipynb 21
 # pytorch3d/transforms/math.py
 from typing import Tuple
 
@@ -822,7 +845,7 @@ def _dacos_dx(x: float) -> float:
     """
     return (-1.0) / math.sqrt(1.0 - x * x)
 
-# %% ../notebooks/api/06_pose.ipynb 21
+# %% ../notebooks/api/06_pose.ipynb 22
 # pytorch3d/transforms/so3.py
 
 import warnings
@@ -1082,7 +1105,7 @@ def hat(v: torch.Tensor) -> torch.Tensor:
 
     return h
 
-# %% ../notebooks/api/06_pose.ipynb 22
+# %% ../notebooks/api/06_pose.ipynb 23
 # pytorch3d/transforms/se3.py
 
 
