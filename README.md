@@ -20,13 +20,13 @@ Most importantly, `DiffDRR` implements DRR rendering as a PyTorch module, making
 
 ## Install
 
-To install the latest stable release:
+To install the latest stable release (**recommended**):
 
 ```zsh
 pip install diffdrr
 ```
 
-To install the development version (**recommended**):
+To install the development version:
 
 ```zsh
 git clone https://github.com/eigenvivek/DiffDRR.git --depth 1
@@ -173,12 +173,20 @@ Physics, 2(12):252–5, 1985.](https://doi.org/10.1118/1.595715)
 If you find `DiffDRR` useful in your work, please cite our
 [paper](https://arxiv.org/abs/2208.12737):
 
-    @inproceedings{gopalakrishnanDiffDRR2022,
-        author    = {Gopalakrishnan, Vivek and Golland, Polina},
-        title     = {Fast Auto-Differentiable Digitally Reconstructed Radiographs for Solving Inverse Problems in Intraoperative Imaging},
-        year      = {2022},
-        booktitle = {Clinical Image-based Procedures: 11th International Workshop, CLIP 2022, Held in Conjunction with MICCAI 2022, Singapore, Proceedings},
-        series    = {Lecture Notes in Computer Science},
-        publisher = {Springer},
-        doi       = {https://doi.org/10.1007/978-3-031-23179-7_1},
+    @inproceedings{gopalakrishnan2022fast,
+      title={Fast auto-differentiable digitally reconstructed radiographs for solving inverse problems in intraoperative imaging},
+      author={Gopalakrishnan, Vivek and Golland, Polina},
+      booktitle={Workshop on Clinical Image-Based Procedures},
+      pages={1--11},
+      year={2022},
+      organization={Springer}
+    }
+
+If the 2D/3D registration capabilities are helpful, please cite our followup, [`DiffPose`](https://arxiv.org/abs/2312.06358):
+
+    @article{gopalakrishnan2023intraoperative,
+      title={Intraoperative 2D/3D Image Registration via Differentiable X-ray Rendering},
+      author={Gopalakrishnan, Vivek and Dey, Neel and Golland, Polina},
+      journal={arXiv preprint arXiv:2312.06358},
+      year={2023}
     }
