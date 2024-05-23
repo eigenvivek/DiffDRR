@@ -42,6 +42,7 @@ import matplotlib.pyplot as plt
 import torch
 
 from diffdrr.drr import DRR
+from diffdrr.pose import convert
 from diffdrr.data import load_example_ct
 from diffdrr.visualization import plot_drr
 
@@ -63,7 +64,8 @@ translations = torch.tensor([[0.0, 850.0, 0.0]], device=device)
 
 # 📸 Also note that DiffDRR can take many representations of SO(3) 📸
 # For example, quaternions, rotation matrix, axis-angle, etc...
-img = drr(rotations, translations, parameterization="euler_angles", convention="ZXY")
+pose = convert(rot, xyz, parameterization="euler_angles", convention="ZXY")
+img = drr(pose)
 plot_drr(img, ticks=False)
 plt.show()
 ```
