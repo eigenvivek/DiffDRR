@@ -18,6 +18,7 @@ website:
           - tutorials/introduction.ipynb
           - tutorials/geometry.ipynb
           - tutorials/optimizers.ipynb
+          - tutorials/reconstruction.ipynb
           - tutorials/metrics.ipynb
           - tutorials/timing.ipynb
           - tutorials/metamorphasis.ipynb

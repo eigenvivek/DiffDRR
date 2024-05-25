@@ -113,7 +113,7 @@ For examples running `DiffDRR` on real surgical datasets, check out our latest w
 
 This work includes a lot of real-world usecases of `DiffDRR` including
 - Using `DiffDRR` as a layer in a deep learning architecture
-- Alignming of real X-rays and rendered DRRs
+- Alignment of real X-rays and rendered DRRs
 - Achieving sub-millimeter registration accuracy very quickly
 
 ### X-ray Segmentation
@@ -128,7 +128,7 @@ This work includes a lot of real-world usecases of `DiffDRR` including
 `DiffDRR` is differentiable with respect to the 3D volume as well as camera poses.
 Therefore, it could (in theory) be used for volume reconstruction via differentiable
 rendering. However, this feature has not been robustly tested and is currently 
-under active development!
+under active development (see [`reconstruction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/reconstruction.html))!
 
 ## Development
 
