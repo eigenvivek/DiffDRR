@@ -115,7 +115,7 @@ def _get_voxel(alpha, source, target, volume, origin, spacing, dims, maxidx, eps
 
 def _get_index(alpha, source, target, origin, spacing, dims, maxidx, eps):
     sdd = target - source + eps
-    idxs = source.unsqueeze(1) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)
+    idxs = source.unsqueeze(2) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)
     idxs = (idxs - origin) / spacing
     idxs = idxs.floor()
     # Conversion to long makes nan->-inf, so temporarily replace them with 0
