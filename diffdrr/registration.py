@@ -34,37 +34,20 @@ class Registration(nn.Module):
 
     @property
     def pose(self):
-        R = convert(
+        return convert(
             self._rotation,
-            torch.tensor([[0.0, 0.0, 0.0]]).to(self._rotation),
-            parameterization=self.parameterization,
-            convention=self.convention,
-        )
-        t = convert(
-            torch.tensor([[0.0, 0.0, 0.0]]).to(self._translation),
             self._translation,
             parameterization=self.parameterization,
             convention=self.convention,
         )
-        return t.compose(R)
 
     @property
     def rotation(self):
-        return (
-            self.pose.convert(self.parameterization, self.convention)[0]
-            .clone()
-            .detach()
-            .cpu()
-        )
+        return self._rotation
 
     @property
     def translation(self):
-        return (
-            self.pose.convert(self.parameterization, self.convention)[1]
-            .clone()
-            .detach()
-            .cpu()
-        )
+        return self._translation
 
 # %% ../notebooks/api/08_registration.ipynb 6
 import timm
