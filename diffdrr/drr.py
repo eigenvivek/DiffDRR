@@ -183,6 +183,7 @@ def perspective_projection(
     pose: RigidTransform,
     pts: torch.Tensor,
 ):
+    """Project points in world coordinates (3D) onto the pixel plane (2D)."""
     extrinsic = (self.detector.reorient.compose(pose)).inverse()
     x = extrinsic(pts)
     x = torch.einsum("ij, bnj -> bni", self.detector.intrinsic, x)
@@ -202,10 +203,13 @@ def inverse_projection(
     pose: RigidTransform,
     pts: torch.Tensor,
 ):
-    extrinsic = self.detector.reorient.compose(pose)
+    """Backproject points in pixel plane (2D) onto the image plane in world coordinates (3D)."""
+    if self.detector.reverse_x_axis:
+        x[..., 1] = self.detector.width - x[..., 1]
     x = self.detector.sdd * torch.einsum(
         "ij, bnj -> bni",
         self.detector.intrinsic.inverse(),
         pad(pts, (0, 1), value=1),  # Convert to homogenous coordinates
     )
+    extrinsic = self.detector.reorient.compose(pose)
     return extrinsic(x)

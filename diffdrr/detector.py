@@ -113,35 +113,28 @@ def _initialize_carm(self: Detector):
 
     # Initialize the source at the origin and the center of the detector plane on the positive z-axis
     source = torch.tensor([[0.0, 0.0, 0.0]], device=device)
-    center = torch.tensor([[0.0, 0.0, 1.0]], device=device)  # * self.sdd
+    center = torch.tensor([[0.0, 0.0, 1.0]], device=device)
 
     # Use the standard basis for the detector plane
     basis = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], device=device)
 
     # Construct the detector plane with different offsets for even or odd heights
+    # These ensure that the detector plane is centered around (0, 0, 1)
     h_off = 1.0 if self.height % 2 else 0.5
     w_off = 1.0 if self.width % 2 else 0.5
 
     # Construct equally spaced points along the basis vectors
-    t = (
-        torch.arange(-self.height // 2, self.height // 2, device=device) + h_off
-    )  # * self.delx
-    s = (
-        torch.arange(-self.width // 2, self.width // 2, device=device) + w_off
-    )  # * self.dely
+    t = torch.arange(-self.height // 2, self.height // 2, device=device) + h_off
+    s = torch.arange(-self.width // 2, self.width // 2, device=device) + w_off
     if self.reverse_x_axis:
         s = -s
     coefs = torch.cartesian_prod(t, s).reshape(-1, 2)
     target = torch.einsum("cd,nc->nd", basis, coefs)
     target += center
 
-    # Batch source and target
+    # Add a batch dimension to the source and target so multiple poses can be passed at once
     source = source.unsqueeze(0)
     target = target.unsqueeze(0)
-
-    # # Apply principal point offset
-    # target[..., 1] -= self.x0
-    # target[..., 0] -= self.y0
 
     if self.n_subsample is not None:
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]
