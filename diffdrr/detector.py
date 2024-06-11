@@ -32,13 +32,8 @@ class Detector(torch.nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
         super().__init__()
-        # self.sdd = sdd
         self.height = height
         self.width = width
-        # self.delx = delx
-        # self.dely = dely
-        # self.x0 = x0
-        # self.y0 = y0
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
             self.subsamples = []
