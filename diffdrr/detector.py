@@ -66,6 +66,26 @@ class Detector(torch.nn.Module):
         )
 
     @property
+    def sdd(self):
+        return self._calibration[2, 2].item()
+
+    @property
+    def delx(self):
+        return self._calibration[0, 0].item()
+
+    @property
+    def dely(self):
+        return self._calibration[1, 1].item()
+
+    @property
+    def x0(self):
+        return self._calibration[0, -1].item()
+
+    @property
+    def y0(self):
+        return self._calibration[1, -1].item()
+
+    @property
     def reorient(self):
         return RigidTransform(self._reorient)
 
@@ -78,13 +98,13 @@ class Detector(torch.nn.Module):
     def intrinsic(self):
         """The 3x3 intrinsic matrix."""
         return make_intrinsic_matrix(
-            self._calibration[2, 2].item(),
-            self._calibration[0, 0].item(),
-            self._calibration[1, 1].item(),
+            self.sdd,
+            self.delx,
+            self.dely,
             self.height,
             self.width,
-            self._calibration[0, -1].item(),
-            self._calibration[1, -1].item(),
+            self.x0,
+            self.y0,
         ).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
