@@ -32,13 +32,8 @@ class Detector(torch.nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
         super().__init__()
-        # self.sdd = sdd
         self.height = height
         self.width = width
-        # self.delx = delx
-        # self.dely = dely
-        # self.x0 = x0
-        # self.y0 = y0
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
             self.subsamples = []
@@ -66,6 +61,26 @@ class Detector(torch.nn.Module):
         )
 
     @property
+    def sdd(self):
+        return self._calibration[2, 2].item()
+
+    @property
+    def delx(self):
+        return self._calibration[0, 0].item()
+
+    @property
+    def dely(self):
+        return self._calibration[1, 1].item()
+
+    @property
+    def x0(self):
+        return self._calibration[0, -1].item()
+
+    @property
+    def y0(self):
+        return self._calibration[1, -1].item()
+
+    @property
     def reorient(self):
         return RigidTransform(self._reorient)
 
@@ -78,13 +93,13 @@ class Detector(torch.nn.Module):
     def intrinsic(self):
         """The 3x3 intrinsic matrix."""
         return make_intrinsic_matrix(
-            self._calibration[2, 2].item(),
-            self._calibration[0, 0].item(),
-            self._calibration[1, 1].item(),
+            self.sdd,
+            self.delx,
+            self.dely,
             self.height,
             self.width,
-            self._calibration[0, -1].item(),
-            self._calibration[1, -1].item(),
+            self.x0,
+            self.y0,
         ).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
