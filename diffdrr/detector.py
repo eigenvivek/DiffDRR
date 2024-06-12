@@ -52,8 +52,8 @@ class Detector(torch.nn.Module):
             "_calibration",
             torch.tensor(
                 [
-                    [delx, 0, 0, x0],
-                    [0, dely, 0, y0],
+                    [dely, 0, 0, -y0],
+                    [0, delx, 0, x0],
                     [0, 0, sdd, 0],
                     [0, 0, 0, 1],
                 ]
@@ -66,19 +66,19 @@ class Detector(torch.nn.Module):
 
     @property
     def delx(self):
-        return self._calibration[0, 0].item()
-
-    @property
-    def dely(self):
         return self._calibration[1, 1].item()
 
     @property
+    def dely(self):
+        return self._calibration[0, 0].item()
+
+    @property
     def x0(self):
-        return self._calibration[0, -1].item()
+        return -self._calibration[1, -1].item()
 
     @property
     def y0(self):
-        return self._calibration[1, -1].item()
+        return -self._calibration[0, -1].item()
 
     @property
     def reorient(self):
@@ -98,8 +98,8 @@ class Detector(torch.nn.Module):
             self.dely,
             self.width,
             self.height,
+            self.y0,
             self.x0,
-            -self.y0,
         ).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
