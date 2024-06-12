@@ -63,7 +63,9 @@ class Siddon(torch.nn.Module):
             # https://stackoverflow.com/questions/78323859/broadcast-pytorch-array-across-channels-based-on-another-array/78324614#78324614
             B, D, _ = img.shape
             C = mask.max().item() + 1
-            channels = _get_voxel(mask, xyzs, aligned_corners=align_corners).long()
+            channels = _get_voxel(
+                mask.to(torch.float32), xyzs, aligned_corners=align_corners
+            ).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(volume)
@@ -84,20 +86,18 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
     alphaz = torch.arange(dims[2]).to(source) * spacing[2] + origin[2]
 
     # Get the alpha at each plane intersection
+    sdd = target - source + eps
     sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
     alphax = alphax.expand(len(source), 1, -1) - sx.unsqueeze(-1)
     alphay = alphay.expand(len(source), 1, -1) - sy.unsqueeze(-1)
     alphaz = alphaz.expand(len(source), 1, -1) - sz.unsqueeze(-1)
-
-    sdd = target - source + eps
     alphax = alphax / sdd[..., 0].unsqueeze(-1)
     alphay = alphay / sdd[..., 1].unsqueeze(-1)
     alphaz = alphaz / sdd[..., 2].unsqueeze(-1)
     alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
-    # Sort the alphas by ray, putting nans at the end of the list
+    # Sort the intersections
     alphas = torch.sort(alphas, dim=-1).values
-
     return alphas
 
 
@@ -174,7 +174,7 @@ class Trilinear(torch.nn.Module):
         else:
             B, D, _ = img.shape
             C = mask.max().item() + 1
-            channels = _get_voxel(mask, xyzs, align_corners).long()
+            channels = _get_voxel(mask.to(torch.float32), xyzs, align_corners).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(volume)
