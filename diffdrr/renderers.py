@@ -11,28 +11,46 @@ from torch.nn.functional import grid_sample
 class Siddon(torch.nn.Module):
     """Differentiable X-ray renderer implemented with Siddon's method for exact raytracing."""
 
-    def __init__(self, eps=1e-8, mode="nearest"):
+    def __init__(
+        self,
+        mode="nearest",
+        eps=1e-8,
+    ):
         super().__init__()
-        self.eps = eps
         self.mode = mode
+        self.eps = eps
 
     def dims(self, volume):
         return torch.tensor(volume.shape).to(volume) + 1
 
-    def maxidx(self, volume):
-        return volume.numel() - 1
-
     def forward(
-        self, volume, origin, spacing, source, target, align_corners=True, mask=None
+        self,
+        volume,
+        origin,
+        spacing,
+        source,
+        target,
+        align_corners=True,
+        mask=None,
     ):
         dims = self.dims(volume)
-        origin = origin.to(torch.float64)
+        origin = origin.to(
+            torch.float64
+        )  # Somehow improves rendering quality (see https://github.com/eigenvivek/DiffDRR/issues/202)
 
+        # Calculate the intersections of each ray with the planes of the CT volume
         alphas = _get_alphas(source, target, origin, spacing, dims, self.eps)
-        alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
-        rays = _get_rays(alphamid, source, target, origin, spacing, dims, self.eps)
-        img = _get_voxel(volume, rays, self.mode, align_corners)
 
+        # Calculate the midpoint of every adjacent intersection point (exclusively in one voxel)
+        alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
+
+        # Get the XYZ coordinate of each midpoint
+        xyzs = _get_xyzs(alphamid, source, target, origin, spacing, dims, self.eps)
+
+        # Use torch.nn.functional.grid_sample to lookup the values of each voxel
+        img = _get_voxel(volume, xyzs, self.mode, align_corners)
+
+        # Weight each voxel by the length of the ray's intersection with the voxel
         step_length = torch.diff(alphas, dim=-1)
         img = img * step_length
 
@@ -45,22 +63,21 @@ class Siddon(torch.nn.Module):
             # https://stackoverflow.com/questions/78323859/broadcast-pytorch-array-across-channels-based-on-another-array/78324614#78324614
             B, D, _ = img.shape
             C = mask.max().item() + 1
-            channels = _get_voxel(
-                mask.to(torch.float32), rays, aligned_corners=align_corners
-            ).long()
+            channels = _get_voxel(mask, xyzs, aligned_corners=align_corners).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(volume)
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
-        # Finish rendering the DRR
+        # Multiply by ray length such that the proportion of attenuated energy is unitless
         raylength = (target - source + self.eps).norm(dim=-1)
         img *= raylength.unsqueeze(1)
         return img
 
 # %% ../notebooks/api/01_renderers.ipynb 8
 def _get_alphas(source, target, origin, spacing, dims, eps):
+    """Calculates the parametric intersections of each ray with the planes of the CT volume."""
     # Get the CT sizing and spacing parameters
     alphax = torch.arange(dims[0]).to(source) * spacing[0] + origin[0]
     alphay = torch.arange(dims[1]).to(source) * spacing[1] + origin[1]
@@ -83,32 +100,32 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
 
     return alphas
 
-# %% ../notebooks/api/01_renderers.ipynb 9
-def _get_voxel(volume, rays, mode="nearest", aligned_corners=True):
+
+def _get_xyzs(alpha, source, target, origin, spacing, dims, eps):
+    """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
+    xyzs = (
+        source.unsqueeze(2)
+        + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
+        - origin.to(torch.float32)
+    )
+    # Use inplace operations to minimize memory overhead
+    xyzs.mul_(2).div_(spacing * dims).sub_(1)
+    return xyzs
+
+
+def _get_voxel(volume, xyzs, mode="nearest", aligned_corners=True):
+    """Wraps torch.nn.functional.grid_sample to sample a volume at XYZ coordinates."""
     volume = volume.permute(2, 1, 0)
-    batch_size = len(rays)
+    batch_size = len(xyzs)
     voxels = grid_sample(
         input=volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1),
-        grid=rays.unsqueeze(1),
+        grid=xyzs.unsqueeze(1),
         mode=mode,
         align_corners=aligned_corners,
     )[:, 0, 0]
     return voxels
 
-
-def _get_rays(alpha, source, target, origin, spacing, dims, eps):
-    rays = (
-        source.unsqueeze(2)
-        + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
-        - origin.to(torch.float32)
-    )
-    # rays = 2 * rays / (spacing * dims) - 1
-    rays.mul_(2).div_(spacing * dims).sub_(
-        1
-    )  # Inplace operation avoids memory overhead
-    return rays
-
-# %% ../notebooks/api/01_renderers.ipynb 11
+# %% ../notebooks/api/01_renderers.ipynb 10
 class Trilinear(torch.nn.Module):
     """Differentiable X-ray renderer implemented with trilinear interpolation."""
 
@@ -147,10 +164,9 @@ class Trilinear(torch.nn.Module):
         alphas = alphas[None, None, :]
 
         # Render the DRR
-        rays = _get_rays(
-            alphas, source, target, origin, spacing, self.dims(volume), self.eps
-        )
-        img = _get_voxel(volume, rays, self.mode, align_corners)
+        dims = self.dims(volume)
+        xyzs = _get_xyzs(alphas, source, target, origin, spacing, dims, self.eps)
+        img = _get_voxel(volume, xyzs, self.mode, align_corners)
 
         # Handle optional masking
         if mask is None:
@@ -158,7 +174,7 @@ class Trilinear(torch.nn.Module):
         else:
             B, D, _ = img.shape
             C = mask.max().item() + 1
-            channels = _get_voxel(mask, rays, align_corners).long()
+            channels = _get_voxel(mask, xyzs, align_corners).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(volume)
