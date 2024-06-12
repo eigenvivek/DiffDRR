@@ -96,10 +96,10 @@ class Detector(torch.nn.Module):
             self.sdd,
             self.delx,
             self.dely,
-            self.height,
             self.width,
+            self.height,
             self.x0,
-            self.y0,
+            -self.y0,
         ).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
