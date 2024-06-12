@@ -8,31 +8,6 @@ import torch
 from torch.nn.functional import grid_sample
 
 # %% ../notebooks/api/01_renderers.ipynb 7
-def _get_voxel(volume, rays, mode="nearest", aligned_corners=True):
-    volume = volume.permute(2, 1, 0)
-    batch_size = len(rays)
-    voxels = grid_sample(
-        input=volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1),
-        grid=rays.unsqueeze(1),
-        mode=mode,
-        align_corners=aligned_corners,
-    )[:, 0, 0]
-    return voxels
-
-
-def _get_rays(alpha, source, target, origin, spacing, dims, eps):
-    rays = (
-        source.unsqueeze(2)
-        + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
-        - origin.to(torch.float32)
-    )
-    # rays = 2 * rays / (spacing * dims) - 1 # original operation
-    rays.mul_(2).div_(spacing * dims).sub_(
-        1
-    )  # inplace operation to avoid memory overhead
-    return rays
-
-# %% ../notebooks/api/01_renderers.ipynb 8
 class Siddon(torch.nn.Module):
     """Differentiable X-ray renderer implemented with Siddon's method for exact raytracing."""
 
@@ -58,19 +33,16 @@ class Siddon(torch.nn.Module):
         rays = _get_rays(alphamid, source, target, origin, spacing, dims, self.eps)
         img = _get_voxel(volume, rays, self.mode, align_corners)
 
-        # Step length for alphas out of range will be nan
-        # These nans cancel out voxels convereted to 0 index
         step_length = torch.diff(alphas, dim=-1)
         img = img * step_length
 
         # Handle optional masking
         if mask is None:
-            img = torch.nansum(img, dim=-1)
+            img = img.sum(dim=-1)
             img = img.unsqueeze(1)
         else:
             # Thanks to @Ivan for the clutch assist w/ pytorch tensor ops
             # https://stackoverflow.com/questions/78323859/broadcast-pytorch-array-across-channels-based-on-another-array/78324614#78324614
-            img = img.nan_to_num()
             B, D, _ = img.shape
             C = mask.max().item() + 1
             channels = _get_voxel(
@@ -87,7 +59,7 @@ class Siddon(torch.nn.Module):
         img *= raylength.unsqueeze(1)
         return img
 
-# %% ../notebooks/api/01_renderers.ipynb 9
+# %% ../notebooks/api/01_renderers.ipynb 8
 def _get_alphas(source, target, origin, spacing, dims, eps):
     # Get the CT sizing and spacing parameters
     alphax = torch.arange(dims[0]).to(source) * spacing[0] + origin[0]
@@ -106,33 +78,35 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
     alphaz = alphaz / sdd[..., 2].unsqueeze(-1)
     alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
-    # Get the alphas within the range [alphamin, alphamax]
-    alphamin, alphamax = _get_alpha_minmax(sdd, source, target, origin, spacing, dims)
-    good_idxs = torch.logical_and(alphas >= alphamin, alphas <= alphamax)
-    alphas[~good_idxs] = torch.nan
-
     # Sort the alphas by ray, putting nans at the end of the list
     alphas = torch.sort(alphas, dim=-1).values
 
-    # Drop indices where alphas for all rays are nan
-    alphas = alphas[..., ~alphas.isnan().all(dim=0).all(dim=0)]
-
     return alphas
 
+# %% ../notebooks/api/01_renderers.ipynb 9
+def _get_voxel(volume, rays, mode="nearest", aligned_corners=True):
+    volume = volume.permute(2, 1, 0)
+    batch_size = len(rays)
+    voxels = grid_sample(
+        input=volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1),
+        grid=rays.unsqueeze(1),
+        mode=mode,
+        align_corners=aligned_corners,
+    )[:, 0, 0]
+    return voxels
 
-def _get_alpha_minmax(sdd, source, target, origin, spacing, dims):
-    planes = torch.zeros(3).to(source)
-    alpha0 = (planes * spacing + origin - source) / sdd
-    planes = (dims - 1).to(source)
-    alpha1 = (planes * spacing + origin - source) / sdd
-    alphas = torch.stack([alpha0, alpha1]).to(source)
 
-    alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
-    alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(-1)
-
-    alphamin = torch.where(alphamin < 0.0, 0.0, alphamin)
-    alphamax = torch.where(alphamax > 1.0, 1.0, alphamax)
-    return alphamin, alphamax
+def _get_rays(alpha, source, target, origin, spacing, dims, eps):
+    rays = (
+        source.unsqueeze(2)
+        + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
+        - origin.to(torch.float32)
+    )
+    # rays = 2 * rays / (spacing * dims) - 1
+    rays.mul_(2).div_(spacing * dims).sub_(
+        1
+    )  # Inplace operation avoids memory overhead
+    return rays
 
 # %% ../notebooks/api/01_renderers.ipynb 11
 class Trilinear(torch.nn.Module):
