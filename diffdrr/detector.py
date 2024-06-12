@@ -32,13 +32,8 @@ class Detector(torch.nn.Module):
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
         super().__init__()
-        # self.sdd = sdd
         self.height = height
         self.width = width
-        # self.delx = delx
-        # self.dely = dely
-        # self.x0 = x0
-        # self.y0 = y0
         self.n_subsample = n_subsample
         if self.n_subsample is not None:
             self.subsamples = []
@@ -57,13 +52,33 @@ class Detector(torch.nn.Module):
             "_calibration",
             torch.tensor(
                 [
-                    [delx, 0, 0, x0],
-                    [0, dely, 0, y0],
+                    [dely, 0, 0, -y0],
+                    [0, delx, 0, x0],
                     [0, 0, sdd, 0],
                     [0, 0, 0, 1],
                 ]
             ),
         )
+
+    @property
+    def sdd(self):
+        return self._calibration[2, 2].item()
+
+    @property
+    def delx(self):
+        return self._calibration[1, 1].item()
+
+    @property
+    def dely(self):
+        return self._calibration[0, 0].item()
+
+    @property
+    def x0(self):
+        return -self._calibration[1, -1].item()
+
+    @property
+    def y0(self):
+        return -self._calibration[0, -1].item()
 
     @property
     def reorient(self):
@@ -78,13 +93,13 @@ class Detector(torch.nn.Module):
     def intrinsic(self):
         """The 3x3 intrinsic matrix."""
         return make_intrinsic_matrix(
-            self._calibration[2, 2].item(),
-            self._calibration[0, 0].item(),
-            self._calibration[1, 1].item(),
-            self.height,
+            self.sdd,
+            self.delx,
+            self.dely,
             self.width,
-            self._calibration[0, -1].item(),
-            self._calibration[1, -1].item(),
+            self.height,
+            self.y0,
+            self.x0,
         ).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
@@ -98,35 +113,28 @@ def _initialize_carm(self: Detector):
 
     # Initialize the source at the origin and the center of the detector plane on the positive z-axis
     source = torch.tensor([[0.0, 0.0, 0.0]], device=device)
-    center = torch.tensor([[0.0, 0.0, 1.0]], device=device)  # * self.sdd
+    center = torch.tensor([[0.0, 0.0, 1.0]], device=device)
 
     # Use the standard basis for the detector plane
     basis = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], device=device)
 
     # Construct the detector plane with different offsets for even or odd heights
+    # These ensure that the detector plane is centered around (0, 0, 1)
     h_off = 1.0 if self.height % 2 else 0.5
     w_off = 1.0 if self.width % 2 else 0.5
 
     # Construct equally spaced points along the basis vectors
-    t = (
-        torch.arange(-self.height // 2, self.height // 2, device=device) + h_off
-    )  # * self.delx
-    s = (
-        torch.arange(-self.width // 2, self.width // 2, device=device) + w_off
-    )  # * self.dely
+    t = torch.arange(-self.height // 2, self.height // 2, device=device) + h_off
+    s = torch.arange(-self.width // 2, self.width // 2, device=device) + w_off
     if self.reverse_x_axis:
         s = -s
     coefs = torch.cartesian_prod(t, s).reshape(-1, 2)
     target = torch.einsum("cd,nc->nd", basis, coefs)
     target += center
 
-    # Batch source and target
+    # Add a batch dimension to the source and target so multiple poses can be passed at once
     source = source.unsqueeze(0)
     target = target.unsqueeze(0)
-
-    # # Apply principal point offset
-    # target[..., 1] -= self.x0
-    # target[..., 0] -= self.y0
 
     if self.n_subsample is not None:
         sample = torch.randperm(self.height * self.width)[: int(self.n_subsample)]

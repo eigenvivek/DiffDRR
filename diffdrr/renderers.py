@@ -5,14 +5,41 @@ __all__ = ['Siddon', 'Trilinear']
 
 # %% ../notebooks/api/01_renderers.ipynb 3
 import torch
+from torch.nn.functional import grid_sample
 
 # %% ../notebooks/api/01_renderers.ipynb 7
+def _get_voxel(volume, rays, mode="nearest", aligned_corners=True):
+    volume = volume.permute(2, 1, 0)
+    batch_size = len(rays)
+    voxels = grid_sample(
+        input=volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1),
+        grid=rays.unsqueeze(1),
+        mode=mode,
+        align_corners=aligned_corners,
+    )[:, 0, 0]
+    return voxels
+
+
+def _get_rays(alpha, source, target, origin, spacing, dims, eps):
+    rays = (
+        source.unsqueeze(2)
+        + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
+        - origin.to(torch.float32)
+    )
+    # rays = 2 * rays / (spacing * dims) - 1 # original operation
+    rays.mul_(2).div_(spacing * dims).sub_(
+        1
+    )  # inplace operation to avoid memory overhead
+    return rays
+
+# %% ../notebooks/api/01_renderers.ipynb 8
 class Siddon(torch.nn.Module):
     """Differentiable X-ray renderer implemented with Siddon's method for exact raytracing."""
 
-    def __init__(self, eps=1e-8):
+    def __init__(self, eps=1e-8, mode="nearest"):
         super().__init__()
         self.eps = eps
+        self.mode = mode
 
     def dims(self, volume):
         return torch.tensor(volume.shape).to(volume) + 1
@@ -20,39 +47,39 @@ class Siddon(torch.nn.Module):
     def maxidx(self, volume):
         return volume.numel() - 1
 
-    def forward(self, volume, origin, spacing, source, target, mask=None):
+    def forward(
+        self, volume, origin, spacing, source, target, align_corners=True, mask=None
+    ):
         dims = self.dims(volume)
-        maxidx = self.maxidx(volume)
         origin = origin.to(torch.float64)
 
         alphas = _get_alphas(source, target, origin, spacing, dims, self.eps)
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
-        voxels, idxs = _get_voxel(
-            alphamid, source, target, volume, origin, spacing, dims, maxidx, self.eps
-        )
+        rays = _get_rays(alphamid, source, target, origin, spacing, dims, self.eps)
+        img = _get_voxel(volume, rays, self.mode, align_corners)
 
         # Step length for alphas out of range will be nan
         # These nans cancel out voxels convereted to 0 index
         step_length = torch.diff(alphas, dim=-1)
-        weighted_voxels = voxels * step_length
+        img = img * step_length
 
         # Handle optional masking
         if mask is None:
-            img = torch.nansum(weighted_voxels, dim=-1)
+            img = torch.nansum(img, dim=-1)
             img = img.unsqueeze(1)
         else:
             # Thanks to @Ivan for the clutch assist w/ pytorch tensor ops
             # https://stackoverflow.com/questions/78323859/broadcast-pytorch-array-across-channels-based-on-another-array/78324614#78324614
-            channels = torch.take(mask, idxs)  # B D N
-            weighted_voxels = weighted_voxels.nan_to_num()
-            B, D, N = weighted_voxels.shape
+            img = img.nan_to_num()
+            B, D, _ = img.shape
             C = mask.max().item() + 1
+            channels = _get_voxel(
+                mask.to(torch.float32), rays, aligned_corners=align_corners
+            ).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(volume)
-                .scatter_add_(
-                    1, channels.transpose(-1, -2), weighted_voxels.transpose(-1, -2)
-                )
+                .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
         # Finish rendering the DRR
@@ -60,7 +87,7 @@ class Siddon(torch.nn.Module):
         img *= raylength.unsqueeze(1)
         return img
 
-# %% ../notebooks/api/01_renderers.ipynb 8
+# %% ../notebooks/api/01_renderers.ipynb 9
 def _get_alphas(source, target, origin, spacing, dims, eps):
     # Get the CT sizing and spacing parameters
     alphax = torch.arange(dims[0]).to(source) * spacing[0] + origin[0]
@@ -107,32 +134,7 @@ def _get_alpha_minmax(sdd, source, target, origin, spacing, dims):
     alphamax = torch.where(alphamax > 1.0, 1.0, alphamax)
     return alphamin, alphamax
 
-
-def _get_voxel(alpha, source, target, volume, origin, spacing, dims, maxidx, eps):
-    idxs = _get_index(alpha, source, target, origin, spacing, dims, maxidx, eps)
-    return torch.take(volume, idxs), idxs
-
-
-def _get_index(alpha, source, target, origin, spacing, dims, maxidx, eps):
-    sdd = target - source + eps
-    idxs = source.unsqueeze(2) + alpha.unsqueeze(-1) * sdd.unsqueeze(2)
-    idxs = (idxs - origin) / spacing
-    idxs = idxs.floor()
-    # Conversion to long makes nan->-inf, so temporarily replace them with 0
-    # This is cancelled out later by multiplication by nan step_length
-    idxs = (
-        idxs[..., 0] * (dims[1] - 1) * (dims[2] - 1)
-        + idxs[..., 1] * (dims[2] - 1)
-        + idxs[..., 2]
-    ).long()
-    idxs[idxs < 0] = 0
-    idxs[idxs > maxidx] = maxidx
-    return idxs
-
-# %% ../notebooks/api/01_renderers.ipynb 10
-from torch.nn.functional import grid_sample
-
-
+# %% ../notebooks/api/01_renderers.ipynb 11
 class Trilinear(torch.nn.Module):
     """Differentiable X-ray renderer implemented with trilinear interpolation."""
 
@@ -150,7 +152,7 @@ class Trilinear(torch.nn.Module):
         self.eps = eps
 
     def dims(self, volume):
-        return torch.tensor(volume.shape).to(volume) - 1
+        return torch.tensor(volume.shape).to(volume) + 1
 
     def forward(
         self,
@@ -165,41 +167,24 @@ class Trilinear(torch.nn.Module):
     ):
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1).unsqueeze(1)
-        source = source[:, None, :, None, :] - origin
-        target = target[:, None, :, None, :] - origin
 
         # Sample points along the rays and rescale to [-1, 1]
         alphas = torch.linspace(self.near, self.far, n_points).to(volume)
-        alphas = alphas[None, None, None, :, None]
-        rays = source + alphas * (target - source)
-        rays = 2 * rays / (spacing * self.dims(volume)) - 1
-
-        # Reorder array to match torch conventions
-        volume = volume.permute(2, 1, 0)
-        if mask is not None:
-            mask = mask.permute(2, 1, 0)
+        alphas = alphas[None, None, :]
 
         # Render the DRR
-        batch_size = len(rays)
-        img = grid_sample(
-            volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1),
-            rays,
-            mode=self.mode,
-            align_corners=align_corners,
-        )[:, 0, 0]
+        rays = _get_rays(
+            alphas, source, target, origin, spacing, self.dims(volume), self.eps
+        )
+        img = _get_voxel(volume, rays, self.mode, align_corners)
 
         # Handle optional masking
         if mask is None:
             img = img.sum(dim=-1).unsqueeze(1)
         else:
-            B, D, N = img.shape
+            B, D, _ = img.shape
             C = mask.max().item() + 1
-            channels = grid_sample(
-                mask[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1).float(),
-                rays,
-                mode="nearest",
-                align_corners=align_corners,
-            ).long()[:, 0, 0]
+            channels = _get_voxel(mask, rays, align_corners).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(volume)
