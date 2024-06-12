@@ -191,7 +191,7 @@ def perspective_projection(
     x = x / z
     if self.detector.reverse_x_axis:
         x[..., 1] = self.detector.width - x[..., 1]
-    return x[..., :2]
+    return x[..., :2].flip(-1)
 
 # %% ../notebooks/api/00_drr.ipynb 13
 from torch.nn.functional import pad
@@ -204,6 +204,7 @@ def inverse_projection(
     pts: torch.Tensor,
 ):
     """Backproject points in pixel plane (2D) onto the image plane in world coordinates (3D)."""
+    pts = pts.flip(-1)
     if self.detector.reverse_x_axis:
         pts[..., 1] = self.detector.width - pts[..., 1]
     x = self.detector.sdd * torch.einsum(
