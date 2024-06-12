@@ -48,7 +48,7 @@ class Siddon(torch.nn.Module):
         xyzs = _get_xyzs(alphamid, source, target, origin, spacing, dims, self.eps)
 
         # Use torch.nn.functional.grid_sample to lookup the values of each voxel
-        img = _get_voxel(volume, xyzs, self.mode, align_corners)
+        img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
 
         # Weight each voxel by the length of the ray's intersection with the voxel
         step_length = torch.diff(alphas, dim=-1)
@@ -166,7 +166,7 @@ class Trilinear(torch.nn.Module):
         # Render the DRR
         dims = self.dims(volume)
         xyzs = _get_xyzs(alphas, source, target, origin, spacing, dims, self.eps)
-        img = _get_voxel(volume, xyzs, self.mode, align_corners)
+        img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
 
         # Handle optional masking
         if mask is None:
@@ -174,7 +174,9 @@ class Trilinear(torch.nn.Module):
         else:
             B, D, _ = img.shape
             C = mask.max().item() + 1
-            channels = _get_voxel(mask.to(torch.float32), xyzs, align_corners).long()
+            channels = _get_voxel(
+                mask.to(torch.float32), xyzs, align_corners=align_corners
+            ).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(volume)
