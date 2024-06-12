@@ -64,7 +64,7 @@ class Siddon(torch.nn.Module):
             B, D, _ = img.shape
             C = mask.max().item() + 1
             channels = _get_voxel(
-                mask.to(torch.float32), xyzs, aligned_corners=align_corners
+                mask.to(torch.float32), xyzs, align_corners=align_corners
             ).long()
             img = (
                 torch.zeros(B, C, D)
@@ -113,7 +113,7 @@ def _get_xyzs(alpha, source, target, origin, spacing, dims, eps):
     return xyzs
 
 
-def _get_voxel(volume, xyzs, mode="nearest", aligned_corners=True):
+def _get_voxel(volume, xyzs, mode="nearest", align_corners=True):
     """Wraps torch.nn.functional.grid_sample to sample a volume at XYZ coordinates."""
     volume = volume.permute(2, 1, 0)
     batch_size = len(xyzs)
@@ -121,7 +121,7 @@ def _get_voxel(volume, xyzs, mode="nearest", aligned_corners=True):
         input=volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1),
         grid=xyzs.unsqueeze(1),
         mode=mode,
-        align_corners=aligned_corners,
+        align_corners=align_corners,
     )[:, 0, 0]
     return voxels
 
