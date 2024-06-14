@@ -49,7 +49,8 @@ class Siddon(torch.nn.Module):
         xyzs = _get_xyzs(alphamid, source, target, origin, spacing, dims, self.eps)
 
         # Use torch.nn.functional.grid_sample to lookup the values of each intersected voxel
-        img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
+        with torch.no_grad():
+            img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
 
         # Weight each intersected voxel by the length of the ray's intersection with the voxel
         intersection_length = torch.diff(alphas, dim=-1)
@@ -109,9 +110,9 @@ def _get_xyzs(alpha, source, target, origin, spacing, dims, eps):
     )
 
     # Normalize coordinates to be in [-1, +1]
-    xyzs_normalized = 2 * (xyzs) / (spacing * (dims - 1)) - 1
-    # xyzs.mul_(2).div_(spacing * (dims - 1)).sub_(1)  # Use inplace operations to minimize memory overhead
-    return xyzs_normalized.unsqueeze(1)
+    # Use inplace operations to minimize memory overhead
+    xyzs.mul_(2).div_(spacing * (dims - 1)).sub_(1)
+    return xyzs.unsqueeze(1)
 
 
 def _get_voxel(volume, xyzs, mode="nearest", align_corners=True):
