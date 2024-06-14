@@ -21,7 +21,7 @@ class Siddon(torch.nn.Module):
         self.eps = eps
 
     def dims(self, volume):
-        return torch.tensor(volume.shape).to(volume) + 1
+        return torch.tensor(volume.shape).to(volume)
 
     def forward(
         self,
@@ -36,23 +36,24 @@ class Siddon(torch.nn.Module):
         dims = self.dims(volume)
         origin = origin.to(
             torch.float64
-        )  # Somehow improves rendering quality (see https://github.com/eigenvivek/DiffDRR/issues/202)
+        )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
 
-        # Calculate the intersections of each ray with the planes of the CT volume
+        # Calculate the intersections of each ray with the planes comprising the CT volume
         alphas = _get_alphas(source, target, origin, spacing, dims, self.eps)
 
-        # Calculate the midpoint of every adjacent intersection point (exclusively in one voxel)
+        # Calculate the midpoint of every pair of adjacent intersections
+        # These midpoints lie exclusively in a single voxel
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
 
-        # Get the XYZ coordinate of each midpoint
+        # Get the XYZ coordinate of each midpoint (normalized to [-1, +1]^3)
         xyzs = _get_xyzs(alphamid, source, target, origin, spacing, dims, self.eps)
 
-        # Use torch.nn.functional.grid_sample to lookup the values of each voxel
+        # Use torch.nn.functional.grid_sample to lookup the values of each intersected voxel
         img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
 
-        # Weight each voxel by the length of the ray's intersection with the voxel
-        step_length = torch.diff(alphas, dim=-1)
-        img = img * step_length
+        # Weight each intersected voxel by the length of the ray's intersection with the voxel
+        intersection_length = torch.diff(alphas, dim=-1)
+        img = img * intersection_length
 
         # Handle optional masking
         if mask is None:
@@ -80,20 +81,17 @@ class Siddon(torch.nn.Module):
 # %% ../notebooks/api/01_renderers.ipynb 8
 def _get_alphas(source, target, origin, spacing, dims, eps):
     """Calculates the parametric intersections of each ray with the planes of the CT volume."""
-    # Get the CT sizing and spacing parameters
-    alphax = torch.arange(dims[0]).to(source) * spacing[0] + origin[0]
-    alphay = torch.arange(dims[1]).to(source) * spacing[1] + origin[1]
-    alphaz = torch.arange(dims[2]).to(source) * spacing[2] + origin[2]
+    # Parameterize the parallel XYZ planes that comprise the CT volumes
+    alphax = (torch.arange(dims[0] + 1).to(source) - 0.5) * spacing[0] + origin[0]
+    alphay = (torch.arange(dims[1] + 1).to(source) - 0.5) * spacing[1] + origin[1]
+    alphaz = (torch.arange(dims[2] + 1).to(source) - 0.5) * spacing[2] + origin[2]
 
-    # Get the alpha at each plane intersection
-    sdd = target - source + eps
-    sx, sy, sz = source[..., 0], source[..., 1], source[..., 2]
-    alphax = alphax.expand(len(source), 1, -1) - sx.unsqueeze(-1)
-    alphay = alphay.expand(len(source), 1, -1) - sy.unsqueeze(-1)
-    alphaz = alphaz.expand(len(source), 1, -1) - sz.unsqueeze(-1)
-    alphax = alphax / sdd[..., 0].unsqueeze(-1)
-    alphay = alphay / sdd[..., 1].unsqueeze(-1)
-    alphaz = alphaz / sdd[..., 2].unsqueeze(-1)
+    # Calculate the parametric intersection of each ray with every plane
+    sx, sy, sz = source[..., 0:1], source[..., 1:2], source[..., 2:3]
+    tx, ty, tz = target[..., 0:1], target[..., 1:2], target[..., 2:3]
+    alphax = (alphax.expand(len(source), 1, -1) - sx) / (tx - sx + eps)
+    alphay = (alphay.expand(len(source), 1, -1) - sy) / (ty - sy + eps)
+    alphaz = (alphaz.expand(len(source), 1, -1) - sz) / (tz - sz + eps)
     alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
     # Sort the intersections
@@ -103,23 +101,25 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
 
 def _get_xyzs(alpha, source, target, origin, spacing, dims, eps):
     """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
+    # Get the world coordinates of every midpoint
     xyzs = (
-        source.unsqueeze(2)
+        source.unsqueeze(-2)
         + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
         - origin.to(torch.float32)
     )
-    # Use inplace operations to minimize memory overhead
-    xyzs.mul_(2).div_(spacing * dims).sub_(1)
-    return xyzs
+
+    # Normalize coordinates to be in [-1, +1]
+    xyzs_normalized = 2 * (xyzs) / (spacing * (dims - 1)) - 1
+    # xyzs.mul_(2).div_(spacing * (dims - 1)).sub_(1)  # Use inplace operations to minimize memory overhead
+    return xyzs_normalized.unsqueeze(1)
 
 
 def _get_voxel(volume, xyzs, mode="nearest", align_corners=True):
     """Wraps torch.nn.functional.grid_sample to sample a volume at XYZ coordinates."""
-    volume = volume.permute(2, 1, 0)
     batch_size = len(xyzs)
     voxels = grid_sample(
-        input=volume[None, None, :, :, :].expand(batch_size, -1, -1, -1, -1),
-        grid=xyzs.unsqueeze(1),
+        input=volume.permute(2, 1, 0)[None, None].expand(batch_size, -1, -1, -1, -1),
+        grid=xyzs,
         mode=mode,
         align_corners=align_corners,
     )[:, 0, 0]
@@ -143,7 +143,7 @@ class Trilinear(torch.nn.Module):
         self.eps = eps
 
     def dims(self, volume):
-        return torch.tensor(volume.shape).to(volume) + 1
+        return torch.tensor(volume.shape).to(volume)
 
     def forward(
         self,
