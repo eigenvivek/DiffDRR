@@ -13,13 +13,15 @@ class Siddon(torch.nn.Module):
 
     def __init__(
         self,
-        mode="nearest",
-        stop_gradients_through_grid_sample=False,
-        eps=1e-8,
+        mode: str = "nearest",  # Interpolation mode for grid_sample
+        stop_gradients_through_grid_sample: bool = False,  # Apply torch.no_grad when calling grid_sample
+        filter_intersections_outside_volume: bool = True,  # Use alphamin/max to filter the intersections
+        eps: float = 1e-8,  # Small constant to avoid div by zero errors
     ):
         super().__init__()
         self.mode = mode
         self.stop_gradients_through_grid_sample = stop_gradients_through_grid_sample
+        self.filter_intersections_outside_volume = filter_intersections_outside_volume
         self.eps = eps
 
     def dims(self, volume):
@@ -41,7 +43,15 @@ class Siddon(torch.nn.Module):
         )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
 
         # Calculate the intersections of each ray with the planes comprising the CT volume
-        alphas = _get_alphas(source, target, origin, spacing, dims, self.eps)
+        alphas = _get_alphas(
+            source,
+            target,
+            origin,
+            spacing,
+            dims,
+            self.eps,
+            self.filter_intersections_outside_volume,
+        )
 
         # Calculate the midpoint of every pair of adjacent intersections
         # These midpoints lie exclusively in a single voxel
@@ -85,7 +95,9 @@ class Siddon(torch.nn.Module):
         return img
 
 # %% ../notebooks/api/01_renderers.ipynb 8
-def _get_alphas(source, target, origin, spacing, dims, eps):
+def _get_alphas(
+    source, target, origin, spacing, dims, eps, filter_intersections_outside_volume
+):
     """Calculates the parametric intersections of each ray with the planes of the CT volume."""
     # Parameterize the parallel XYZ planes that comprise the CT volumes
     alphax = (torch.arange(dims[0] + 1).to(source) - 0.5) * spacing[0] + origin[0]
@@ -102,19 +114,45 @@ def _get_alphas(source, target, origin, spacing, dims, eps):
 
     # Sort the intersections
     alphas = torch.sort(alphas, dim=-1).values
+
+    # Remove interesections that are outside of the volume for all rays
+    if filter_intersections_outside_volume:
+        alphamin, alphamax = _get_alpha_minmax(
+            source, target, origin, spacing, dims, eps
+        )
+        good_idxs = torch.logical_and(alphamin <= alphas, alphas <= alphamax)
+        alphas = alphas[..., good_idxs.any(dim=[0, 1])]
+
     return alphas
+
+
+def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
+    sdd = target - source + eps
+
+    planes = torch.zeros(3).to(source)
+    alpha0 = (planes * spacing + origin - source) / sdd
+    planes = (dims - 1).to(source)
+    alpha1 = (planes * spacing + origin - source) / sdd
+    alphas = torch.stack([alpha0, alpha1]).to(source)
+
+    alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
+    alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(-1)
+
+    alphamin = torch.where(alphamin < 0.0, 0.0, alphamin)
+    alphamax = torch.where(alphamax > 1.0, 1.0, alphamax)
+    return alphamin, alphamax
 
 
 def _get_xyzs(alpha, source, target, origin, spacing, dims, eps):
     """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
-    # Get the world coordinates of every midpoint
+    # Get the world coordinates of every point parameterized by alpha
     xyzs = (
         source.unsqueeze(-2)
         + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
         - origin.to(torch.float32)
     )
 
-    # Normalize coordinates to be in [-1, +1]
+    # Normalize coordinates to be in [-1, +1] for grid_sample
     # Use inplace operations to minimize memory overhead
     xyzs.mul_(2).div_(spacing * (dims - 1)).sub_(1)
     return xyzs.unsqueeze(1)
