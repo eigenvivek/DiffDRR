@@ -17,7 +17,7 @@ website:
         contents:
           - tutorials/introduction.ipynb
           - tutorials/geometry.ipynb
-          - tutorials/optimizers.ipynb
+          - tutorials/registration.ipynb
           - tutorials/reconstruction.ipynb
           - tutorials/metrics.ipynb
           - tutorials/timing.ipynb
