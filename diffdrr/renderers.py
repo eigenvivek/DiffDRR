@@ -14,10 +14,12 @@ class Siddon(torch.nn.Module):
     def __init__(
         self,
         mode="nearest",
+        stop_gradients_through_grid_sample=False,
         eps=1e-8,
     ):
         super().__init__()
         self.mode = mode
+        self.stop_gradients_through_grid_sample = stop_gradients_through_grid_sample
         self.eps = eps
 
     def dims(self, volume):
@@ -49,7 +51,10 @@ class Siddon(torch.nn.Module):
         xyzs = _get_xyzs(alphamid, source, target, origin, spacing, dims, self.eps)
 
         # Use torch.nn.functional.grid_sample to lookup the values of each intersected voxel
-        with torch.no_grad():
+        if self.stop_gradients_through_grid_sample:
+            with torch.no_grad():
+                img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
+        else:
             img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
 
         # Weight each intersected voxel by the length of the ray's intersection with the voxel
