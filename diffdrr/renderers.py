@@ -114,24 +114,31 @@ def _get_alphas(
 
     # Sort the intersections
     alphas = torch.sort(alphas, dim=-1).values
-
-    # Remove interesections that are outside of the volume for all rays
     if filter_intersections_outside_volume:
-        alphamin, alphamax = _get_alpha_minmax(
-            source, target, origin, spacing, dims, eps
+        alphas = _filter_intersections_outside_volume(
+            alphas, source, target, origin, spacing, dims, eps
         )
-        good_idxs = torch.logical_and(alphamin <= alphas, alphas <= alphamax)
-        alphas = alphas[..., good_idxs.any(dim=[0, 1])]
 
     return alphas
 
 
+def _filter_intersections_outside_volume(
+    alphas, source, target, origin, spacing, dims, eps
+):
+    """Remove interesections that are outside of the volume for all rays."""
+    alphamin, alphamax = _get_alpha_minmax(source, target, origin, spacing, dims, eps)
+    good_idxs = torch.logical_and(alphamin <= alphas, alphas <= alphamax)
+    alphas = alphas[..., good_idxs.any(dim=[0, 1])]
+    return alphas
+
+
 def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
+    """Calculate the first and last intersections of each ray with the volume."""
     sdd = target - source + eps
 
-    planes = torch.zeros(3).to(source)
+    planes = torch.zeros(3).to(source) - 0.5
     alpha0 = (planes * spacing + origin - source) / sdd
-    planes = (dims - 1).to(source)
+    planes = dims.to(source) - 0.5
     alpha1 = (planes * spacing + origin - source) / sdd
     alphas = torch.stack([alpha0, alpha1]).to(source)
 
@@ -177,13 +184,15 @@ class Trilinear(torch.nn.Module):
         self,
         near=0.0,
         far=1.0,
-        mode="bilinear",
-        eps=1e-8,
+        mode: str = "bilinear",  # Interpolation mode for grid_sample
+        filter_intersections_outside_volume: bool = True,  # Use alphamin/max to filter the intersections
+        eps: float = 1e-8,  # Small constant to avoid div by zero errors
     ):
         super().__init__()
         self.near = near
         self.far = far
         self.mode = mode
+        self.filter_intersections_outside_volume = filter_intersections_outside_volume
         self.eps = eps
 
     def dims(self, volume):
@@ -200,16 +209,18 @@ class Trilinear(torch.nn.Module):
         align_corners=True,
         mask=None,
     ):
-        # Get the raylength and reshape sources
-        raylength = (source - target + self.eps).norm(dim=-1).unsqueeze(1)
-
-        # Sample points along the rays and rescale to [-1, 1]
-        alphas = torch.linspace(self.near, self.far, n_points).to(volume)
-        alphas = alphas[None, None, :]
-
-        # Render the DRR
+        # Sample points along the rays
         dims = self.dims(volume)
+        alphas = torch.linspace(self.near, self.far, n_points)[None, None].to(volume)
+        if self.filter_intersections_outside_volume:
+            alphas = _filter_intersections_outside_volume(
+                alphas, source, target, origin, spacing, dims, self.eps
+            )
+
+        # Get the XYZ coordinate of each alpha, normalized for grid_sample
         xyzs = _get_xyzs(alphas, source, target, origin, spacing, dims, self.eps)
+
+        # Sample the volume with trilinear interpolation
         img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
 
         # Handle optional masking
@@ -227,6 +238,7 @@ class Trilinear(torch.nn.Module):
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
-        # Multiply by raylength
+        # Multiply by raylength and return the drr
+        raylength = (target - source + self.eps).norm(dim=-1).unsqueeze(1)
         img *= raylength / n_points
         return img
