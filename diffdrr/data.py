@@ -139,7 +139,6 @@ from diffdrr.pose import RigidTransform
 def canonicalize(subject):
     # Convert to RAS+ coordinate system
     affine_original = torch.from_numpy(subject.volume.affine)
-    subject = ToCanonical()(subject)
 
     # Move the Subject's isocenter to the origin in world coordinates
     for image in subject.get_images(intensity_only=False):
