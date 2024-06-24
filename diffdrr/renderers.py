@@ -112,39 +112,35 @@ def _get_alphas(
     alphaz = (alphaz.expand(len(source), 1, -1) - sz) / (tz - sz + eps)
     alphas = torch.cat([alphax, alphay, alphaz], dim=-1)
 
-    # Sort the intersections
+    # Sort the plane intersections by distance from the camera source
     alphas = torch.sort(alphas, dim=-1).values
+
+    # Remove interesections that are outside of the volume for all rays
     if filter_intersections_outside_volume:
-        alphas = _filter_intersections_outside_volume(
-            alphas, source, target, origin, spacing, dims, eps
+        alphamin, alphamax = _get_alpha_minmax(
+            source, target, origin, spacing, dims, eps
         )
+        good_idxs = (alphamin <= alphas) & (alphas <= alphamax)
+        alphas = alphas[..., good_idxs.any(dim=0).any(dim=0)]
 
-    return alphas
-
-
-def _filter_intersections_outside_volume(
-    alphas, source, target, origin, spacing, dims, eps
-):
-    """Remove interesections that are outside of the volume for all rays."""
-    alphamin, alphamax = _get_alpha_minmax(source, target, origin, spacing, dims, eps)
-    good_idxs = torch.logical_and(alphamin <= alphas, alphas <= alphamax)
-    alphas = alphas[..., good_idxs.any(dim=[0, 1])]
     return alphas
 
 
 def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
     """Calculate the first and last intersections of each ray with the volume."""
+    # Calculate the first and last intersections of each ray with the XYZ planes
     sdd = target - source + eps
-
     planes = torch.zeros(3).to(source) - 0.5
     alpha0 = (planes * spacing + origin - source) / sdd
-    planes = dims.to(source) - 0.5
+    planes = (dims + 1).to(source) - 0.5
     alpha1 = (planes * spacing + origin - source) / sdd
     alphas = torch.stack([alpha0, alpha1]).to(source)
 
+    # Of these, get the earliest and latest intersections (i.e., choose X, Y, or Z)
     alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
     alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(-1)
 
+    # Ensure these intersections are not outside the volume
     alphamin = torch.where(alphamin < 0.0, 0.0, alphamin)
     alphamax = torch.where(alphamax > 1.0, 1.0, alphamax)
     return alphamin, alphamax
@@ -156,7 +152,7 @@ def _get_xyzs(alpha, source, target, origin, spacing, dims, eps):
     xyzs = (
         source.unsqueeze(-2)
         + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
-        - origin.to(torch.float32)
+        - origin.to(source)
     )
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
@@ -176,23 +172,17 @@ def _get_voxel(volume, xyzs, mode="nearest", align_corners=True):
     )[:, 0, 0]
     return voxels
 
-# %% ../notebooks/api/01_renderers.ipynb 10
+# %% ../notebooks/api/01_renderers.ipynb 11
 class Trilinear(torch.nn.Module):
     """Differentiable X-ray renderer implemented with trilinear interpolation."""
 
     def __init__(
         self,
-        near=0.0,
-        far=1.0,
         mode: str = "bilinear",  # Interpolation mode for grid_sample
-        filter_intersections_outside_volume: bool = True,  # Use alphamin/max to filter the intersections
-        eps: float = 1e-8,  # Small constant to avoid div by zero errors
+        eps: float = 1e-2,  # Small constant to avoid div by zero errors
     ):
         super().__init__()
-        self.near = near
-        self.far = far
         self.mode = mode
-        self.filter_intersections_outside_volume = filter_intersections_outside_volume
         self.eps = eps
 
     def dims(self, volume):
@@ -209,13 +199,15 @@ class Trilinear(torch.nn.Module):
         align_corners=True,
         mask=None,
     ):
-        # Sample points along the rays
+        # For each ray, initialize points within the intersections with the volume
         dims = self.dims(volume)
-        alphas = torch.linspace(self.near, self.far, n_points)[None, None].to(volume)
-        if self.filter_intersections_outside_volume:
-            alphas = _filter_intersections_outside_volume(
-                alphas, source, target, origin, spacing, dims, self.eps
-            )
+        alphamin, alphamax = _get_alpha_minmax(
+            source, target, origin, spacing, dims, self.eps
+        )
+        alphas = torch.linspace(0 + self.eps, 1 - self.eps, n_points)[None, None].to(
+            volume
+        )
+        alphas = alphas * (alphamax - alphamin) + alphamin
 
         # Get the XYZ coordinate of each alpha, normalized for grid_sample
         xyzs = _get_xyzs(alphas, source, target, origin, spacing, dims, self.eps)
