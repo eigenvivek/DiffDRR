@@ -64,12 +64,8 @@ class DRR(nn.Module):
         self.subject = subject
         self.volume = subject.volume.data.squeeze()
         self.register_buffer("density", subject.density.data.squeeze())
-        self.register_buffer(
-            "spacing", torch.tensor(subject.volume.spacing, dtype=torch.float32)
-        )
-        self.register_buffer(
-            "origin", torch.tensor(subject.volume.origin, dtype=torch.float32)
-        )
+        self.register_buffer("affine", torch.as_tensor(subject.volume.affine, dtype=torch.float64).unsqueeze(0))
+        self.register_buffer("inverse_affine", torch.inverse(self.affine))
         if subject.mask is not None:
             self.register_buffer("mask", subject.mask.data[0].to(torch.int64))
 
@@ -130,8 +126,7 @@ def forward(
     if self.patch_size is None:
         img = self.renderer(
             self.density,
-            self.origin,
-            self.spacing,
+            self.inverse_affine,
             source,
             target,
             **kwargs,

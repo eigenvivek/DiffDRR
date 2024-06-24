@@ -30,15 +30,14 @@ class Siddon(torch.nn.Module):
     def forward(
         self,
         volume,
-        origin,
-        spacing,
+        inverse_affine,
         source,
         target,
         align_corners=True,
         mask=None,
     ):
         dims = self.dims(volume)
-        origin = origin.to(
+        inverse_affine =  inverse_affine.to(
             torch.float64
         )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
 
@@ -46,8 +45,7 @@ class Siddon(torch.nn.Module):
         alphas = _get_alphas(
             source,
             target,
-            origin,
-            spacing,
+            inverse_affine,
             dims,
             self.eps,
             self.filter_intersections_outside_volume,
@@ -58,7 +56,7 @@ class Siddon(torch.nn.Module):
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
 
         # Get the XYZ coordinate of each midpoint (normalized to [-1, +1]^3)
-        xyzs = _get_xyzs(alphamid, source, target, origin, spacing, dims, self.eps)
+        xyzs = _get_xyzs(alphamid, source, target, inverse_affine, dims, self.eps)
 
         # Use torch.nn.functional.grid_sample to lookup the values of each intersected voxel
         if self.stop_gradients_through_grid_sample:
@@ -90,21 +88,24 @@ class Siddon(torch.nn.Module):
             )
 
         # Multiply by ray length such that the proportion of attenuated energy is unitless
-        raylength = (target - source + self.eps).norm(dim=-1)
+        raylength = (target - source + self.eps).norm(dim=-1).to(torch.float32)
         img *= raylength.unsqueeze(1)
         return img
 
 # %% ../notebooks/api/01_renderers.ipynb 8
 def _get_alphas(
-    source, target, origin, spacing, dims, eps, filter_intersections_outside_volume
+    source, target, inverse_affine, dims, eps, filter_intersections_outside_volume
 ):
     """Calculates the parametric intersections of each ray with the planes of the CT volume."""
+    inverse_affine = inverse_affine.to(source)
     # Parameterize the parallel XYZ planes that comprise the CT volumes
-    alphax = (torch.arange(dims[0] + 1).to(source) - 0.5) * spacing[0] + origin[0]
-    alphay = (torch.arange(dims[1] + 1).to(source) - 0.5) * spacing[1] + origin[1]
-    alphaz = (torch.arange(dims[2] + 1).to(source) - 0.5) * spacing[2] + origin[2]
+    alphax = (torch.arange(dims[0] + 1).to(source) - 0.5)
+    alphay = (torch.arange(dims[1] + 1).to(source) - 0.5)
+    alphaz = (torch.arange(dims[2] + 1).to(source) - 0.5)
 
     # Calculate the parametric intersection of each ray with every plane
+    source = torch.einsum('nab, n...b -> n...a', inverse_affine[:, :3, :3], source) + inverse_affine[:, :3, 3]
+    target = torch.einsum('nab, n...b -> n...a', inverse_affine[:, :3, :3], target) + inverse_affine[:, :3, 3]   
     sx, sy, sz = source[..., 0:1], source[..., 1:2], source[..., 2:3]
     tx, ty, tz = target[..., 0:1], target[..., 1:2], target[..., 2:3]
     alphax = (alphax.expand(len(source), 1, -1) - sx) / (tx - sx + eps)
@@ -118,22 +119,19 @@ def _get_alphas(
     # Remove interesections that are outside of the volume for all rays
     if filter_intersections_outside_volume:
         alphamin, alphamax = _get_alpha_minmax(
-            source, target, origin, spacing, dims, eps
+            source, target, dims, eps
         )
         good_idxs = torch.logical_and(alphamin <= alphas, alphas <= alphamax)
         alphas = alphas[..., good_idxs.any(dim=[0, 1])]
-
     return alphas
 
 
-def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
+def _get_alpha_minmax(source, target, dims, eps):
     sdd = target - source + eps
 
-    planes = torch.zeros(3).to(source)
-    alpha0 = (planes * spacing + origin - source) / sdd
-    planes = (dims - 1).to(source)
-    alpha1 = (planes * spacing + origin - source) / sdd
-    alphas = torch.stack([alpha0, alpha1]).to(source)
+    alpha0 = (torch.zeros(3).to(source) - source) / sdd
+    alpha1 = ((dims - 1).to(source) - source) / sdd
+    alphas = torch.stack([alpha0, alpha1])
 
     alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
     alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(-1)
@@ -143,19 +141,19 @@ def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
     return alphamin, alphamax
 
 
-def _get_xyzs(alpha, source, target, origin, spacing, dims, eps):
+def _get_xyzs(alpha, source, target, inverse_affine, dims, eps):
     """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
     # Get the world coordinates of every point parameterized by alpha
     xyzs = (
         source.unsqueeze(-2)
         + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
-        - origin.to(torch.float32)
-    )
+    ).to(inverse_affine)
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
     # Use inplace operations to minimize memory overhead
-    xyzs.mul_(2).div_(spacing * (dims - 1)).sub_(1)
-    return xyzs.unsqueeze(1)
+    xyzs =  torch.einsum('nab, ...b -> n...a', inverse_affine[:, :3, :3], xyzs)
+    xyzs =  2 * (xyzs + inverse_affine[:, :3, 3]) / dims - 1
+    return xyzs.to(torch.float32)
 
 
 def _get_voxel(volume, xyzs, mode="nearest", align_corners=True):
@@ -192,24 +190,28 @@ class Trilinear(torch.nn.Module):
     def forward(
         self,
         volume,
-        origin,
-        spacing,
+        inverse_affine,
         source,
         target,
         n_points=500,
         align_corners=True,
         mask=None,
     ):
+        inverse_affine =  inverse_affine.to(
+        torch.float64
+        )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
+        source = source.to(torch.float64)
+        target = target.to(torch.float64)
         # Get the raylength and reshape sources
         raylength = (source - target + self.eps).norm(dim=-1).unsqueeze(1)
 
         # Sample points along the rays and rescale to [-1, 1]
-        alphas = torch.linspace(self.near, self.far, n_points).to(volume)
+        alphas = torch.linspace(self.near, self.far, n_points).to(source)
         alphas = alphas[None, None, :]
 
         # Render the DRR
         dims = self.dims(volume)
-        xyzs = _get_xyzs(alphas, source, target, origin, spacing, dims, self.eps)
+        xyzs = _get_xyzs(alphas, source, target, inverse_affine, dims, self.eps)
         img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
 
         # Handle optional masking
@@ -228,5 +230,5 @@ class Trilinear(torch.nn.Module):
             )
 
         # Multiply by raylength
-        img *= raylength / n_points
+        img *= raylength.to(torch.float32) / n_points
         return img
