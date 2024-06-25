@@ -37,7 +37,7 @@ class Siddon(torch.nn.Module):
         mask=None,
     ):
         dims = self.dims(volume)
-        inverse_affine =  inverse_affine.to(
+        inverse_affine = inverse_affine.to(
             torch.float64
         )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
         inverse_affine = inverse_affine.expand(len(source), -1, -1)
@@ -99,13 +99,19 @@ def _get_alphas(
     """Calculates the parametric intersections of each ray with the planes of the CT volume."""
     inverse_affine = inverse_affine.to(source)
     # Parameterize the parallel XYZ planes that comprise the CT volumes
-    alphax = (torch.arange(dims[0] + 1).to(source) - 0.5)
-    alphay = (torch.arange(dims[1] + 1).to(source) - 0.5)
-    alphaz = (torch.arange(dims[2] + 1).to(source) - 0.5)
+    alphax = torch.arange(dims[0] + 1).to(source) - 0.5
+    alphay = torch.arange(dims[1] + 1).to(source) - 0.5
+    alphaz = torch.arange(dims[2] + 1).to(source) - 0.5
 
     # Calculate the parametric intersection of each ray with every plane
-    source = torch.einsum('nab, n...b -> n...a', inverse_affine[:, :3, :3], source) + inverse_affine[:, :3, 3][:, None]
-    target = torch.einsum('nab, n...b -> n...a', inverse_affine[:, :3, :3], target) + inverse_affine[:, :3, 3][:, None] 
+    source = (
+        torch.einsum("nab, n...b -> n...a", inverse_affine[:, :3, :3], source)
+        + inverse_affine[:, :3, 3][:, None]
+    )
+    target = (
+        torch.einsum("nab, n...b -> n...a", inverse_affine[:, :3, :3], target)
+        + inverse_affine[:, :3, 3][:, None]
+    )
     sx, sy, sz = source[..., 0:1], source[..., 1:2], source[..., 2:3]
     tx, ty, tz = target[..., 0:1], target[..., 1:2], target[..., 2:3]
     alphax = (alphax.expand(len(source), 1, -1) - sx) / (tx - sx + eps)
@@ -116,15 +122,11 @@ def _get_alphas(
     # Sort the intersections
     alphas = torch.sort(alphas, dim=-1).values
     if filter_intersections_outside_volume:
-        alphas = _filter_intersections_outside_volume(
-            alphas, source, target, dims, eps
-        )
+        alphas = _filter_intersections_outside_volume(alphas, source, target, dims, eps)
     return alphas
 
 
-def _filter_intersections_outside_volume(
-    alphas, source, target, dims, eps
-):
+def _filter_intersections_outside_volume(alphas, source, target, dims, eps):
     """Remove interesections that are outside of the volume for all rays."""
     alphamin, alphamax = _get_alpha_minmax(source, target, dims, eps)
     good_idxs = torch.logical_and(alphamin <= alphas, alphas <= alphamax)
@@ -152,14 +154,18 @@ def _get_xyzs(alpha, source, target, inverse_affine, dims, eps):
     """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
     # Get the world coordinates of every point parameterized by alpha
     xyzs = (
-        source.unsqueeze(-2)
-        + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
-    ).to(inverse_affine).unsqueeze(1)
+        (
+            source.unsqueeze(-2)
+            + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
+        )
+        .to(inverse_affine)
+        .unsqueeze(1)
+    )
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
     # Use inplace operations to minimize memory overhead
-    xyzs =  torch.einsum('nab, n...b -> n...a', inverse_affine[:, :3, :3], xyzs)
-    xyzs =  2 * (xyzs + inverse_affine[:, None, None, None, :3, 3]) / dims - 1
+    xyzs = torch.einsum("nab, n...b -> n...a", inverse_affine[:, :3, :3], xyzs)
+    xyzs = 2 * (xyzs + inverse_affine[:, None, None, None, :3, 3]) / dims - 1
     return xyzs.to(torch.float32)
 
 
@@ -206,8 +212,8 @@ class Trilinear(torch.nn.Module):
         align_corners=True,
         mask=None,
     ):
-        inverse_affine =  inverse_affine.to(
-        torch.float64
+        inverse_affine = inverse_affine.to(
+            torch.float64
         )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
         source = source.to(torch.float64)
         target = target.to(torch.float64)

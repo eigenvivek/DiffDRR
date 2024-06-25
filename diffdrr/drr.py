@@ -64,7 +64,10 @@ class DRR(nn.Module):
         self.subject = subject
         self.volume = subject.volume.data.squeeze()
         self.register_buffer("density", subject.density.data.squeeze())
-        self.register_buffer("affine", torch.as_tensor(subject.volume.affine, dtype=torch.float64).unsqueeze(0))
+        self.register_buffer(
+            "affine",
+            torch.as_tensor(subject.volume.affine, dtype=torch.float64).unsqueeze(0),
+        )
         self.register_buffer("inverse_affine", torch.inverse(self.affine))
         if subject.mask is not None:
             self.register_buffer("mask", subject.mask.data[0].to(torch.int64))
