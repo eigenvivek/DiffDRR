@@ -36,6 +36,7 @@ class DRR(nn.Module):
         reverse_x_axis: bool = True,  # If True, obey radiologic convention (e.g., heart on right)
         patch_size: int | None = None,  # Render patches of the DRR in series
         renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
+        persistent: bool = True,  # Set persistent value in "register_buffer"
         **renderer_kwargs,  # Kwargs for the renderer
     ):
         super().__init__()
@@ -63,15 +64,23 @@ class DRR(nn.Module):
         # Initialize the volume
         self.subject = subject
         self.volume = subject.volume.data.squeeze()
-        self.register_buffer("density", subject.density.data.squeeze())
         self.register_buffer(
-            "spacing", torch.tensor(subject.volume.spacing, dtype=torch.float32)
+            "density", subject.density.data.squeeze(), persistent=persistent
         )
         self.register_buffer(
-            "origin", torch.tensor(subject.volume.origin, dtype=torch.float32)
+            "spacing",
+            torch.tensor(subject.volume.spacing, dtype=torch.float32),
+            persistent=persistent,
+        )
+        self.register_buffer(
+            "origin",
+            torch.tensor(subject.volume.origin, dtype=torch.float32),
+            persistent=persistent,
         )
         if subject.mask is not None:
-            self.register_buffer("mask", subject.mask.data[0].to(torch.int64))
+            self.register_buffer(
+                "mask", subject.mask.data[0].to(torch.int64), persistent=persistent
+            )
 
         # Initialize the renderer
         if renderer == "siddon":
