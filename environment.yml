@@ -9,6 +9,7 @@ dependencies:
   - torchvision
   - einops
   - matplotlib
+  - numpy<2
   - seaborn
   - imageio
   - fastcore
