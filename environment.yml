@@ -5,8 +5,8 @@ channels:
   - nvidia
 dependencies:
   - pip
-  - pytorch
-  - torchvision
+  - pytorch>2.2
+  - torchvision>0.18
   - einops
   - matplotlib
   - numpy<2
