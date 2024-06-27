@@ -67,13 +67,18 @@ class DRR(nn.Module):
         self.subject = subject
         self.volume = subject.volume.data.squeeze()
         self.register_buffer(
+            "density",
+            subject.density.data.squeeze(),
+            persistent=persistent,
+        )
+        self.register_buffer(
             "_affine",
             torch.as_tensor(subject.volume.affine, dtype=torch.float64).unsqueeze(0),
             persistent=persistent,
         )
         self.register_buffer(
-            "_affine_inverse", 
-            torch.inverse(self.affine), 
+            "_affine_inverse",
+            torch.inverse(self.affine),
             persistent=persistent,
         )
         self.register_buffer(
