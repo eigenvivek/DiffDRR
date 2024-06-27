@@ -78,7 +78,7 @@ class DRR(nn.Module):
         )
         self.register_buffer(
             "_affine_inverse",
-            torch.inverse(self.affine),
+            self._affine.inverse(),
             persistent=persistent,
         )
         self.register_buffer(
