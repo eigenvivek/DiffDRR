@@ -17,6 +17,8 @@ __all__ = ['DRR']
 # %% ../notebooks/api/00_drr.ipynb 7
 from torchio import Subject
 
+from .pose import RigidTransform
+
 
 class DRR(nn.Module):
     """PyTorch module that computes differentiable digitally reconstructed radiographs."""
@@ -65,10 +67,10 @@ class DRR(nn.Module):
         self.volume = subject.volume.data.squeeze()
         self.register_buffer("density", subject.density.data.squeeze())
         self.register_buffer(
-            "affine",
+            "_affine",
             torch.as_tensor(subject.volume.affine, dtype=torch.float64).unsqueeze(0),
         )
-        self.register_buffer("inverse_affine", torch.inverse(self.affine))
+        self.register_buffer("_affine_inverse", torch.inverse(self.affine))
         if subject.mask is not None:
             self.register_buffer("mask", subject.mask.data[0].to(torch.int64))
 
@@ -93,6 +95,14 @@ class DRR(nn.Module):
             else:
                 img = reshape_subsampled_drr(img, self.detector, batch_size)
         return img
+
+    @property
+    def affine(self):
+        return RigidTransform(self._affine)
+
+    @property
+    def affine_inverse(self):
+        return RigidTransform(self._affine_inverse)
 
 # %% ../notebooks/api/00_drr.ipynb 8
 def reshape_subsampled_drr(img: torch.Tensor, detector: Detector, batch_size: int):
@@ -129,7 +139,7 @@ def forward(
     if self.patch_size is None:
         img = self.renderer(
             self.density,
-            self.inverse_affine,
+            self.affine_inverse,
             source,
             target,
             **kwargs,
@@ -141,8 +151,7 @@ def forward(
             t = target[:, idx * n_points : (idx + 1) * n_points]
             partial = self.renderer(
                 self.density,
-                self.origin,
-                self.spacing,
+                self.affine_inverse,
                 source,
                 t,
                 **kwargs,
