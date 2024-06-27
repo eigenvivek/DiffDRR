@@ -10,7 +10,6 @@ import pandas as pd
 import torch
 from torchio import LabelMap, ScalarImage, Subject
 from torchio.transforms import Resample
-from torchio.transforms.preprocessing import ToCanonical
 
 # %% auto 0
 __all__ = ['load_example_ct', 'read']
@@ -137,7 +136,7 @@ from diffdrr.pose import RigidTransform
 
 
 def canonicalize(subject):
-    # Convert to RAS+ coordinate system
+    # Get the original affine matrix
     affine_original = torch.from_numpy(subject.volume.affine)
 
     # Move the Subject's isocenter to the origin in world coordinates
@@ -157,15 +156,13 @@ def canonicalize(subject):
     if subject.fiducials is not None:
         affine_new = torch.tensor(image.affine)
         affine = affine_new @ affine_original.inverse()
-        affine = affine.to(torch.float32)
+        affine = affine.to(subject.fiducials)
         affine = RigidTransform(affine)
         subject.fiducials = affine(subject.fiducials)
     return subject
 
 # %% ../notebooks/api/03_data.ipynb 8
 def transform_hu_to_density(volume, bone_attenuation_multiplier):
-    volume = volume.to(torch.float32)
-
     air = torch.where(volume <= -800)
     soft_tissue = torch.where((-800 < volume) & (volume <= 350))
     bone = torch.where(350 < volume)
@@ -176,5 +173,4 @@ def transform_hu_to_density(volume, bone_attenuation_multiplier):
     density[bone] = volume[bone] * bone_attenuation_multiplier
     density -= density.min()
     density /= density.max()
-
     return density
