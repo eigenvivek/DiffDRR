@@ -41,7 +41,7 @@ def read(
     volume: str | Path | ScalarImage,  # CT volume
     labelmap: str | Path | LabelMap = None,  # Labelmap for the CT volume
     labels: int | list = None,  # Labels from the mask of structures to render
-    orientation: str = "AP",  # Frame-of-reference change
+    orientation: str | None = "AP",  # Frame-of-reference change
     bone_attenuation_multiplier: float = 1.0,  # Scalar multiplier on density of high attenuation voxels
     fiducials: torch.Tensor = None,  # 3D fiducials in world coordinates
     **kwargs,  # Any additional information to be stored in the torchio.Subject
