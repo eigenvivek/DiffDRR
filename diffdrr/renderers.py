@@ -151,7 +151,7 @@ def _get_xyzs(alpha, source, target, affine_inverse, dims, eps):
             source.unsqueeze(-2)
             + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
         )
-        .to(affine_inverse)
+        .to(affine_inverse.matrix)
         .unsqueeze(1)
     )
 
