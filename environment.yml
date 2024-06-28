@@ -17,5 +17,5 @@ dependencies:
   - pip:
     - pyvista
     - timm
-    - torchio
+    - torchio>=0.19.8
     - vtk
