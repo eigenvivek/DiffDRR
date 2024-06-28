@@ -6,16 +6,15 @@ channels:
 dependencies:
   - pip
   - pytorch
-  - torchvision
+  - torchvision<0.18
+  - torchio>=0.19.8
   - einops
+  - timm
   - matplotlib
   - seaborn
   - imageio
   - fastcore
-  - tqdm
+  - pyvista
+  - vtk
   - scipy
-  - pip:
-    - pyvista
-    - timm
-    - torchio>=0.19.8
-    - vtk
+  - tqdm
