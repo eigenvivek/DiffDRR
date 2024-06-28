@@ -6,7 +6,7 @@ channels:
 dependencies:
   - pip
   - pytorch
-  - torchvision<0.18
+  - torchvision
   - torchio>=0.19.8
   - einops
   - timm
