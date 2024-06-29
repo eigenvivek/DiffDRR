@@ -152,13 +152,17 @@ def forward(
     else:
         pose = convert(*args, parameterization=parameterization, convention=convention)
     source, target = self.detector(pose, calibration)
+    # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
+    source = source.to(self.affine_inverse.matrix)
+    target = target.to(self.affine_inverse.matrix)
+    source = self.affine_inverse(source)
+    target = self.affine_inverse(target)
 
     # Render the DRR
     kwargs["mask"] = self.mask if mask_to_channels else None
     if self.patch_size is None:
         img = self.renderer(
             self.density,
-            self.affine_inverse,
             source,
             target,
             **kwargs,
@@ -170,7 +174,6 @@ def forward(
             t = target[:, idx * n_points : (idx + 1) * n_points]
             partial = self.renderer(
                 self.density,
-                self.affine_inverse,
                 source,
                 t,
                 **kwargs,

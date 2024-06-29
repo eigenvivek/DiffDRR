@@ -4,7 +4,6 @@
 __all__ = ['Siddon', 'Trilinear']
 
 # %% ../notebooks/api/01_renderers.ipynb 3
-from .data import RigidTransform
 import torch
 from torch.nn.functional import grid_sample
 
@@ -31,22 +30,12 @@ class Siddon(torch.nn.Module):
     def forward(
         self,
         volume,
-        affine_inverse,
         source,
         target,
         align_corners=True,
         mask=None,
     ):
         dims = self.dims(volume)
-        affine_inverse = affine_inverse.to(
-            torch.float64
-        )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
-        source = source.to(affine_inverse)
-        target = target.to(affine_inverse)
-
-        transform = RigidTransform(inverse_affine)
-        source = transform(source)
-        target = transform(target)
 
         # Calculate the intersections of each ray with the planes comprising the CT volume
         alphas = _get_alphas(
@@ -145,7 +134,7 @@ def _get_alpha_minmax(source, target, dims, eps):
     return alphamin, alphamax
 
 
-def _get_xyzs(alpha, source, target, affine_inverse, dims, eps):
+def _get_xyzs(alpha, source, target, dims, eps):
     """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
     # Get the world coordinates of every point parameterized by alpha
     xyzs = (
@@ -194,22 +183,13 @@ class Trilinear(torch.nn.Module):
     def forward(
         self,
         volume,
-        affine_inverse,
         source,
         target,
         n_points=500,
         align_corners=True,
         mask=None,
     ):
-        affine_inverse = affine_inverse.to(
-            torch.float64
-        )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
-        source = source.to(affine_inverse)
-        target = target.to(affine_inverse)
-
-        transform = RigidTransform(inverse_affine)
-        source = transform(source)
-        target = transform(target)
+        dims = self.dims(volume)
 
         # Sample points along the rays and rescale to [-1, 1]
         alphas = torch.linspace(self.near, self.far, n_points)[None, None].to(volume)
@@ -219,9 +199,8 @@ class Trilinear(torch.nn.Module):
             )
 
         # Render the DRR
-        dims = self.dims(volume)
         # Get the XYZ coordinate of each alpha, normalized for grid_sample
-        xyzs = _get_xyzs(alphas, source, target, affine_inverse, dims, self.eps)
+        xyzs = _get_xyzs(alphas, source, target, dims, self.eps)
 
         # Sample the volume with trilinear interpolation
         img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
