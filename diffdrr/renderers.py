@@ -4,6 +4,7 @@
 __all__ = ['Siddon', 'Trilinear']
 
 # %% ../notebooks/api/01_renderers.ipynb 3
+from .data import RigidTransform
 import torch
 from torch.nn.functional import grid_sample
 
@@ -40,11 +41,17 @@ class Siddon(torch.nn.Module):
         affine_inverse = affine_inverse.to(
             torch.float64
         )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
+        source = source.to(affine_inverse)
+        target = target.to(affine_inverse)
+
+        transform = RigidTransform(inverse_affine)
+        source = transform(source)
+        target = transform(target)
+
         # Calculate the intersections of each ray with the planes comprising the CT volume
         alphas = _get_alphas(
             source,
             target,
-            affine_inverse,
             dims,
             self.eps,
             self.filter_intersections_outside_volume,
@@ -55,7 +62,7 @@ class Siddon(torch.nn.Module):
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
 
         # Get the XYZ coordinate of each midpoint (normalized to [-1, +1]^3)
-        xyzs = _get_xyzs(alphamid, source, target, affine_inverse, dims, self.eps)
+        xyzs = _get_xyzs(alphamid, source, target, dims, self.eps)
 
         # Use torch.nn.functional.grid_sample to lookup the values of each intersected voxel
         if self.stop_gradients_through_grid_sample:
@@ -92,19 +99,14 @@ class Siddon(torch.nn.Module):
         return img
 
 # %% ../notebooks/api/01_renderers.ipynb 8
-def _get_alphas(
-    source, target, affine_inverse, dims, eps, filter_intersections_outside_volume
-):
+def _get_alphas(source, target, dims, eps, filter_intersections_outside_volume):
     """Calculates the parametric intersections of each ray with the planes of the CT volume."""
-    affine_inverse = affine_inverse.to(source)
     # Parameterize the parallel XYZ planes that comprise the CT volumes
     alphax = torch.arange(dims[0] + 1).to(source) - 0.5
     alphay = torch.arange(dims[1] + 1).to(source) - 0.5
     alphaz = torch.arange(dims[2] + 1).to(source) - 0.5
 
     # Calculate the parametric intersection of each ray with every plane
-    source = affine_inverse(source)
-    target = affine_inverse(target)
     sx, sy, sz = source[..., 0:1], source[..., 1:2], source[..., 2:3]
     tx, ty, tz = target[..., 0:1], target[..., 1:2], target[..., 2:3]
     alphax = (alphax.expand(len(source), 1, -1) - sx) / (tx - sx + eps)
@@ -147,17 +149,11 @@ def _get_xyzs(alpha, source, target, affine_inverse, dims, eps):
     """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
     # Get the world coordinates of every point parameterized by alpha
     xyzs = (
-        (
-            source.unsqueeze(-2)
-            + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
-        )
-        .to(affine_inverse.matrix)
-        .unsqueeze(1)
-    )
+        source.unsqueeze(-2)
+        + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
+    ).unsqueeze(1)
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
-    # Use inplace operations to minimize memory overhead
-    xyzs = affine_inverse(xyzs)
     xyzs = 2 * xyzs / dims - 1
     return xyzs.to(torch.float32)
 
@@ -208,8 +204,12 @@ class Trilinear(torch.nn.Module):
         affine_inverse = affine_inverse.to(
             torch.float64
         )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
-        source = source.to(torch.float64)
-        target = target.to(torch.float64)
+        source = source.to(affine_inverse)
+        target = target.to(affine_inverse)
+
+        transform = RigidTransform(inverse_affine)
+        source = transform(source)
+        target = transform(target)
 
         # Sample points along the rays and rescale to [-1, 1]
         alphas = torch.linspace(self.near, self.far, n_points)[None, None].to(volume)
