@@ -163,6 +163,8 @@ def canonicalize(subject):
 
 # %% ../notebooks/api/03_data.ipynb 8
 def transform_hu_to_density(volume, bone_attenuation_multiplier):
+    # volume can be loaded as int16, need to convert to float32 to use float bone_attenuation_multiplier
+    volume = volume.to(torch.float32)
     air = torch.where(volume <= -800)
     soft_tissue = torch.where((-800 < volume) & (volume <= 350))
     bone = torch.where(350 < volume)
