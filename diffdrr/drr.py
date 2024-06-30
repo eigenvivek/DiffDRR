@@ -157,8 +157,6 @@ def forward(
     target = target.to(self.affine_inverse.matrix)
     source = self.affine_inverse(source)
     target = self.affine_inverse(target)
-    source = source.repeat(len(pose), 1, 1)
-    target = target.repeat(len(pose), 1, 1)
 
     # Render the DRR
     kwargs["mask"] = self.mask if mask_to_channels else None
