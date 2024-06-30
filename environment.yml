@@ -7,6 +7,7 @@ dependencies:
   - pip
   - pytorch>2.2
   - torchvision
+  - cpuonly
   - einops
   - torchio
   - timm
