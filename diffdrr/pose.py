@@ -7,6 +7,8 @@ __all__ = ['RigidTransform', 'convert', 'rotation_9d_to_matrix', 'matrix_to_rota
 # %% ../notebooks/api/06_pose.ipynb 6
 import torch
 
+from einops import rearrange
+
 
 class RigidTransform(torch.nn.Module):
     """
@@ -30,7 +32,7 @@ class RigidTransform(torch.nn.Module):
     def forward(self, x):
         """Apply (a batch) of rigid transforms to a pointcloud."""
         x_pad = torch.nn.functional.pad(x, (0, 1), value=1.0)
-        return torch.einsum("bij, knj -> bni", self.matrix[:, :3], x_pad)
+        return torch.einsum("bij, bnj -> bni", self.matrix[:, :3], x_pad)
 
     @property
     def rotation(self):
