@@ -8,6 +8,7 @@ dependencies:
   - pytorch
   - torchvision
   - einops
+  - torchio>=0.19.8
   - timm
   - matplotlib
   - seaborn
@@ -17,5 +18,3 @@ dependencies:
   - vtk
   - scipy
   - tqdm
-  - pip:
-    - torchio>=0.19.8
