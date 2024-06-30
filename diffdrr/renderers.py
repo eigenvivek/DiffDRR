@@ -72,10 +72,8 @@ class Siddon(torch.nn.Module):
             # Thanks to @Ivan for the clutch assist w/ pytorch tensor ops
             # https://stackoverflow.com/questions/78323859/broadcast-pytorch-array-across-channels-based-on-another-array/78324614#78324614
             B, D, _ = img.shape
-            C = mask.max().item() + 1
-            channels = _get_voxel(
-                mask.to(torch.float32), xyzs, align_corners=align_corners
-            ).long()
+            C = int(mask.max().item() + 1)
+            channels = _get_voxel(mask, xyzs, align_corners=align_corners).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(img)
@@ -83,7 +81,7 @@ class Siddon(torch.nn.Module):
             )
 
         # Multiply by ray length such that the proportion of attenuated energy is unitless
-        raylength = (target - source + self.eps).norm(dim=-1).to(torch.float32)
+        raylength = (target - source + self.eps).norm(dim=-1)
         img *= raylength.unsqueeze(1)
         return img
 
@@ -144,7 +142,7 @@ def _get_xyzs(alpha, source, target, dims, eps):
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
     xyzs = 2 * xyzs / dims - 1
-    return xyzs.to(torch.float32)
+    return xyzs
 
 
 def _get_voxel(volume, xyzs, mode="nearest", align_corners=True):
@@ -210,10 +208,8 @@ class Trilinear(torch.nn.Module):
             img = img.sum(dim=-1).unsqueeze(1)
         else:
             B, D, _ = img.shape
-            C = mask.max().item() + 1
-            channels = _get_voxel(
-                mask.to(torch.float32), xyzs, align_corners=align_corners
-            ).long()
+            C = int(mask.max().item() + 1)
+            channels = _get_voxel(mask, xyzs, align_corners=align_corners).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(img)

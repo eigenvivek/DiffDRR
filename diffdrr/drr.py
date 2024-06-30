@@ -73,7 +73,7 @@ class DRR(nn.Module):
         )
         self.register_buffer(
             "_affine",
-            torch.as_tensor(subject.volume.affine, dtype=torch.float64).unsqueeze(0),
+            torch.as_tensor(subject.volume.affine).unsqueeze(0),
             persistent=persistent,
         )
         self.register_buffer(
@@ -89,7 +89,7 @@ class DRR(nn.Module):
         if subject.mask is not None:
             self.register_buffer(
                 "mask",
-                subject.mask.data.squeeze().to(torch.int64),
+                subject.mask.data.squeeze(),
                 persistent=persistent,
             )
 
@@ -152,9 +152,6 @@ def forward(
     else:
         pose = convert(*args, parameterization=parameterization, convention=convention)
     source, target = self.detector(pose, calibration)
-    # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
-    source = source.to(self.affine_inverse.matrix)
-    target = target.to(self.affine_inverse.matrix)
     source = self.affine_inverse(source)
     target = self.affine_inverse(target)
 
