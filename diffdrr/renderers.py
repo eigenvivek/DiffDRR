@@ -78,7 +78,7 @@ class Siddon(torch.nn.Module):
             ).long()
             img = (
                 torch.zeros(B, C, D)
-                .to(volume)
+                .to(img)
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
@@ -216,7 +216,7 @@ class Trilinear(torch.nn.Module):
             ).long()
             img = (
                 torch.zeros(B, C, D)
-                .to(volume)
+                .to(img)
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
