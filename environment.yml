@@ -5,7 +5,7 @@ channels:
   - nvidia
 dependencies:
   - pip
-  - pytorch>2.2,<2.3
+  - pytorch>2.2
   - torchvision
   - einops
   - torchio
@@ -16,5 +16,6 @@ dependencies:
   - fastcore
   - pyvista
   - vtk
+  - numpy<2
   - scipy
   - tqdm
