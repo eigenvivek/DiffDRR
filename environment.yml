@@ -5,18 +5,17 @@ channels:
   - nvidia
 dependencies:
   - pip
-  - pytorch=2.2.2
-  - torchvision=0.17.2
+  - pytorch>2.2,<2.3
   - einops
+  - torchvision
+  - torchio
+  - timm
+  - numpy<2
   - matplotlib
-  - numpy=1.26.4
   - seaborn
   - imageio
   - fastcore
-  - tqdm
   - scipy
-  - pip:
-    - pyvista
-    - timm
-    - torchio
-    - vtk
+  - tqdm
+  - pyvista
+  - vtk
