@@ -73,7 +73,7 @@ class DRR(nn.Module):
         )
         self.register_buffer(
             "_affine",
-            torch.as_tensor(subject.volume.affine).unsqueeze(0),
+            torch.as_tensor(subject.volume.affine, dtype=torch.float32).unsqueeze(0),
             persistent=persistent,
         )
         self.register_buffer(
@@ -89,7 +89,7 @@ class DRR(nn.Module):
         if subject.mask is not None:
             self.register_buffer(
                 "mask",
-                subject.mask.data.squeeze(),
+                subject.mask.data.to(torch.float32).squeeze(),
                 persistent=persistent,
             )
 
