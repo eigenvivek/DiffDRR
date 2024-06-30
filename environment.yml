@@ -6,9 +6,9 @@ channels:
 dependencies:
   - pip
   - pytorch>2.2,<2.3
-  - torchvision<0.18
+  - torchvision
   - einops
-  - torchio>=0.19.8
+  - torchio
   - timm
   - matplotlib
   - seaborn
