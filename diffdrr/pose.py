@@ -128,25 +128,19 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
     if parameterization == "axis_angle":
         rotation, translation = args
         rotmat = axis_angle_to_matrix(rotation)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "euler_angles":
         rotation, translation = args
         rotmat = euler_angles_to_matrix(rotation, convention)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "matrix":
         return RigidTransform(args[0])
     elif parameterization == "quaternion":
         rotation, translation = args
         rotmat = quaternion_to_matrix(rotation)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "quaternion_adjugate":
         rotation, translation = args
@@ -155,16 +149,12 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
     elif parameterization == "rotation_6d":
         rotation, translation = args
         rotmat = rotation_6d_to_matrix(rotation)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "rotation_9d":
         rotation, translation = args
         rotmat = rotation_9d_to_matrix(rotation)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization in ["rotation_10d"]:
         rotation, translation = args
