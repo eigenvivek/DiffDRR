@@ -3,6 +3,8 @@
 # %% ../notebooks/api/00_drr.ipynb 3
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -37,7 +39,7 @@ class DRR(nn.Module):
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         reverse_x_axis: bool = True,  # If True, obey radiologic convention (e.g., heart on right)
         patch_size: int | None = None,  # Render patches of the DRR in series
-        renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
+        renderer: str = "trilinear",  # Rendering backend, either "siddon" or "trilinear"
         persistent: bool = True,  # Set persistent value in `torch.nn.Module.register_buffer`
         **renderer_kwargs,  # Kwargs for the renderer
     ):
@@ -96,10 +98,15 @@ class DRR(nn.Module):
         # Initialize the renderer
         if renderer == "siddon":
             self.renderer = Siddon(**renderer_kwargs)
+            warnings.warn(
+                "Gradients from Siddon's method are currently unstable for 2D/3D registration. Use 'trilinear' instead."
+            )
         elif renderer == "trilinear":
             self.renderer = Trilinear(**renderer_kwargs)
         else:
-            raise ValueError(f"renderer must be 'siddon', not {renderer}")
+            raise ValueError(
+                f"renderer must be 'siddon' or 'trilinear', not {renderer}"
+            )
         self.reshape = reshape
         self.patch_size = patch_size
         if self.patch_size is not None:
