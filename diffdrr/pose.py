@@ -7,6 +7,8 @@ __all__ = ['RigidTransform', 'convert', 'rotation_9d_to_matrix', 'matrix_to_rota
 # %% ../notebooks/api/06_pose.ipynb 6
 import torch
 
+from einops import rearrange
+
 
 class RigidTransform(torch.nn.Module):
     """
@@ -30,7 +32,7 @@ class RigidTransform(torch.nn.Module):
     def forward(self, x):
         """Apply (a batch) of rigid transforms to a pointcloud."""
         x_pad = torch.nn.functional.pad(x, (0, 1), value=1.0)
-        return torch.einsum("bij, knj -> bni", self.matrix[:, :3], x_pad)
+        return torch.einsum("bij, bnj -> bni", self.matrix[:, :3], x_pad)
 
     @property
     def rotation(self):
@@ -126,25 +128,19 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
     if parameterization == "axis_angle":
         rotation, translation = args
         rotmat = axis_angle_to_matrix(rotation)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "euler_angles":
         rotation, translation = args
         rotmat = euler_angles_to_matrix(rotation, convention)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "matrix":
         return RigidTransform(args[0])
     elif parameterization == "quaternion":
         rotation, translation = args
         rotmat = quaternion_to_matrix(rotation)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "quaternion_adjugate":
         rotation, translation = args
@@ -153,16 +149,12 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
     elif parameterization == "rotation_6d":
         rotation, translation = args
         rotmat = rotation_6d_to_matrix(rotation)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "rotation_9d":
         rotation, translation = args
         rotmat = rotation_9d_to_matrix(rotation)
-        camera_center = camera_center = torch.einsum(
-            "bij, bj -> bi", rotmat, translation
-        )
+        camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization in ["rotation_10d"]:
         rotation, translation = args

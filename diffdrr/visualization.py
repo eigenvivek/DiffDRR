@@ -173,6 +173,7 @@ def animate(
 import pyvista
 import vtk
 from torchio import Subject
+from torchio.transforms import ToCanonical
 
 vtk.vtkLogger.SetStderrVerbosity(vtk.vtkLogger.ConvertToVerbosity(-1))
 
@@ -196,9 +197,13 @@ def drr_to_mesh(
     4. Fill any holes
     5. Clean (remove any redundant vertices/edges)
     """
+    # Ensure the image is in RAS+ for pyvista's sake
+    canonicalize = ToCanonical()
+    subject = canonicalize(subject)
+
     # Turn the CT into a PyVista object and run surface extraction
     grid = pyvista.ImageData(
-        dimensions=subject.volume.shape[1:],
+        dimensions=subject.volume.spatial_shape,
         spacing=subject.volume.spacing,
         origin=subject.volume.origin,
     )
@@ -226,7 +231,7 @@ def drr_to_mesh(
             f"method must be `marching_cubes` or `surface_nets`, not {method}"
         )
 
-    # Process the mesh
+    # Preprocess the mesh
     mesh.extract_largest(inplace=True, progress_bar=verbose)
     mesh.point_data.clear()
     mesh.cell_data.clear()
@@ -251,9 +256,13 @@ def labelmap_to_mesh(
     subject: Subject,  # torchio.Subject with  a `mask` attribute
     verbose: bool = True,  # Display progress bars for mesh processing steps
 ):
+    # Ensure the image is in RAS+ for pyvista's sake
+    canonicalize = ToCanonical()
+    subject = canonicalize(subject)
+
     # Turn the 3D labelmap into a PyVista object and run SurfaceNets
     grid = pyvista.ImageData(
-        dimensions=subject.mask.shape[1:],
+        dimensions=subject.mask.spatial_shape,
         spacing=subject.mask.spacing,
         origin=subject.mask.origin,
     )
