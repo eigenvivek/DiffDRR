@@ -71,12 +71,11 @@ class DRR(nn.Module):
             subject.density.data.squeeze(),
             persistent=persistent,
         )
-        # Float64 somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
         self.register_buffer(
             "_affine",
             torch.as_tensor(subject.volume.affine, dtype=torch.float32).unsqueeze(0),
             persistent=persistent,
-        )
+        )  # Using float64 can sometimes improve rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
         self.register_buffer(
             "_affine_inverse",
             self._affine.inverse(),
