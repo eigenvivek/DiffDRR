@@ -173,7 +173,6 @@ def animate(
 import pyvista
 import vtk
 from torchio import Subject
-from torchio.transforms import ToCanonical
 
 vtk.vtkLogger.SetStderrVerbosity(vtk.vtkLogger.ConvertToVerbosity(-1))
 
@@ -181,7 +180,7 @@ vtk.vtkLogger.SetStderrVerbosity(vtk.vtkLogger.ConvertToVerbosity(-1))
 def drr_to_mesh(
     subject: Subject,  # torchio.Subject with a `volume` attribute
     method: str,  # Either `surface_nets` or `marching_cubes`
-    threshold: float = 300,  # Min value for marching cubes (Hounsfield units)
+    threshold: float = 150,  # Min value for marching cubes (Hounsfield units)
     verbose: bool = True,  # Display progress bars for mesh processing steps
 ):
     """
@@ -197,17 +196,12 @@ def drr_to_mesh(
     4. Fill any holes
     5. Clean (remove any redundant vertices/edges)
     """
-    # Ensure the image is in RAS+ for pyvista's sake
-    canonicalize = ToCanonical()
-    subject = canonicalize(subject)
-
-    # Turn the CT into a PyVista object and run surface extraction
+    # Turn the CT into a PyVista object
     grid = pyvista.ImageData(
-        dimensions=subject.volume.spatial_shape,
-        spacing=subject.volume.spacing,
-        origin=subject.volume.origin,
+        dimensions=subject.volume.spatial_shape, spacing=(1, 1, 1), origin=(0, 0, 0)
     )
 
+    # Run surface extraction
     if method == "marching_cubes":
         mesh = grid.contour(
             isosurfaces=1,
@@ -230,6 +224,9 @@ def drr_to_mesh(
         raise ValueError(
             f"method must be `marching_cubes` or `surface_nets`, not {method}"
         )
+
+    # Transform the mesh using the affine matrix
+    mesh = mesh.transform(subject.volume.affine.squeeze())
 
     # Preprocess the mesh
     mesh.extract_largest(inplace=True, progress_bar=verbose)
@@ -256,16 +253,12 @@ def labelmap_to_mesh(
     subject: Subject,  # torchio.Subject with  a `mask` attribute
     verbose: bool = True,  # Display progress bars for mesh processing steps
 ):
-    # Ensure the image is in RAS+ for pyvista's sake
-    canonicalize = ToCanonical()
-    subject = canonicalize(subject)
-
-    # Turn the 3D labelmap into a PyVista object and run SurfaceNets
+    # Turn the 3D labelmap into a PyVista object
     grid = pyvista.ImageData(
-        dimensions=subject.mask.spatial_shape,
-        spacing=subject.mask.spacing,
-        origin=subject.mask.origin,
+        dimensions=subject.mask.spatial_shape, spacing=(1, 1, 1), origin=(0, 0, 0)
     )
+
+    # Run SurfaceNets
     grid.point_data["values"] = subject.mask.data[0].numpy().flatten(order="F")
     mesh = grid.contour_labeled(smoothing=True, progress_bar=verbose)
     mesh.smooth_taubin(
@@ -279,6 +272,10 @@ def labelmap_to_mesh(
         progress_bar=verbose,
     )
     mesh.clean(inplace=True, progress_bar=verbose)
+
+    # Transform the mesh using the affine matrix
+    mesh = mesh.transform(subject.mask.affine.squeeze())
+
     return mesh
 
 # %% ../notebooks/api/04_visualization.ipynb 13
