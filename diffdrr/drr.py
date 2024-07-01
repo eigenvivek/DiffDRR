@@ -153,8 +153,6 @@ def forward(
     else:
         pose = convert(*args, parameterization=parameterization, convention=convention)
     source, target = self.detector(pose, calibration)
-    source = source.to(self.affine_inverse.matrix)
-    target = target.to(self.affine_inverse.matrix)
     source = self.affine_inverse(source)
     target = self.affine_inverse(target)
 
