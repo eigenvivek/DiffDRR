@@ -67,6 +67,7 @@ def read(
             mask = labelmap
         else:
             mask = LabelMap(labelmap)
+        _ = mask.data  # Load and cache the labelmap
     else:
         mask = None
 
