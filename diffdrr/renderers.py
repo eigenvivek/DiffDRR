@@ -32,7 +32,7 @@ class Siddon(torch.nn.Module):
         volume,
         source,
         target,
-        align_corners=True,
+        align_corners=False,
         mask=None,
     ):
         dims = self.dims(volume)
@@ -184,7 +184,7 @@ class Trilinear(torch.nn.Module):
         source,
         target,
         n_points=500,
-        align_corners=True,
+        align_corners=False,
         mask=None,
     ):
         dims = self.dims(volume)
