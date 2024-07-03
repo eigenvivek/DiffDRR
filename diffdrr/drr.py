@@ -3,8 +3,6 @@
 # %% ../notebooks/api/00_drr.ipynb 3
 from __future__ import annotations
 
-import warnings
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -98,9 +96,6 @@ class DRR(nn.Module):
         # Initialize the renderer
         if renderer == "siddon":
             self.renderer = Siddon(**renderer_kwargs)
-            warnings.warn(
-                "Gradients from Siddon's method are currently unstable for 2D/3D registration. Use 'trilinear' instead."
-            )
         elif renderer == "trilinear":
             self.renderer = Trilinear(**renderer_kwargs)
         else:
