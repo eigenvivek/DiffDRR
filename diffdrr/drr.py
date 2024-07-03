@@ -37,7 +37,7 @@ class DRR(nn.Module):
         reshape: bool = True,  # Return DRR with shape (b, 1, h, w)
         reverse_x_axis: bool = True,  # If True, obey radiologic convention (e.g., heart on right)
         patch_size: int | None = None,  # Render patches of the DRR in series
-        renderer: str = "trilinear",  # Rendering backend, either "siddon" or "trilinear"
+        renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
         persistent: bool = True,  # Set persistent value in `torch.nn.Module.register_buffer`
         **renderer_kwargs,  # Kwargs for the renderer
     ):
