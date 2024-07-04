@@ -21,4 +21,5 @@ website:
           - tutorials/reconstruction.ipynb
           - tutorials/metrics.ipynb
           - tutorials/timing.ipynb
+          - tutorials/trilinear.ipynb
           - tutorials/metamorphasis.ipynb
