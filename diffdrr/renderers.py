@@ -30,24 +30,17 @@ class Siddon(torch.nn.Module):
     def forward(
         self,
         volume,
-        origin,
-        spacing,
         source,
         target,
-        align_corners=True,
+        align_corners=False,
         mask=None,
     ):
         dims = self.dims(volume)
-        origin = origin.to(
-            torch.float64
-        )  # Somehow dramatically improves rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
 
         # Calculate the intersections of each ray with the planes comprising the CT volume
         alphas = _get_alphas(
             source,
             target,
-            origin,
-            spacing,
             dims,
             self.eps,
             self.filter_intersections_outside_volume,
@@ -58,7 +51,7 @@ class Siddon(torch.nn.Module):
         alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
 
         # Get the XYZ coordinate of each midpoint (normalized to [-1, +1]^3)
-        xyzs = _get_xyzs(alphamid, source, target, origin, spacing, dims, self.eps)
+        xyzs = _get_xyzs(alphamid, source, target, dims, self.eps)
 
         # Use torch.nn.functional.grid_sample to lookup the values of each intersected voxel
         if self.stop_gradients_through_grid_sample:
@@ -79,13 +72,11 @@ class Siddon(torch.nn.Module):
             # Thanks to @Ivan for the clutch assist w/ pytorch tensor ops
             # https://stackoverflow.com/questions/78323859/broadcast-pytorch-array-across-channels-based-on-another-array/78324614#78324614
             B, D, _ = img.shape
-            C = mask.max().item() + 1
-            channels = _get_voxel(
-                mask.to(torch.float32), xyzs, align_corners=align_corners
-            ).long()
+            C = int(mask.max().item() + 1)
+            channels = _get_voxel(mask, xyzs, align_corners=align_corners).long()
             img = (
                 torch.zeros(B, C, D)
-                .to(volume)
+                .to(img)
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
@@ -95,14 +86,12 @@ class Siddon(torch.nn.Module):
         return img
 
 # %% ../notebooks/api/01_renderers.ipynb 8
-def _get_alphas(
-    source, target, origin, spacing, dims, eps, filter_intersections_outside_volume
-):
+def _get_alphas(source, target, dims, eps, filter_intersections_outside_volume):
     """Calculates the parametric intersections of each ray with the planes of the CT volume."""
     # Parameterize the parallel XYZ planes that comprise the CT volumes
-    alphax = (torch.arange(dims[0] + 1).to(source) - 0.5) * spacing[0] + origin[0]
-    alphay = (torch.arange(dims[1] + 1).to(source) - 0.5) * spacing[1] + origin[1]
-    alphaz = (torch.arange(dims[2] + 1).to(source) - 0.5) * spacing[2] + origin[2]
+    alphax = torch.arange(dims[0] + 1).to(source)
+    alphay = torch.arange(dims[1] + 1).to(source)
+    alphaz = torch.arange(dims[2] + 1).to(source)
 
     # Calculate the parametric intersection of each ray with every plane
     sx, sy, sz = source[..., 0:1], source[..., 1:2], source[..., 2:3]
@@ -115,32 +104,25 @@ def _get_alphas(
     # Sort the intersections
     alphas = torch.sort(alphas, dim=-1).values
     if filter_intersections_outside_volume:
-        alphas = _filter_intersections_outside_volume(
-            alphas, source, target, origin, spacing, dims, eps
-        )
-
+        alphas = _filter_intersections_outside_volume(alphas, source, target, dims, eps)
     return alphas
 
 
-def _filter_intersections_outside_volume(
-    alphas, source, target, origin, spacing, dims, eps
-):
+def _filter_intersections_outside_volume(alphas, source, target, dims, eps):
     """Remove interesections that are outside of the volume for all rays."""
-    alphamin, alphamax = _get_alpha_minmax(source, target, origin, spacing, dims, eps)
+    alphamin, alphamax = _get_alpha_minmax(source, target, dims, eps)
     good_idxs = torch.logical_and(alphamin <= alphas, alphas <= alphamax)
     alphas = alphas[..., good_idxs.any(dim=[0, 1])]
     return alphas
 
 
-def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
+def _get_alpha_minmax(source, target, dims, eps):
     """Calculate the first and last intersections of each ray with the volume."""
     sdd = target - source + eps
 
-    planes = torch.zeros(3).to(source) - 0.5
-    alpha0 = (planes * spacing + origin - source) / sdd
-    planes = dims.to(source) - 0.5
-    alpha1 = (planes * spacing + origin - source) / sdd
-    alphas = torch.stack([alpha0, alpha1]).to(source)
+    alpha0 = (torch.zeros(3).to(source) - source) / sdd
+    alpha1 = ((dims + 1).to(source) - source) / sdd
+    alphas = torch.stack([alpha0, alpha1])
 
     alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
     alphamax = alphas.max(dim=0).values.min(dim=-1).values.unsqueeze(-1)
@@ -150,22 +132,20 @@ def _get_alpha_minmax(source, target, origin, spacing, dims, eps):
     return alphamin, alphamax
 
 
-def _get_xyzs(alpha, source, target, origin, spacing, dims, eps):
+def _get_xyzs(alpha, source, target, dims, eps):
     """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
     # Get the world coordinates of every point parameterized by alpha
     xyzs = (
         source.unsqueeze(-2)
         + alpha.unsqueeze(-1) * (target - source + eps).unsqueeze(2)
-        - origin.to(torch.float32)
-    )
+    ).unsqueeze(1)
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
-    # Use inplace operations to minimize memory overhead
-    xyzs.mul_(2).div_(spacing * (dims - 1)).sub_(1)
-    return xyzs.unsqueeze(1)
+    xyzs = 2 * xyzs / dims - 1
+    return xyzs
 
 
-def _get_voxel(volume, xyzs, mode="nearest", align_corners=True):
+def _get_voxel(volume, xyzs, mode, align_corners):
     """Wraps torch.nn.functional.grid_sample to sample a volume at XYZ coordinates."""
     batch_size = len(xyzs)
     voxels = grid_sample(
@@ -182,17 +162,11 @@ class Trilinear(torch.nn.Module):
 
     def __init__(
         self,
-        near=0.0,
-        far=1.0,
         mode: str = "bilinear",  # Interpolation mode for grid_sample
-        filter_intersections_outside_volume: bool = True,  # Use alphamin/max to filter the intersections
         eps: float = 1e-8,  # Small constant to avoid div by zero errors
     ):
         super().__init__()
-        self.near = near
-        self.far = far
         self.mode = mode
-        self.filter_intersections_outside_volume = filter_intersections_outside_volume
         self.eps = eps
 
     def dims(self, volume):
@@ -201,24 +175,24 @@ class Trilinear(torch.nn.Module):
     def forward(
         self,
         volume,
-        origin,
-        spacing,
         source,
         target,
         n_points=500,
-        align_corners=True,
+        align_corners=False,
         mask=None,
     ):
-        # Sample points along the rays
         dims = self.dims(volume)
-        alphas = torch.linspace(self.near, self.far, n_points)[None, None].to(volume)
-        if self.filter_intersections_outside_volume:
-            alphas = _filter_intersections_outside_volume(
-                alphas, source, target, origin, spacing, dims, self.eps
-            )
 
+        # Sample points along the rays and rescale to [-1, 1]
+        alphamin, alphamax = _get_alpha_minmax(source, target, dims, self.eps)
+        alphamin = alphamin.min()
+        alphamax = alphamax.max()
+        alphas = torch.linspace(0, 1, n_points)[None, None].to(volume)
+        alphas = alphas * (alphamax - alphamin) + alphamin
+
+        # Render the DRR
         # Get the XYZ coordinate of each alpha, normalized for grid_sample
-        xyzs = _get_xyzs(alphas, source, target, origin, spacing, dims, self.eps)
+        xyzs = _get_xyzs(alphas, source, target, dims, self.eps)
 
         # Sample the volume with trilinear interpolation
         img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
@@ -228,13 +202,11 @@ class Trilinear(torch.nn.Module):
             img = img.sum(dim=-1).unsqueeze(1)
         else:
             B, D, _ = img.shape
-            C = mask.max().item() + 1
-            channels = _get_voxel(
-                mask.to(torch.float32), xyzs, align_corners=align_corners
-            ).long()
+            C = int(mask.max().item() + 1)
+            channels = _get_voxel(mask, xyzs, align_corners=align_corners).long()
             img = (
                 torch.zeros(B, C, D)
-                .to(volume)
+                .to(img)
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 

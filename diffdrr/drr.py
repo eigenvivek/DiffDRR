@@ -17,6 +17,8 @@ __all__ = ['DRR']
 # %% ../notebooks/api/00_drr.ipynb 7
 from torchio import Subject
 
+from .pose import RigidTransform
+
 
 class DRR(nn.Module):
     """PyTorch module that computes differentiable digitally reconstructed radiographs."""
@@ -65,13 +67,18 @@ class DRR(nn.Module):
         self.subject = subject
         self.volume = subject.volume.data.squeeze()
         self.register_buffer(
-            "spacing",
-            torch.tensor(subject.volume.spacing, dtype=torch.float32),
+            "density",
+            subject.density.data.squeeze(),
             persistent=persistent,
         )
         self.register_buffer(
-            "origin",
-            torch.tensor(subject.volume.origin, dtype=torch.float32),
+            "_affine",
+            torch.as_tensor(subject.volume.affine, dtype=torch.float32).unsqueeze(0),
+            persistent=persistent,
+        )  # Using float64 can sometimes improve rendering quality (https://github.com/eigenvivek/DiffDRR/issues/202)
+        self.register_buffer(
+            "_affine_inverse",
+            self._affine.inverse(),
             persistent=persistent,
         )
         self.register_buffer(
@@ -82,7 +89,7 @@ class DRR(nn.Module):
         if subject.mask is not None:
             self.register_buffer(
                 "mask",
-                subject.mask.data.squeeze().to(torch.int64),
+                subject.mask.data.to(torch.float32).squeeze(),
                 persistent=persistent,
             )
 
@@ -92,7 +99,9 @@ class DRR(nn.Module):
         elif renderer == "trilinear":
             self.renderer = Trilinear(**renderer_kwargs)
         else:
-            raise ValueError(f"renderer must be 'siddon', not {renderer}")
+            raise ValueError(
+                f"renderer must be 'siddon' or 'trilinear', not {renderer}"
+            )
         self.reshape = reshape
         self.patch_size = patch_size
         if self.patch_size is not None:
@@ -107,6 +116,14 @@ class DRR(nn.Module):
             else:
                 img = reshape_subsampled_drr(img, self.detector, batch_size)
         return img
+
+    @property
+    def affine(self):
+        return RigidTransform(self._affine)
+
+    @property
+    def affine_inverse(self):
+        return RigidTransform(self._affine_inverse)
 
 # %% ../notebooks/api/00_drr.ipynb 8
 def reshape_subsampled_drr(img: torch.Tensor, detector: Detector, batch_size: int):
@@ -137,14 +154,14 @@ def forward(
     else:
         pose = convert(*args, parameterization=parameterization, convention=convention)
     source, target = self.detector(pose, calibration)
+    source = self.affine_inverse(source)
+    target = self.affine_inverse(target)
 
     # Render the DRR
     kwargs["mask"] = self.mask if mask_to_channels else None
     if self.patch_size is None:
         img = self.renderer(
             self.density,
-            self.origin,
-            self.spacing,
             source,
             target,
             **kwargs,
@@ -156,8 +173,6 @@ def forward(
             t = target[:, idx * n_points : (idx + 1) * n_points]
             partial = self.renderer(
                 self.density,
-                self.origin,
-                self.spacing,
                 source,
                 t,
                 **kwargs,
