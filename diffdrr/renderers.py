@@ -145,7 +145,7 @@ def _get_xyzs(alpha, source, target, dims, eps):
     return xyzs
 
 
-def _get_voxel(volume, xyzs, mode="nearest", align_corners=True):
+def _get_voxel(volume, xyzs, mode, align_corners):
     """Wraps torch.nn.functional.grid_sample to sample a volume at XYZ coordinates."""
     batch_size = len(xyzs)
     voxels = grid_sample(
@@ -162,17 +162,11 @@ class Trilinear(torch.nn.Module):
 
     def __init__(
         self,
-        near=0.0,
-        far=1.0,
         mode: str = "bilinear",  # Interpolation mode for grid_sample
-        filter_intersections_outside_volume: bool = True,  # Use alphamin/max to filter the intersections
         eps: float = 1e-8,  # Small constant to avoid div by zero errors
     ):
         super().__init__()
-        self.near = near
-        self.far = far
         self.mode = mode
-        self.filter_intersections_outside_volume = filter_intersections_outside_volume
         self.eps = eps
 
     def dims(self, volume):
@@ -190,11 +184,11 @@ class Trilinear(torch.nn.Module):
         dims = self.dims(volume)
 
         # Sample points along the rays and rescale to [-1, 1]
-        alphas = torch.linspace(self.near, self.far, n_points)[None, None].to(volume)
-        if self.filter_intersections_outside_volume:
-            alphas = _filter_intersections_outside_volume(
-                alphas, source, target, dims, self.eps
-            )
+        alphamin, alphamax = _get_alpha_minmax(source, target, dims, self.eps)
+        alphamin = alphamin.min()
+        alphamax = alphamax.max()
+        alphas = torch.linspace(0, 1, n_points)[None, None].to(volume)
+        alphas = alphas * (alphamax - alphamin) + alphamin
 
         # Render the DRR
         # Get the XYZ coordinate of each alpha, normalized for grid_sample
