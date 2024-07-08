@@ -73,7 +73,9 @@ class Siddon(torch.nn.Module):
             # https://stackoverflow.com/questions/78323859/broadcast-pytorch-array-across-channels-based-on-another-array/78324614#78324614
             B, D, _ = img.shape
             C = int(mask.max().item() + 1)
-            channels = _get_voxel(mask, xyzs, align_corners=align_corners).long()
+            channels = _get_voxel(
+                mask, xyzs, self.mode, align_corners=align_corners
+            ).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(img)
@@ -203,7 +205,9 @@ class Trilinear(torch.nn.Module):
         else:
             B, D, _ = img.shape
             C = int(mask.max().item() + 1)
-            channels = _get_voxel(mask, xyzs, align_corners=align_corners).long()
+            channels = _get_voxel(
+                mask, xyzs, self.mode, align_corners=align_corners
+            ).long()
             img = (
                 torch.zeros(B, C, D)
                 .to(img)
