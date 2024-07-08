@@ -96,3 +96,6 @@ target/
 
 # Mypy cache
 .mypy_cache/
+
+# Jupyter notebooks
+**/.last_checked
