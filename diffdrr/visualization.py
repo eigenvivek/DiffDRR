@@ -181,6 +181,7 @@ def drr_to_mesh(
     subject: Subject,  # torchio.Subject with a `volume` attribute
     method: str,  # Either `surface_nets` or `marching_cubes`
     threshold: float = 150,  # Min value for marching cubes (Hounsfield units)
+    extract_largest: bool = True,  # Extract the largest connected component from the mesh
     verbose: bool = True,  # Display progress bars for mesh processing steps
 ):
     """
@@ -190,7 +191,7 @@ def drr_to_mesh(
 
     The mesh processing steps are:
 
-    1. Keep only largest connected components
+    1. Keep only largest connected components (optional)
     2. Smooth
     3. Decimate (if `method=="marching_cubes"`)
     4. Fill any holes
@@ -229,7 +230,8 @@ def drr_to_mesh(
     mesh = mesh.transform(subject.volume.affine.squeeze())
 
     # Preprocess the mesh
-    mesh.extract_largest(inplace=True, progress_bar=verbose)
+    if extract_largest:
+        mesh.extract_largest(inplace=True, progress_bar=verbose)
     mesh.point_data.clear()
     mesh.cell_data.clear()
     mesh.smooth_taubin(
