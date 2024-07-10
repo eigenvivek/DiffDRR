@@ -65,7 +65,6 @@ class DRR(nn.Module):
 
         # Initialize the volume and world geometry
         self.subject = subject
-        self.volume = subject.volume.data.squeeze()
         self.register_buffer(
             "_affine",
             torch.as_tensor(subject.volume.affine, dtype=torch.float32).unsqueeze(0),
@@ -197,7 +196,7 @@ def set_intrinsics(
         n_subsample=self.detector.n_subsample,
         reverse_x_axis=self.detector.reverse_x_axis,
         reorient=self.subject.reorient,
-    ).to(self.volume)
+    ).to(self.density)
 
 # %% ../notebooks/api/00_drr.ipynb 12
 @patch
