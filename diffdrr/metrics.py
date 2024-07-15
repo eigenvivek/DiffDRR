@@ -101,7 +101,7 @@ class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
         return super().forward(self.sobel(x1), self.sobel(x2))
 
 # %% ../notebooks/api/05_metrics.ipynb 14
-from .pose import RigidTransform, convert, so3_log_map
+from .pose import RigidTransform, convert
 
 
 class LogGeodesicSE3(torch.nn.Module):
@@ -119,40 +119,10 @@ class LogGeodesicSE3(torch.nn.Module):
     ) -> Float[torch.Tensor, "b"]:
         return pose_2.compose(pose_1.inverse()).get_se3_log().norm(dim=1)
 
-# %% ../notebooks/api/05_metrics.ipynb 16
-class GeodesicSO3(torch.nn.Module):
-    """Calculate the angular distance between two rotations in SO(3)."""
-
-    def __init__(self):
-        super().__init__()
-
-    def forward(
-        self,
-        pose_1: RigidTransform,
-        pose_2: RigidTransform,
-    ) -> Float[torch.Tensor, "b"]:
-        r1 = pose_1.matrix[..., :3, :3]
-        r2 = pose_2.matrix[..., :3, :3]
-        rdiff = r1.transpose(-1, -2) @ r2
-        return so3_log_map(rdiff).norm(dim=-1)
+# %% ../notebooks/api/05_metrics.ipynb 17
+from .pose import so3_log_map
 
 
-class GeodesicTranslation(torch.nn.Module):
-    """Calculate the angular distance between two translations in R^3."""
-
-    def __init__(self):
-        super().__init__()
-
-    def forward(
-        self,
-        pose_1: RigidTransform,
-        pose_2: RigidTransform,
-    ) -> Float[torch.Tensor, "b"]:
-        t1 = pose_1.matrix[..., :3, 3]
-        t2 = pose_2.matrix[..., :3, 3]
-        return (t1 - t2).norm(dim=1)
-
-# %% ../notebooks/api/05_metrics.ipynb 18
 class DoubleGeodesicSE3(torch.nn.Module):
     """
     Calculate the angular and translational geodesics between two SE(3) transformation matrices.
@@ -161,19 +131,21 @@ class DoubleGeodesicSE3(torch.nn.Module):
     def __init__(
         self,
         sdd: float,  # Source-to-detector distance
-        eps: float = 1e-4,  # Avoid overflows in sqrt
+        eps: float = 1e-6,  # Avoid overflows in sqrt
     ):
         super().__init__()
         self.sdr = sdd / 2
         self.eps = eps
 
-        self.rotation = GeodesicSO3()
-        self.translation = GeodesicTranslation()
+        self.rot_geo = lambda r1, r2: self.sdr * so3_log_map(
+            r1.transpose(-1, -2) @ r2
+        ).norm(dim=-1)
+        self.xyz_geo = lambda t1, t2: (t1 - t2).norm(dim=-1)
 
     def forward(self, pose_1: RigidTransform, pose_2: RigidTransform):
-        angular_geodesic = self.sdr * self.rotation(pose_1, pose_2)
-        translation_geodesic = self.translation(pose_1, pose_2)
-        double_geodesic = (
-            (angular_geodesic).square() + translation_geodesic.square() + self.eps
-        ).sqrt()
-        return angular_geodesic, translation_geodesic, double_geodesic
+        r1, t1 = pose_1.convert("matrix")
+        r2, t2 = pose_2.convert("matrix")
+        rot = self.rot_geo(r1, r2)
+        xyz = self.xyz_geo(t1, t2)
+        dou = (rot.square() + xyz.square() + self.eps).sqrt()
+        return rot, xyz, dou
