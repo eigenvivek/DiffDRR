@@ -98,4 +98,4 @@ target/
 .mypy_cache/
 
 # Jupyter notebooks
-**/.last_checked
+.last_checked
