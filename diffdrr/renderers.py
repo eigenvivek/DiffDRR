@@ -187,8 +187,8 @@ class Trilinear(torch.nn.Module):
 
         # Sample points along the rays and rescale to [-1, 1]
         alphamin, alphamax = _get_alpha_minmax(source, target, dims, self.eps)
-        alphamin = alphamin.min()
-        alphamax = alphamax.max()
+        alphamin = alphamin.min(-1, keepdim=True).values.min(-2, keepdim=True).values
+        alphamax = alphamax.max(-1, keepdim=True).values.max(-2, keepdim=True).values
         alphas = torch.linspace(0, 1, n_points)[None, None].to(volume)
         alphas = alphas * (alphamax - alphamin) + alphamin
 
