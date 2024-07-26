@@ -5,12 +5,12 @@ channels:
   - nvidia
 dependencies:
   - pip
-  - pytorch>2.2,<2.3
+  - pytorch
   - einops
   - torchvision
   - torchio
   - timm
-  - numpy<2
+  - numpy
   - matplotlib
   - seaborn
   - imageio
