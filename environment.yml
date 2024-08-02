@@ -9,6 +9,7 @@ dependencies:
   - einops
   - torchvision
   - torchio
+  - kornia
   - timm
   - numpy
   - matplotlib
