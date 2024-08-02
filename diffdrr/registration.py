@@ -93,7 +93,9 @@ class PoseRegressor(torch.nn.Module):
         x = self.backbone(x)
         rot = self.rot_regression(x)
         xyz = self.xyz_regression(x)
-        return rot, xyz
+        return convert(
+            rot, xyz, convention=self.convention, parameterization=self.parameterization
+        )
 
 # %% ../notebooks/api/08_registration.ipynb 7
 N_ANGULAR_COMPONENTS = {
