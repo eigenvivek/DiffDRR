@@ -37,6 +37,9 @@ def load_example_ct(
     )
 
 # %% ../notebooks/api/03_data.ipynb 6
+from .pose import RigidTransform
+
+
 def read(
     volume: str | Path | ScalarImage,  # CT volume
     labelmap: str | Path | LabelMap = None,  # Labelmap for the CT volume
@@ -44,6 +47,8 @@ def read(
     orientation: str | None = "AP",  # Frame-of-reference change
     bone_attenuation_multiplier: float = 1.0,  # Scalar multiplier on density of high attenuation voxels
     fiducials: torch.Tensor = None,  # 3D fiducials in world coordinates
+    transform: RigidTransform = None,  # RigidTransform to apply to the volume's affine
+    center_volume: bool = True,  # Move the volume's isocenter to the world origin
     **kwargs,  # Any additional information to be stored in the torchio.Subject
 ) -> Subject:
     """
@@ -57,10 +62,6 @@ def read(
     else:
         volume = ScalarImage(volume)
 
-    # Convert the volume to density
-    density = transform_hu_to_density(volume.data, bone_attenuation_multiplier)
-    density = ScalarImage(tensor=density, affine=volume.affine)
-
     # Read the mask if passed
     if labelmap is not None:
         if isinstance(labelmap, LabelMap):
@@ -70,6 +71,15 @@ def read(
         _ = mask.data  # Load and cache the labelmap
     else:
         mask = None
+
+    # Optionally apply transform
+    if transform is not None:
+        T = transform.matrix[0].numpy()
+        volume = ScalarImage(tensor=volume.data, affine=T.dot(volume.affine))
+
+    # Convert the volume to density
+    density = transform_hu_to_density(volume.data, bone_attenuation_multiplier)
+    density = ScalarImage(tensor=density, affine=volume.affine)
 
     # Frame-of-reference change
     if orientation == "AP":
@@ -117,9 +127,9 @@ def read(
         **kwargs,
     )
 
-    # Canonicalize the images by converting to RAS+ and moving the
-    # Subject's isocenter to the origin in world coordinates
-    subject = canonicalize(subject)
+    # Move the subject's isocenter to the origin in world coordinates
+    if center_volume:
+        subject = canonicalize(subject)
 
     # Apply mask
     if labels is not None:
