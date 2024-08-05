@@ -7,7 +7,7 @@ import torch
 
 # %% auto 0
 __all__ = ['NormalizedCrossCorrelation2d', 'MultiscaleNormalizedCrossCorrelation2d', 'GradientNormalizedCrossCorrelation2d',
-           'LogGeodesicSE3', 'DoubleGeodesicSE3']
+           'MutualInformation', 'LogGeodesicSE3', 'DoubleGeodesicSE3']
 
 # %% ../notebooks/api/05_metrics.ipynb 6
 from einops import rearrange
@@ -100,7 +100,42 @@ class GradientNormalizedCrossCorrelation2d(NormalizedCrossCorrelation2d):
     def forward(self, x1, x2):
         return super().forward(self.sobel(x1), self.sobel(x2))
 
-# %% ../notebooks/api/05_metrics.ipynb 14
+# %% ../notebooks/api/05_metrics.ipynb 11
+from kornia.enhance.histogram import marginal_pdf, joint_pdf
+
+
+class MutualInformation(torch.nn.Module):
+    """Mutual Information."""
+
+    def __init__(self, sigma=0.1, num_bins=256, epsilon=1e-10, normalize=True):
+        super().__init__()
+        self.register_buffer("sigma", torch.tensor(sigma))
+        self.register_buffer("bins", torch.linspace(0.0, 1.0, num_bins))
+        self.epsilon = epsilon
+        self.normalize = normalize
+
+    def forward(self, x1, x2):
+        assert x1.shape == x2.shape
+        B, C, H, W = x1.shape
+
+        x1 = x1.view(B, H * W, C)
+        x2 = x2.view(B, H * W, C)
+
+        pdf_x1, kernel_values1 = marginal_pdf(x1, self.bins, self.sigma, self.epsilon)
+        pdf_x2, kernel_values2 = marginal_pdf(x2, self.bins, self.sigma, self.epsilon)
+        pdf_x1x2 = joint_pdf(kernel_values1, kernel_values2)
+
+        H_x1 = -(pdf_x1 * (pdf_x1 + self.epsilon).log2()).sum(dim=1)
+        H_x2 = -(pdf_x2 * (pdf_x2 + self.epsilon).log2()).sum(dim=1)
+        H_x1x2 = -(pdf_x1x2 * (pdf_x1x2 + self.epsilon).log2()).sum(dim=(1, 2))
+
+        mutual_information = H_x1 + H_x2 - H_x1x2
+        if self.normalize:
+            mutual_information = 2 * mutual_information / (H_x1 + H_x2)
+
+        return mutual_information
+
+# %% ../notebooks/api/05_metrics.ipynb 15
 from .pose import RigidTransform, convert
 
 
@@ -119,7 +154,7 @@ class LogGeodesicSE3(torch.nn.Module):
     ) -> Float[torch.Tensor, "b"]:
         return pose_2.compose(pose_1.inverse()).get_se3_log().norm(dim=1)
 
-# %% ../notebooks/api/05_metrics.ipynb 17
+# %% ../notebooks/api/05_metrics.ipynb 18
 from .pose import so3_log_map
 
 
