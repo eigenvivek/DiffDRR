@@ -53,7 +53,7 @@ class Detector(torch.nn.Module):
             torch.tensor(
                 [
                     [dely, 0, 0, -y0],
-                    [0, delx, 0, x0],
+                    [0, delx, 0, -x0],
                     [0, 0, sdd, 0],
                     [0, 0, 0, 1],
                 ]
