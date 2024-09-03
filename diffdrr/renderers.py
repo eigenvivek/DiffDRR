@@ -82,9 +82,6 @@ class Siddon(torch.nn.Module):
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
-        # Multiply by ray length such that the proportion of attenuated energy is unitless
-        raylength = (target - source + self.eps).norm(dim=-1)
-        img *= raylength.unsqueeze(1)
         return img
 
 # %% ../notebooks/api/01_renderers.ipynb 8
@@ -202,6 +199,10 @@ class Trilinear(torch.nn.Module):
         # Sample the volume with trilinear interpolation
         img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
 
+        # Multiply by the step size to compute the rectangular rule for integration
+        step_size = (alphamax - alphamin) / (n_points - 1)
+        img = img * step_size
+
         # Handle optional masking
         if mask is None:
             img = img.sum(dim=-1).unsqueeze(1)
@@ -217,8 +218,4 @@ class Trilinear(torch.nn.Module):
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
-        # Compute the line integral with the rectangular rule and return the DRR
-        raylength = (target - source + self.eps).norm(dim=-1).unsqueeze(1)
-        step_size = (alphamax - alphamin) / (n_points - 1)
-        img *= raylength * step_size
         return img
