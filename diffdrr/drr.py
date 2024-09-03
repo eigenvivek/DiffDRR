@@ -173,6 +173,10 @@ def forward(
             )
             img.append(partial)
         img = torch.cat(img, dim=-1)
+
+    # Multiply by the raylength (in world coordinate units)
+    img *= self.affine(target - source).norm(dim=-1).unsqueeze(1)
+
     return self.reshape_transform(img, batch_size=len(pose))
 
 # %% ../notebooks/api/00_drr.ipynb 11
