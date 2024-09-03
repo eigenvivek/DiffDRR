@@ -217,7 +217,8 @@ class Trilinear(torch.nn.Module):
                 .scatter_add_(1, channels.transpose(-1, -2), img.transpose(-1, -2))
             )
 
-        # Multiply by raylength and return the drr
+        # Compute the line integral with the rectangular rule and return the DRR
         raylength = (target - source + self.eps).norm(dim=-1).unsqueeze(1)
-        img *= raylength / n_points
+        step_size = (alphamax - alphamin) / (n_points - 1)
+        img *= raylength * step_size
         return img
