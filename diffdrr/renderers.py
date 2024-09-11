@@ -32,6 +32,7 @@ class Siddon(torch.nn.Module):
         volume,
         source,
         target,
+        img,
         align_corners=False,
         mask=None,
     ):
@@ -56,9 +57,11 @@ class Siddon(torch.nn.Module):
         # Use torch.nn.functional.grid_sample to lookup the values of each intersected voxel
         if self.stop_gradients_through_grid_sample:
             with torch.no_grad():
-                img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
+                img = _get_voxel(
+                    volume, xyzs, img, self.mode, align_corners=align_corners
+                )
         else:
-            img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
+            img = _get_voxel(volume, xyzs, img, self.mode, align_corners=align_corners)
 
         # Weight each intersected voxel by the length of the ray's intersection with the voxel
         intersection_length = torch.diff(alphas, dim=-1)
@@ -74,7 +77,7 @@ class Siddon(torch.nn.Module):
             B, D, _ = img.shape
             C = int(mask.max().item() + 1)
             channels = _get_voxel(
-                mask, xyzs, self.mode, align_corners=align_corners
+                mask, xyzs, img=None, mode=self.mode, align_corners=align_corners
             ).long()
             img = (
                 torch.zeros(B, C, D)
@@ -144,7 +147,7 @@ def _get_xyzs(alpha, source, target, dims, eps):
     return xyzs
 
 
-def _get_voxel(volume, xyzs, mode, align_corners):
+def _get_voxel(volume, xyzs, img, mode, align_corners):
     """Wraps torch.nn.functional.grid_sample to sample a volume at XYZ coordinates."""
     batch_size = len(xyzs)
     voxels = grid_sample(
@@ -153,7 +156,11 @@ def _get_voxel(volume, xyzs, mode, align_corners):
         mode=mode,
         align_corners=align_corners,
     )[:, 0, 0]
-    return voxels
+    if img is not None:
+        img = torch.einsum("bcn, bnj -> bnj", img, voxels)
+    else:
+        img = voxels
+    return img
 
 # %% ../notebooks/api/01_renderers.ipynb 10
 class Trilinear(torch.nn.Module):
@@ -176,6 +183,7 @@ class Trilinear(torch.nn.Module):
         volume,
         source,
         target,
+        img,
         n_points=500,
         align_corners=False,
         mask=None,
@@ -197,7 +205,7 @@ class Trilinear(torch.nn.Module):
         xyzs = _get_xyzs(alphas, source, target, dims, self.eps)
 
         # Sample the volume with trilinear interpolation
-        img = _get_voxel(volume, xyzs, self.mode, align_corners=align_corners)
+        img = _get_voxel(volume, xyzs, img, self.mode, align_corners=align_corners)
 
         # Multiply by the step size to compute the rectangular rule for integration
         step_size = (alphamax - alphamin) / (n_points - 1)
@@ -210,7 +218,7 @@ class Trilinear(torch.nn.Module):
             B, D, _ = img.shape
             C = int(mask.max().item() + 1)
             channels = _get_voxel(
-                mask, xyzs, self.mode, align_corners=align_corners
+                mask, xyzs, img=None, mode=self.mode, align_corners=align_corners
             ).long()
             img = (
                 torch.zeros(B, C, D)
