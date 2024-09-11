@@ -160,10 +160,10 @@ def forward(
 @patch
 def render(
     self: DRR,
-    density: torch.tensor,
-    source: torch.tensor,
-    target: torch.tensor,
-    mask_to_channels: bool,
+    density: torch.tensor,  # Volume from which to render DRRs
+    source: torch.tensor,  # World coordinates of X-ray source
+    target: torch.tensor,  # World coordinates of X-ray target
+    mask_to_channels: bool = False,  # If True, structures from the CT mask are rendered in separate channels
     **kwargs,
 ):
     # Initialize the image with the length of each cast ray
