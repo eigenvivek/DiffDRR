@@ -105,7 +105,10 @@ class DRR(nn.Module):
         if self.reshape:
             if self.detector.n_subsample is None:
                 img = img.view(
-                    batch_size, -1, self.detector.height, self.detector.width
+                    batch_size,
+                    -1,
+                    self.detector.height,
+                    self.detector.width,
                 )
             else:
                 img = reshape_subsampled_drr(img, self.detector, batch_size)
@@ -147,37 +150,54 @@ def forward(
         pose = args[0]
     else:
         pose = convert(*args, parameterization=parameterization, convention=convention)
+
+    # Create the source / target points and render the image
     source, target = self.detector(pose, calibration)
+    img = self.render(self.density, source, target, mask_to_channels, **kwargs)
+    return self.reshape_transform(img, batch_size=len(pose))
+
+
+@patch
+def render(
+    self: DRR,
+    density: torch.tensor,
+    source: torch.tensor,
+    target: torch.tensor,
+    mask_to_channels: bool,
+    **kwargs,
+):
+    # Initialize the image with the length of each cast ray
+    img = (target - source).norm(dim=-1).unsqueeze(1)
+
+    # Convert rays to voxelspace
     source = self.affine_inverse(source)
     target = self.affine_inverse(target)
 
-    # Render the DRR
+    # Render the image
     kwargs["mask"] = self.mask if mask_to_channels else None
     if self.patch_size is None:
         img = self.renderer(
-            self.density,
+            density,
             source,
             target,
+            img,
             **kwargs,
         )
     else:
         n_points = target.shape[1] // self.n_patches
-        img = []
+        partials = []
         for idx in range(self.n_patches):
-            t = target[:, idx * n_points : (idx + 1) * n_points]
             partial = self.renderer(
-                self.density,
+                density,
                 source,
-                t,
+                target[:, idx * n_points : (idx + 1) * n_points],
+                img[:, idx * n_points : (idx + 1) * n_points],
                 **kwargs,
             )
-            img.append(partial)
-        img = torch.cat(img, dim=-1)
+            partials.append(partial)
+        img = torch.cat(partials, dim=-1)
 
-    # Multiply by the raylength (in world coordinate units)
-    img *= self.affine(target - source).norm(dim=-1).unsqueeze(1)
-
-    return self.reshape_transform(img, batch_size=len(pose))
+    return img
 
 # %% ../notebooks/api/00_drr.ipynb 11
 @patch
