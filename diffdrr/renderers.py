@@ -16,12 +16,14 @@ class Siddon(torch.nn.Module):
         mode: str = "nearest",  # Interpolation mode for grid_sample
         stop_gradients_through_grid_sample: bool = False,  # Apply torch.no_grad when calling grid_sample
         filter_intersections_outside_volume: bool = True,  # Use alphamin/max to filter the intersections
+        reducefn: str = "sum",  # Function for combining samples along each ray
         eps: float = 1e-8,  # Small constant to avoid div by zero errors
     ):
         super().__init__()
         self.mode = mode
         self.stop_gradients_through_grid_sample = stop_gradients_through_grid_sample
         self.filter_intersections_outside_volume = filter_intersections_outside_volume
+        self.reducefn = reducefn
         self.eps = eps
 
     def dims(self, volume):
@@ -69,7 +71,7 @@ class Siddon(torch.nn.Module):
 
         # Handle optional masking
         if mask is None:
-            img = img.sum(dim=-1)
+            img = reduce(img, self.reducefn)
             img = img.unsqueeze(1)
         else:
             # Thanks to @Ivan for the clutch assist w/ pytorch tensor ops
@@ -162,17 +164,28 @@ def _get_voxel(volume, xyzs, img, mode, align_corners):
         img = voxels
     return img
 
-# %% ../notebooks/api/01_renderers.ipynb 10
+# %% ../notebooks/api/01_renderers.ipynb 9
+def reduce(img, reducefn):
+    if reducefn == "sum":
+        return img.sum(dim=-1)
+    elif reducefn == "max":
+        return img.max(dim=-1).values
+    else:
+        raise ValueError(f"Only supports reducefn 'sum' or 'max', not {reducefn}")
+
+# %% ../notebooks/api/01_renderers.ipynb 11
 class Trilinear(torch.nn.Module):
     """Differentiable X-ray renderer implemented with trilinear interpolation."""
 
     def __init__(
         self,
         mode: str = "bilinear",  # Interpolation mode for grid_sample
+        reducefn: str = "sum",  # Function for combining samples along each ray
         eps: float = 1e-8,  # Small constant to avoid div by zero errors
     ):
         super().__init__()
         self.mode = mode
+        self.reducefn = reducefn
         self.eps = eps
 
     def dims(self, volume):
@@ -213,7 +226,8 @@ class Trilinear(torch.nn.Module):
 
         # Handle optional masking
         if mask is None:
-            img = img.sum(dim=-1).unsqueeze(1)
+            img = reduce(img, self.reducefn)
+            img = img.unsqueeze(1)
         else:
             B, D, _ = img.shape
             C = int(mask.max().item() + 1)
