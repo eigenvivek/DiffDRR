@@ -185,8 +185,9 @@ If you find `DiffDRR` useful in your work, please cite our
 If the 2D/3D registration capabilities are helpful, please cite our followup, [`DiffPose`](https://arxiv.org/abs/2312.06358):
 
     @article{gopalakrishnan2023intraoperative,
-      title={Intraoperative 2D/3D Image Registration via Differentiable X-ray Rendering},
+      title={Intraoperative {2D/3D} image registration via differentiable {X}-ray rendering},
       author={Gopalakrishnan, Vivek and Dey, Neel and Golland, Polina},
-      journal={arXiv preprint arXiv:2312.06358},
-      year={2023}
+      booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+      pages={11662--11672},
+      year={2024}
     }
