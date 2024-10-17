@@ -191,7 +191,7 @@ def render(
                 density,
                 source,
                 target[:, idx * n_points : (idx + 1) * n_points],
-                img[:, idx * n_points : (idx + 1) * n_points],
+                img[..., idx * n_points : (idx + 1) * n_points],
                 **kwargs,
             )
             partials.append(partial)
