@@ -165,11 +165,16 @@ def _get_voxel(volume, xyzs, img, mode, align_corners):
     return img
 
 # %% ../notebooks/api/01_renderers.ipynb 9
+from typing import Callable
+
+
 def reduce(img, reducefn):
     if reducefn == "sum":
         return img.sum(dim=-1)
     elif reducefn == "max":
         return img.max(dim=-1).values
+    elif isinstance(reducefn, Callable):
+        return reducefn(img)
     else:
         raise ValueError(f"Only supports reducefn 'sum' or 'max', not {reducefn}")
 
