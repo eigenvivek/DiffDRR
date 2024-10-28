@@ -98,8 +98,6 @@ class DRR(nn.Module):
             )
         self.reshape = reshape
         self.patch_size = patch_size
-        if self.patch_size is not None:
-            self.n_patches = (height * width) // (self.patch_size**2)
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
@@ -121,6 +119,10 @@ class DRR(nn.Module):
     @property
     def affine_inverse(self):
         return RigidTransform(self._affine_inverse)
+
+    @property
+    def n_patches(self):
+        return (self.detector.height * self.detector.width) // (self.patch_size**2)
 
 # %% ../notebooks/api/00_drr.ipynb 8
 def reshape_subsampled_drr(img: torch.Tensor, detector: Detector, batch_size: int):
