@@ -116,11 +116,10 @@ def resample(
 from kornia.geometry.calibration import solve_pnp_dlt
 from kornia.geometry.camera.pinhole import PinholeCamera
 
-from .drr import DRR
 from .pose import RigidTransform
 
 
-def get_pinhole_camera(drr: DRR, pose: RigidTransform) -> PinholeCamera:
+def get_pinhole_camera(drr, pose: RigidTransform) -> PinholeCamera:
     # Move everything to CPU and use double precision
     drr = drr.to(device="cpu", dtype=torch.float64)
     pose = pose.to(device="cpu", dtype=torch.float64)
