@@ -151,7 +151,10 @@ def read(
             mask = torch.any(
                 torch.stack(
                     [
-                        apply_orientation(subject.mask.data.squeeze(), transform) == idx
+                        torch.tensor(
+                            apply_orientation(subject.mask.data.squeeze(), transform)
+                            == idx
+                        )
                         for idx in labels
                     ]
                 ),
