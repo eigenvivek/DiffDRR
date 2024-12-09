@@ -10,7 +10,7 @@ import pandas as pd
 import torch
 from torchio import LabelMap, ScalarImage, Subject
 from torchio.transforms import Resample
-import nibabel as nib
+from nibabel.orientations import ornt_transform, axcodes2ornt, apply_orientation
 
 # %% auto 0
 __all__ = ['load_example_ct', 'read']
@@ -138,19 +138,24 @@ def read(
             labels = [labels]
         if subject.volume.orientation == subject.mask.orientation:
             mask = torch.any(
-                torch.stack([subject.mask.data.squeeze() == idx for idx in labels]), dim=0
+                torch.stack([subject.mask.data.squeeze() == idx for idx in labels]),
+                dim=0,
             )
         else:
             # If the mask does not have the same orientation, transform the mask data
             # to match the orientation of the volume data
-            transform = nib.orientations.ornt_transform(
-                nib.orientations.axcodes2ornt(subject.mask.orientation),
-                nib.orientations.axcodes2ornt(subject.volume.orientation)
+            transform = ornt_transform(
+                axcodes2ornt(subject.mask.orientation),
+                axcodes2ornt(subject.volume.orientation),
             )
             mask = torch.any(
-                torch.stack([
-                    nib.orientations.apply_orientation(subject.mask.data.squeeze(), transform)
-                    == idx for idx in labels]), dim=0
+                torch.stack(
+                    [
+                        apply_orientation(subject.mask.data.squeeze(), transform) == idx
+                        for idx in labels
+                    ]
+                ),
+                dim=0,
             )
 
         subject.density.data = subject.density.data * mask
