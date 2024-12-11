@@ -8,9 +8,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
+from nibabel.orientations import apply_orientation, axcodes2ornt, ornt_transform
 from torchio import LabelMap, ScalarImage, Subject
 from torchio.transforms import Resample
-from nibabel.orientations import ornt_transform, axcodes2ornt, apply_orientation
 
 # %% auto 0
 __all__ = ['load_example_ct', 'read']
