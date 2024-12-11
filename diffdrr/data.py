@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
+from nibabel.orientations import apply_orientation, axcodes2ornt, ornt_transform
 from torchio import LabelMap, ScalarImage, Subject
 from torchio.transforms import Resample
 
@@ -135,9 +136,31 @@ def read(
     if labels is not None:
         if isinstance(labels, int):
             labels = [labels]
-        mask = torch.any(
-            torch.stack([subject.mask.data.squeeze() == idx for idx in labels]), dim=0
-        )
+        if subject.volume.orientation == subject.mask.orientation:
+            mask = torch.any(
+                torch.stack([subject.mask.data.squeeze() == idx for idx in labels]),
+                dim=0,
+            )
+        else:
+            # If the mask does not have the same orientation, transform the mask data
+            # to match the orientation of the volume data
+            transform = ornt_transform(
+                axcodes2ornt(subject.mask.orientation),
+                axcodes2ornt(subject.volume.orientation),
+            )
+            mask = torch.any(
+                torch.stack(
+                    [
+                        torch.tensor(
+                            apply_orientation(subject.mask.data.squeeze(), transform)
+                            == idx
+                        )
+                        for idx in labels
+                    ]
+                ),
+                dim=0,
+            )
+
         subject.density.data = subject.density.data * mask
 
     return subject
