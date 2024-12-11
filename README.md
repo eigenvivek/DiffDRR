@@ -132,6 +132,8 @@ under active development (see [`reconstruction.ipynb`](https://vivekg.dev/DiffDR
 
 ## Development
 
+> **TLDR:** Source code is stored in `notebooks/api/`, not `diffdrr/`. Update the notebooks instead!
+
 `DiffDRR` source code, docs, and CI are all built using
 [`nbdev`](https://nbdev.fast.ai/). To get set up with `nbdev`, install
 the following
