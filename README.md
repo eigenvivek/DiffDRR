@@ -126,9 +126,12 @@ This work includes a lot of real-world usecases of `DiffDRR` including
 ### Volume Reconstruction
 
 `DiffDRR` is differentiable with respect to the 3D volume as well as camera poses.
-Therefore, it could (in theory) be used for volume reconstruction via differentiable
-rendering. However, this feature has not been robustly tested and is currently 
-under active development (see [`reconstruction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/reconstruction.html))!
+Therefore, it can be used for volume reconstruction via differentiable
+rendering (see [`reconstruction.ipynb`](https://vivekg.dev/DiffDRR/tutorials/reconstruction.html))!
+
+#### *🆕 Examples on Real-World Data 🆕*
+
+For an in-depth example using `DiffDRR` for cone-beam CT reconstruction, check out [`DiffVox`](https://github.com/hossein-momeni/DiffVox).
 
 ## Development
 
@@ -191,5 +194,14 @@ If the 2D/3D registration capabilities are helpful, please cite our followup, [`
       author={Gopalakrishnan, Vivek and Dey, Neel and Golland, Polina},
       booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
       pages={11662--11672},
+      year={2024}
+    }
+
+If you use the 3D CBCT reconstruction capabilities, please cite our followup, [`DiffVox`](https://arxiv.org/abs/2312.06358):
+
+    @article{momeni2024voxel,
+      title={Voxel-based Differentiable X-ray Rendering Improves Self-Supervised 3D CBCT Reconstruction},
+      author={Momeni, Mohammadhossein and Gopalakrishnan, Vivek and Dey, Neel and Golland, Polina and Frisken, Sarah},
+      booktitle={Machine Learning and the Physical Sciences, NeurIPS 2024},
       year={2024}
     }
