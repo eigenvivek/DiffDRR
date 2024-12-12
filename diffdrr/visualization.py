@@ -356,9 +356,9 @@ def _make_camera_frustum_mesh(source, target, size=0.125):
 # %% ../notebooks/api/04_visualization.ipynb 15
 def visualize_scene(drr, pose, labelmap=False, grid=True, verbose=False, **kwargs):
     if labelmap:
-        mesh = drr_to_mesh(drr.subject, "surface_nets", verbose=verbose, **kwargs)
-    else:
         mesh = labelmap_to_mesh(drr.subject, verbose=verbose)
+    else:
+        mesh = drr_to_mesh(drr.subject, "surface_nets", verbose=verbose, **kwargs)
 
     pl = pyvista.Plotter()
     pl.add_mesh(mesh)
