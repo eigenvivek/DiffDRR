@@ -76,11 +76,18 @@ class PinholeCamera(KorniaPinholeCamera):
 
     @property
     def center(self):
-        return -self.extrinsics[0, :3, :3].T @ self.extrinsics[0, :3, 3]
+        """Camera center is -R^T t (Hartley and Zisserman)"""
+        return (-self.extrinsics[:, :3, :3].mT @ self.extrinsics[:, :3, 3:])[..., 0]
+
+    @property
+    def projmat(self):
+        """Bx3x4 camera matrix"""
+        return (self.intrinsics @ self.extrinsics)[:, :3]
 
     @property
     def pose(self):
-        return RigidTransform(self.extrinsics)
+        """Turn c2w matrix in w2c matrix as input to diffdrr.drr.DRR"""
+        return RigidTransform(self.extrinsics).inverse()
 
 # %% ../notebooks/api/07_utils.ipynb 7
 from copy import deepcopy
