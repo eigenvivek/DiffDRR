@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 # %% auto 0
-__all__ = ['plot_drr', 'plot_mask', 'animate', 'drr_to_mesh', 'labelmap_to_mesh', 'img_to_mesh']
+__all__ = ['plot_drr', 'plot_mask', 'animate', 'drr_to_mesh', 'labelmap_to_mesh', 'img_to_mesh', 'visualize_scene', 'add_image']
 
 # %% ../notebooks/api/04_visualization.ipynb 5
 import torch
@@ -352,3 +352,26 @@ def _make_camera_frustum_mesh(source, target, size=0.125):
         ]
     )
     return pyvista.PolyData(vertices, faces)
+
+# %% ../notebooks/api/04_visualization.ipynb 15
+def visualize_scene(drr, pose, labelmap=False, grid=True, verbose=False, **kwargs):
+    if labelmap:
+        mesh = drr_to_mesh(drr.subject, "surface_nets", verbose=verbose, **kwargs)
+    else:
+        mesh = labelmap_to_mesh(drr.subject, verbose=verbose)
+
+    pl = pyvista.Plotter()
+    pl.add_mesh(mesh)
+    pl = add_image(drr, pose, pl)
+    if grid:
+        pl.show_grid()
+
+    return pl
+
+
+def add_image(drr, pose, pl):
+    camera, detector, texture, principal_ray = img_to_mesh(drr, pose)
+    pl.add_mesh(camera, show_edges=True)
+    pl.add_mesh(detector, texture=texture)
+    pl.add_mesh(principal_ray, color="lime", line_width=3)
+    return pl
