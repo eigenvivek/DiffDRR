@@ -53,13 +53,43 @@ def resample(
     return x
 
 # %% ../notebooks/api/07_utils.ipynb 6
+from kornia.geometry.camera.pinhole import PinholeCamera as KorniaPinholeCamera
+
+from diffdrr.detector import Detector
+
+
+class PinholeCamera(KorniaPinholeCamera):
+    def __init__(
+        self,
+        intrinsics: torch.Tensor,
+        extrinsics: torch.Tensor,
+        height: torch.Tensor,
+        width: torch.Tensor,
+        detector: Detector,
+    ):
+        super().__init__(intrinsics, extrinsics, height, width)
+        self.f = detector.sdd
+        self.delx = detector.delx
+        self.dely = detector.dely
+        self.x0 = detector.x0
+        self.y0 = detector.y0
+
+    @property
+    def center(self):
+        return -self.extrinsics[0, :3, :3].T @ self.extrinsics[0, :3, 3]
+
+    @property
+    def pose(self):
+        return RigidTransform(self.extrinsics)
+
+# %% ../notebooks/api/07_utils.ipynb 7
 from copy import deepcopy
 
 from kornia.geometry.calibration import solve_pnp_dlt
-from kornia.geometry.camera.pinhole import PinholeCamera
 
 from .drr import DRR
 from .pose import RigidTransform
+from .detector import make_intrinsic_matrix
 
 
 def get_pinhole_camera(
@@ -74,7 +104,10 @@ def get_pinhole_camera(
     fy = drr.detector.sdd / drr.detector.dely
     u0 = drr.detector.x0 / drr.detector.delx + drr.detector.width / 2
     v0 = drr.detector.y0 / drr.detector.dely + drr.detector.height / 2
-    intrinsics = torch.tensor(
+    intrinsics = torch.eye(4)[None]
+    intrinsics[0, :3, :3] = make_intrinsic_matrix(drr.detector)
+
+    torch.tensor(
         [
             [
                 [fx, 0.0, u0, 0.0],
@@ -115,18 +148,7 @@ def get_pinhole_camera(
         extrinsics.to(torch.float32),
         torch.tensor([drr.detector.height]),
         torch.tensor([drr.detector.width]),
-    )
-
-    # Append the necessary intrinsics
-    camera.f = drr.detector.sdd
-    camera.delx = drr.detector.delx
-    camera.dely = drr.detector.dely
-    camera.x0 = drr.detector.x0
-    camera.y0 = drr.detector.y0
-
-    # Define a function to get the camera center
-    camera.center = (
-        lambda: -camera.extrinsics[0, :3, :3].T @ camera.extrinsics[0, :3, 3]
+        drr.detector,
     )
 
     return camera
