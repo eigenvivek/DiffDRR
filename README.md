@@ -197,7 +197,7 @@ If the 2D/3D registration capabilities are helpful, please cite our followup, [`
       year={2024}
     }
 
-If you use the 3D CBCT reconstruction capabilities, please cite our followup, [`DiffVox`](https://arxiv.org/abs/2312.06358):
+If you use the 3D CBCT reconstruction capabilities, please cite our followup, [`DiffVox`](https://arxiv.org/abs/2411.19224):
 
     @article{momeni2024voxel,
       title={Voxel-based Differentiable X-ray Rendering Improves Self-Supervised 3D CBCT Reconstruction},
