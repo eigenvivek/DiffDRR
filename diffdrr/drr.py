@@ -212,6 +212,8 @@ def set_intrinsics_(
     dely: float = None,
     x0: float = None,
     y0: float = None,
+    n_subsample: int = None,
+    reverse_x_axis: bool = None,
 ):
     """Set new intrinsic parameters (inplace)."""
     self.detector = Detector(
@@ -222,9 +224,9 @@ def set_intrinsics_(
         dely if dely is not None else self.detector.dely,
         x0 if x0 is not None else self.detector.x0,
         y0 if y0 is not None else self.detector.y0,
-        n_subsample=self.detector.n_subsample,
-        reverse_x_axis=self.detector.reverse_x_axis,
-        reorient=self.subject.reorient,
+        self.subject.reorient,
+        n_subsample if n_subsample is not None else self.detector.n_subsample,
+        reverse_x_axis if reverse_x_axis is not None else self.detector.reverse_x_axis,
     ).to(self.density)
 
 # %% ../notebooks/api/00_drr.ipynb 12
