@@ -53,6 +53,8 @@ def resample(
     return x
 
 # %% ../notebooks/api/07_utils.ipynb 6
+from copy import deepcopy
+
 from kornia.geometry.calibration import solve_pnp_dlt
 from kornia.geometry.camera.pinhole import PinholeCamera
 
@@ -60,10 +62,12 @@ from .drr import DRR
 from .pose import RigidTransform
 
 
-def get_pinhole_camera(drr: DRR, pose: RigidTransform) -> PinholeCamera:
+def get_pinhole_camera(
+    drr: DRR, pose: RigidTransform, dtype: torch.dtype = torch.float64
+) -> PinholeCamera:
     # Move everything to CPU and use double precision
-    drr = drr.to(device="cpu", dtype=torch.float64)
-    pose = pose.to(device="cpu", dtype=torch.float64)
+    drr = deepcopy(drr).to(device="cpu", dtype=dtype)
+    pose = deepcopy(pose).to(device="cpu", dtype=dtype)
 
     # Make the intrinsic matrix (in pixels)
     fx = drr.detector.sdd / drr.detector.delx
@@ -79,7 +83,7 @@ def get_pinhole_camera(drr: DRR, pose: RigidTransform) -> PinholeCamera:
                 [0.0, 0.0, 0.0, 1.0],
             ]
         ],
-        dtype=torch.float64,
+        dtype=dtype,
     )
 
     # Get matching 3D and 2D points for PnP
@@ -97,12 +101,12 @@ def get_pinhole_camera(drr: DRR, pose: RigidTransform) -> PinholeCamera:
                 [xmax, ymax, zmax],
             ]
         ],
-        dtype=torch.float64,
+        dtype=dtype,
     )
     x = drr.perspective_projection(pose, X)
 
     # Solve for the extrinsic matrix with PnP
-    extrinsics = torch.eye(4, dtype=torch.float64)[None]
+    extrinsics = torch.eye(4, dtype=dtype)[None]
     extrinsics[:, :3, :] = solve_pnp_dlt(X, x, intrinsics[..., :3, :3])
 
     # Make the pinhole camera, converted back to single precision
