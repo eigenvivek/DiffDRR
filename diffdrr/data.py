@@ -161,6 +161,8 @@ def read(
                 dim=0,
             )
 
+        subject.volume.data = subject.volume.data * mask
+        subject.mask.data = subject.mask.data * mask
         subject.density.data = subject.density.data * mask
 
     return subject
