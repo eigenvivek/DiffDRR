@@ -354,22 +354,35 @@ def _make_camera_frustum_mesh(source, target, size=0.125):
     return pyvista.PolyData(vertices, faces)
 
 # %% ../notebooks/api/04_visualization.ipynb 15
-def visualize_scene(drr, pose, labelmap=False, grid=True, verbose=False, **kwargs):
+def visualize_scene(
+    drr: DRR,
+    pose: RigidTransform,
+    labelmap: bool = False,
+    grid: bool = True,
+    verbose: bool = False,
+    **kwargs
+):
+    """
+    Given a DRR and a RigidTransform, render the 3D scene in PyVista.
+    **kwargs are passed to drr_to_mesh.
+    """
+    # Extract a mesh from the subject
     if labelmap:
         mesh = labelmap_to_mesh(drr.subject, verbose=verbose)
     else:
         mesh = drr_to_mesh(drr.subject, "surface_nets", verbose=verbose, **kwargs)
 
+    # Plot on a grid
     pl = pyvista.Plotter()
     pl.add_mesh(mesh)
     pl = add_image(drr, pose, pl)
     if grid:
         pl.show_grid()
-
     return pl
 
 
-def add_image(drr, pose, pl):
+def add_image(drr: DRR, pose: RigidTransform, pl: pyvista.Plotter):
+    """Add a camera to an existing scene."""
     camera, detector, texture, principal_ray = img_to_mesh(drr, pose)
     pl.add_mesh(camera, show_edges=True)
     pl.add_mesh(detector, texture=texture)
