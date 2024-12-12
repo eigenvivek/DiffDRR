@@ -124,6 +124,14 @@ class DRR(nn.Module):
     def n_patches(self):
         return (self.detector.height * self.detector.width) // (self.patch_size**2)
 
+    @property
+    def device(self):
+        return self.density.device
+
+    @property
+    def dtype(self):
+        return self.density.dtype
+
 # %% ../notebooks/api/00_drr.ipynb 8
 def reshape_subsampled_drr(img: torch.Tensor, detector: Detector, batch_size: int):
     n_points = detector.height * detector.width
