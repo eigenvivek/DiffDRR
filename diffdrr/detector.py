@@ -19,14 +19,14 @@ class Detector(torch.nn.Module):
 
     def __init__(
         self,
-        sdd: float,  # Source-to-detector distance (i.e., focal length)
-        height: int,  # Height of the X-ray detector
-        width: int,  # Width of the X-ray detector
-        delx: float,  # Pixel spacing in the X-direction
-        dely: float,  # Pixel spacing in the Y-direction
-        x0: float,  # Principal point X-offset
-        y0: float,  # Principal point Y-offset
-        reorient: torch.tensor,  # Frame-of-reference change matrix
+        sdd: float,  # Source-to-detector distance (in units length)
+        height: int,  # Y-direction length (in units pixels)
+        width: int,  # X-direction length (in units pixels)
+        delx: float,  # X-direction spacing (in units length / pixel)
+        dely: float,  # Y-direction spacing (in units length / pixel)
+        x0: float,  # Principal point x-coordinate (in units length)
+        y0: float,  # Principal point y-coordinate (in units length)
+        reorient: torch.Tensor,  # Frame-of-reference change matrix
         n_subsample: int | None = None,  # Number of target points to randomly sample
         reverse_x_axis: bool = False,  # If pose includes reflection (in E(3) not SE(3)), reverse x-axis
     ):
@@ -91,15 +91,7 @@ class Detector(torch.nn.Module):
     @property
     def intrinsic(self):
         """The 3x3 intrinsic matrix."""
-        return make_intrinsic_matrix(
-            self.sdd,
-            self.delx,
-            self.dely,
-            self.width,
-            self.height,
-            self.y0,
-            self.x0,
-        ).to(self.source)
+        return make_intrinsic_matrix(self).to(self.source)
 
 # %% ../notebooks/api/02_detector.ipynb 6
 @patch
@@ -192,19 +184,11 @@ def parse_intrinsic_matrix(
     return focal_length, x0, y0
 
 # %% ../notebooks/api/02_detector.ipynb 12
-def make_intrinsic_matrix(
-    sdd: float,  # Source-to-detector distance (in units length)
-    delx: float,  # X-direction spacing (in units length / pixel)
-    dely: float,  # Y-direction spacing (in units length / pixel)
-    height: int,  # Y-direction length (in units pixels)
-    width: int,  # X-direction length (in units pixels)
-    x0: float = 0.0,  # Principal point x-coordinate (in units length)
-    y0: float = 0.0,  # Principal point y-coordinate (in units length)
-):
-    fx = sdd / delx
-    fy = sdd / dely
-    u0 = x0 / delx + width / 2
-    v0 = y0 / dely + height / 2
+def make_intrinsic_matrix(detector: Detector):
+    fx = detector.sdd / detector.delx
+    fy = detector.sdd / detector.dely
+    u0 = detector.x0 / detector.delx + detector.width / 2
+    v0 = detector.y0 / detector.dely + detector.height / 2
     return torch.tensor(
         [
             [fx, 0.0, u0],
