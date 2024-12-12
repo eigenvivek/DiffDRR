@@ -201,10 +201,14 @@ def make_intrinsic_matrix(
     x0: float = 0.0,  # Principal point x-coordinate (in units length)
     y0: float = 0.0,  # Principal point y-coordinate (in units length)
 ):
+    fx = sdd / delx
+    fy = sdd / dely
+    u0 = x0 / delx + width / 2
+    v0 = y0 / dely + height / 2
     return torch.tensor(
         [
-            [sdd / delx, 0.0, x0 / delx + width / 2],
-            [0.0, sdd / dely, y0 / dely + height / 2],
+            [fx, 0.0, u0],
+            [0.0, fy, v0],
             [0.0, 0.0, 1.0],
         ]
     )
