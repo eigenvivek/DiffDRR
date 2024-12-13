@@ -71,7 +71,7 @@ class PinholeCamera(KorniaPinholeCamera):
     ):
         super().__init__(intrinsics, extrinsics, height, width)
         multiplier = -1 if subject.orientation == "PA" else 1
-        self.f = multiplier * detector.sdd
+        self.sdd = multiplier * detector.sdd
         self.delx = detector.delx
         self.dely = detector.dely
         self.x0 = detector.x0
