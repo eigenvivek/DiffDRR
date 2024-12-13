@@ -117,8 +117,12 @@ def _initialize_carm(self: Detector):
     # Construct equally spaced points along the basis vectors
     t = torch.arange(-self.height // 2, self.height // 2, device=device) + h_off
     s = torch.arange(-self.width // 2, self.width // 2, device=device) + w_off
-    if self.reverse_x_axis:
+
+    t = -t
+    s = -s
+    if not self.reverse_x_axis:
         s = -s
+
     coefs = torch.cartesian_prod(t, s).reshape(-1, 2)
     target = torch.einsum("cd,nc->nd", basis, coefs)
     target += center

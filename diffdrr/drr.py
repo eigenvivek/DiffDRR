@@ -261,7 +261,7 @@ def perspective_projection(
     x = torch.einsum("ij, bnj -> bni", self.detector.intrinsic, x)
     z = x[..., -1].unsqueeze(-1).clone()
     x = x / z
-    if self.detector.reverse_x_axis:
+    if not self.detector.reverse_x_axis:
         x[..., 1] = self.detector.width - x[..., 1]
     return x[..., :2]  # .flip(-1)
 

@@ -54,6 +54,7 @@ def resample(
 
 # %% ../notebooks/api/07_utils.ipynb 6
 from kornia.geometry.camera.pinhole import PinholeCamera as KorniaPinholeCamera
+from torchio import Subject
 
 from diffdrr.detector import Detector
 
@@ -66,9 +67,11 @@ class PinholeCamera(KorniaPinholeCamera):
         height: torch.Tensor,
         width: torch.Tensor,
         detector: Detector,
+        subject: Subject,
     ):
         super().__init__(intrinsics, extrinsics, height, width)
-        self.f = detector.sdd
+        multiplier = -1 if subject.orientation == "PA" else 1
+        self.f = multiplier * detector.sdd
         self.delx = detector.delx
         self.dely = detector.dely
         self.x0 = detector.x0
@@ -94,9 +97,9 @@ from copy import deepcopy
 
 from kornia.geometry.calibration import solve_pnp_dlt
 
+from .detector import make_intrinsic_matrix
 from .drr import DRR
 from .pose import RigidTransform
-from .detector import make_intrinsic_matrix
 
 
 def get_pinhole_camera(
@@ -107,14 +110,12 @@ def get_pinhole_camera(
     pose = deepcopy(pose).to(device="cpu", dtype=dtype)
 
     # Make the intrinsic matrix (in pixels)
-    fx = drr.detector.sdd / drr.detector.delx
-    fy = drr.detector.sdd / drr.detector.dely
+    multiplier = -1 if drr.subject.orientation == "PA" else 1
+    fx = multiplier * drr.detector.sdd / drr.detector.delx
+    fy = multiplier * drr.detector.sdd / drr.detector.dely
     u0 = drr.detector.x0 / drr.detector.delx + drr.detector.width / 2
     v0 = drr.detector.y0 / drr.detector.dely + drr.detector.height / 2
-    intrinsics = torch.eye(4)[None]
-    intrinsics[0, :3, :3] = make_intrinsic_matrix(drr.detector)
-
-    torch.tensor(
+    intrinsics = torch.tensor(
         [
             [
                 [fx, 0.0, u0, 0.0],
@@ -156,6 +157,7 @@ def get_pinhole_camera(
         torch.tensor([drr.detector.height]),
         torch.tensor([drr.detector.width]),
         drr.detector,
+        drr.subject,
     )
 
     return camera

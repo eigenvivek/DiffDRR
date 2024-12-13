@@ -85,35 +85,37 @@ def read(
     # Frame-of-reference change
     if orientation == "AP":
         # Rotates the C-arm about the x-axis by 90 degrees
-        # Rotates the C-arm about the z-axis by -90 degrees
         reorient = torch.tensor(
             [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, -1.0, 0.0],
-                [0.0, -1.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
+                [1, 0, 0, 0],
+                [0, 0, -1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 1],
+            ],
+            dtype=torch.float32,
         )
     elif orientation == "PA":
         # Rotates the C-arm about the x-axis by 90 degrees
-        # Rotates the C-arm about the z-axis by 90 degrees
+        # Reverses the direction of the y-axis
         reorient = torch.tensor(
             [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, -1.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
+                [1, 0, 0, 0],
+                [0, 0, 1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 1],
+            ],
+            dtype=torch.float32,
         )
     elif orientation is None:
         # Identity transform
         reorient = torch.tensor(
             [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ],
+            dtype=torch.float32,
         )
     else:
         raise ValueError(f"Unrecognized orientation {orientation}")
@@ -122,6 +124,7 @@ def read(
     subject = Subject(
         volume=volume,
         mask=mask,
+        orientation=orientation,
         reorient=reorient,
         density=density,
         fiducials=fiducials,
