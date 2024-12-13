@@ -107,7 +107,7 @@ def _initialize_carm(self: Detector):
     center = torch.tensor([[0.0, 0.0, 1.0]], device=device)
 
     # Use the standard basis for the detector plane
-    basis = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], device=device)
+    basis = torch.tensor([[0.0, 1.0, 0.0], [1.0, 0.0, 0.0]], device=device)
 
     # Construct the detector plane with different offsets for even or odd heights
     # These ensure that the detector plane is centered around (0, 0, 1)
