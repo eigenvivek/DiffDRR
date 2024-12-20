@@ -256,14 +256,21 @@ def perspective_projection(
     pts: torch.Tensor,
 ):
     """Project points in world coordinates (3D) onto the pixel plane (2D)."""
+    # Poses in DiffDRR are world2camera, but perspective transforms use camera2world, so invert
     extrinsic = (self.detector.reorient.compose(pose)).inverse()
     x = extrinsic(pts)
+
+    # Project onto the detector plane
     x = torch.einsum("ij, bnj -> bni", self.detector.intrinsic, x)
     z = x[..., -1].unsqueeze(-1).clone()
     x = x / z
-    if not self.detector.reverse_x_axis:
+
+    # Move origin to upper-left corner
+    x[..., 0] = self.detector.height - x[..., 0]
+    if self.detector.reverse_x_axis:
         x[..., 1] = self.detector.width - x[..., 1]
-    return x[..., :2]  # .flip(-1)
+
+    return x[..., :2]
 
 # %% ../notebooks/api/00_drr.ipynb 14
 from torch.nn.functional import pad
