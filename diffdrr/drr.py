@@ -230,8 +230,8 @@ def set_intrinsics_(
         width if width is not None else self.detector.width,
         delx if delx is not None else self.detector.delx,
         dely if dely is not None else self.detector.dely,
-        x0 if x0 is not None else self.detector.x0,
-        y0 if y0 is not None else self.detector.y0,
+        x0 if x0 is not None else -self.detector.x0,
+        y0 if y0 is not None else -self.detector.y0,
         self.subject.reorient,
         n_subsample if n_subsample is not None else self.detector.n_subsample,
         reverse_x_axis if reverse_x_axis is not None else self.detector.reverse_x_axis,
@@ -266,9 +266,9 @@ def perspective_projection(
     x = x / z
 
     # Move origin to upper-left corner
-    x[..., 0] = self.detector.height - x[..., 0]
+    x[..., 1] = self.detector.height - x[..., 1]
     if self.detector.reverse_x_axis:
-        x[..., 1] = self.detector.width - x[..., 1]
+        x[..., 0] = self.detector.width - x[..., 0]
 
     return x[..., :2]
 
