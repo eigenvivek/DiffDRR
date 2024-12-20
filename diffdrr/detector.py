@@ -51,8 +51,8 @@ class Detector(torch.nn.Module):
             "_calibration",
             torch.tensor(
                 [
-                    [dely, 0, 0, -y0],
-                    [0, delx, 0, -x0],
+                    [delx, 0, 0, x0],
+                    [0, dely, 0, y0],
                     [0, 0, sdd, 0],
                     [0, 0, 0, 1],
                 ]
@@ -65,19 +65,19 @@ class Detector(torch.nn.Module):
 
     @property
     def delx(self):
-        return self._calibration[1, 1].item()
-
-    @property
-    def dely(self):
         return self._calibration[0, 0].item()
 
     @property
+    def dely(self):
+        return self._calibration[1, 1].item()
+
+    @property
     def x0(self):
-        return -self._calibration[1, -1].item()
+        return -self._calibration[0, -1].item()
 
     @property
     def y0(self):
-        return -self._calibration[0, -1].item()
+        return -self._calibration[1, -1].item()
 
     @property
     def reorient(self):
@@ -107,7 +107,7 @@ def _initialize_carm(self: Detector):
     center = torch.tensor([[0.0, 0.0, 1.0]], device=device)
 
     # Use the standard basis for the detector plane
-    basis = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], device=device)
+    basis = torch.tensor([[0.0, 1.0, 0.0], [1.0, 0.0, 0.0]], device=device)
 
     # Construct the detector plane with different offsets for even or odd heights
     # These ensure that the detector plane is centered around (0, 0, 1)
@@ -117,8 +117,12 @@ def _initialize_carm(self: Detector):
     # Construct equally spaced points along the basis vectors
     t = torch.arange(-self.height // 2, self.height // 2, device=device) + h_off
     s = torch.arange(-self.width // 2, self.width // 2, device=device) + w_off
-    if self.reverse_x_axis:
+
+    t = -t
+    s = -s
+    if not self.reverse_x_axis:
         s = -s
+
     coefs = torch.cartesian_prod(t, s).reshape(-1, 2)
     target = torch.einsum("cd,nc->nd", basis, coefs)
     target += center

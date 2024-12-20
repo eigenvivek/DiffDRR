@@ -230,8 +230,8 @@ def set_intrinsics_(
         width if width is not None else self.detector.width,
         delx if delx is not None else self.detector.delx,
         dely if dely is not None else self.detector.dely,
-        x0 if x0 is not None else self.detector.x0,
-        y0 if y0 is not None else self.detector.y0,
+        x0 if x0 is not None else -self.detector.x0,
+        y0 if y0 is not None else -self.detector.y0,
         self.subject.reorient,
         n_subsample if n_subsample is not None else self.detector.n_subsample,
         reverse_x_axis if reverse_x_axis is not None else self.detector.reverse_x_axis,
@@ -256,14 +256,21 @@ def perspective_projection(
     pts: torch.Tensor,
 ):
     """Project points in world coordinates (3D) onto the pixel plane (2D)."""
+    # Poses in DiffDRR are world2camera, but perspective transforms use camera2world, so invert
     extrinsic = (self.detector.reorient.compose(pose)).inverse()
     x = extrinsic(pts)
+
+    # Project onto the detector plane
     x = torch.einsum("ij, bnj -> bni", self.detector.intrinsic, x)
     z = x[..., -1].unsqueeze(-1).clone()
     x = x / z
+
+    # Move origin to upper-left corner
+    x[..., 1] = self.detector.height - x[..., 1]
     if self.detector.reverse_x_axis:
-        x[..., 1] = self.detector.width - x[..., 1]
-    return x[..., :2].flip(-1)
+        x[..., 0] = self.detector.width - x[..., 0]
+
+    return x[..., :2]
 
 # %% ../notebooks/api/00_drr.ipynb 14
 from torch.nn.functional import pad
@@ -276,7 +283,7 @@ def inverse_projection(
     pts: torch.Tensor,
 ):
     """Backproject points in pixel plane (2D) onto the image plane in world coordinates (3D)."""
-    pts = pts.flip(-1)
+    # pts = pts.flip(-1)
     if self.detector.reverse_x_axis:
         pts[..., 1] = self.detector.width - pts[..., 1]
     x = self.detector.sdd * torch.einsum(
