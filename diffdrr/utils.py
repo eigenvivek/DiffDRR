@@ -110,7 +110,7 @@ def get_pinhole_camera(
     pose = deepcopy(pose).to(device="cpu", dtype=dtype)
 
     # Make the intrinsic matrix (in pixels)
-    multiplier = -1 if drr.subject.orientation == "PA" else 1
+    multiplier = -1 if drr.subject.orientation == "AP" else 1
     fx = multiplier * drr.detector.sdd / drr.detector.delx
     fy = multiplier * drr.detector.sdd / drr.detector.dely
     u0 = drr.detector.x0 / drr.detector.delx + drr.detector.width / 2
