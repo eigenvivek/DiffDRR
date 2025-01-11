@@ -283,9 +283,9 @@ def inverse_projection(
     pts: torch.Tensor,
 ):
     """Backproject points in pixel plane (2D) onto the image plane in world coordinates (3D)."""
-    # pts = pts.flip(-1)
+    pts[..., 1] = self.detector.height - pts[..., 1]
     if self.detector.reverse_x_axis:
-        pts[..., 1] = self.detector.width - pts[..., 1]
+        pts[..., 0] = self.detector.width - pts[..., 0]
     x = self.detector.sdd * torch.einsum(
         "ij, bnj -> bni",
         self.detector.intrinsic.inverse(),
