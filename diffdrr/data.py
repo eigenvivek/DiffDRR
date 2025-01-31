@@ -50,6 +50,7 @@ def read(
     fiducials: torch.Tensor = None,  # 3D fiducials in world coordinates
     transform: RigidTransform = None,  # RigidTransform to apply to the volume's affine
     center_volume: bool = True,  # Move the volume's isocenter to the world origin
+    resample_target=None,  # Resampling resolution argument passed to torchio.transforms.Resample
     **kwargs,  # Any additional information to be stored in the torchio.Subject
 ) -> Subject:
     """
@@ -171,6 +172,11 @@ def read(
             subject.density.data = subject.density.data * mask
         except:
             subject.density.data = subject.density.data * mask
+
+    # Apply resample
+    if resample_target is not None:
+        resample = Resample(resample_target)
+        subject = resample(subject)
 
     return subject
 
