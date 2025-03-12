@@ -54,12 +54,14 @@ class RigidTransform(torch.nn.Module):
         matrix = torch.einsum("bij, bjk -> bik", T.matrix, self.matrix)
         return RigidTransform(matrix)
 
-    def convert(self, parameterization, convention=None):
+    def convert(self, parameterization, convention=None, degrees=False):
         translation = -self.inverse().translation
         if parameterization == "axis_angle":
             rotation = matrix_to_axis_angle(self.matrix[..., :3, :3])
         elif parameterization == "euler_angles":
             rotation = matrix_to_euler_angles(self.matrix[..., :3, :3], convention)
+            if degrees:
+                rotation = rotation / torch.pi * 180
         elif parameterization == "matrix":
             rotation = self.matrix[..., :3, :3]
         elif parameterization == "quaternion":
@@ -119,7 +121,7 @@ PARAMETERIZATIONS = [
 ]
 
 # %% ../notebooks/api/06_pose.ipynb 11
-def convert(*args, parameterization, convention=None) -> RigidTransform:
+def convert(*args, parameterization, convention=None, degrees=False) -> RigidTransform:
     if parameterization == "euler_angles" and convention is None:
         raise ValueError(
             "convention for Euler angles must be specified as a 3 letter combination of [X, Y, Z]"
@@ -132,6 +134,8 @@ def convert(*args, parameterization, convention=None) -> RigidTransform:
         matrix = make_matrix(rotmat, camera_center)
     elif parameterization == "euler_angles":
         rotation, translation = args
+        if degrees:
+            rotation = rotation / 180 * torch.pi
         rotmat = euler_angles_to_matrix(rotation, convention)
         camera_center = torch.einsum("bij, bj -> bi", rotmat, translation)
         matrix = make_matrix(rotmat, camera_center)
