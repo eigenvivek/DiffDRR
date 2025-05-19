@@ -257,7 +257,7 @@ def drr_to_mesh(
         )
 
     # Transform the mesh using the affine matrix
-    mesh = mesh.transform(subject.volume.affine.squeeze())
+    mesh = mesh.transform(subject.volume.affine.squeeze(), inplace=False)
 
     # Preprocess the mesh
     if extract_largest:
@@ -314,7 +314,7 @@ def labelmap_to_mesh(
     mesh.clean(inplace=True, progress_bar=verbose)
 
     # Transform the mesh using the affine matrix
-    mesh = mesh.transform(subject.mask.affine.squeeze())
+    mesh = mesh.transform(subject.mask.affine.squeeze(), inplace=False)
 
     return mesh
 
