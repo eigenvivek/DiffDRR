@@ -19,4 +19,4 @@ dependencies:
   - scipy
   - tqdm
   - pyvista>=0.45.0
-  - vtk
+  - vtk>9.4.0
