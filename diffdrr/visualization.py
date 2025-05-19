@@ -238,7 +238,15 @@ def drr_to_mesh(
             subject.volume.data[0].cpu().numpy().flatten(order="F") > threshold
         )
         try:
-            mesh = grid.contour_labeled(smoothing=True, progress_bar=verbose)
+            mesh = grid.contour_labels(
+                boundary_style="strict_external",
+                smoothing=True,
+                output_mesh_type="quads",
+                pad_background=True,
+                orient_faces=True,
+                simplify_output=False,
+                progress_bar=verbose,
+            )
         except AttributeError as e:
             raise AttributeError(
                 f"{e}, ensure you are using pyvista>=0.43 and vtk>=9.3"
@@ -249,7 +257,7 @@ def drr_to_mesh(
         )
 
     # Transform the mesh using the affine matrix
-    mesh = mesh.transform(subject.volume.affine.squeeze())
+    mesh = mesh.transform(subject.volume.affine.squeeze(), inplace=False)
 
     # Preprocess the mesh
     if extract_largest:
@@ -284,7 +292,15 @@ def labelmap_to_mesh(
 
     # Run SurfaceNets
     grid.point_data["values"] = subject.mask.data[0].numpy().flatten(order="F")
-    mesh = grid.contour_labeled(smoothing=True, progress_bar=verbose)
+    mesh = grid.contour_labels(
+        boundary_style="strict_external",
+        smoothing=True,
+        output_mesh_type="quads",
+        pad_background=True,
+        orient_faces=True,
+        simplify_output=False,
+        progress_bar=verbose,
+    )
     mesh.smooth_taubin(
         n_iter=100,
         feature_angle=120.0,
@@ -298,7 +314,7 @@ def labelmap_to_mesh(
     mesh.clean(inplace=True, progress_bar=verbose)
 
     # Transform the mesh using the affine matrix
-    mesh = mesh.transform(subject.mask.affine.squeeze())
+    mesh = mesh.transform(subject.mask.affine.squeeze(), inplace=False)
 
     return mesh
 
