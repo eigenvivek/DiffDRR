@@ -148,7 +148,7 @@ def _get_xyzs(alpha, source, target, dims, eps):
     ).unsqueeze(1)
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
-    xyzs = 2 * xyzs / (dims - 1) - 1
+    xyzs = 2 * (xyzs + 0.5) / dims - 1
     return xyzs
 
 
