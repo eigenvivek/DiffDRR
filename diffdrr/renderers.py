@@ -93,9 +93,9 @@ class Siddon(torch.nn.Module):
 def _get_alphas(source, target, dims, eps, filter_intersections_outside_volume):
     """Calculates the parametric intersections of each ray with the planes of the CT volume."""
     # Parameterize the parallel XYZ planes that comprise the CT volumes
-    alphax = torch.arange(dims[0] + 1).to(source)
-    alphay = torch.arange(dims[1] + 1).to(source)
-    alphaz = torch.arange(dims[2] + 1).to(source)
+    alphax = torch.arange(dims[0] + 1).to(source) - 0.5
+    alphay = torch.arange(dims[1] + 1).to(source) - 0.5
+    alphaz = torch.arange(dims[2] + 1).to(source) - 0.5
 
     # Calculate the parametric intersection of each ray with every plane
     sx, sy, sz = source[..., 0:1], source[..., 1:2], source[..., 2:3]
@@ -124,8 +124,11 @@ def _get_alpha_minmax(source, target, dims, eps):
     """Calculate the first and last intersections of each ray with the volume."""
     sdd = target - source + eps
 
-    alpha0 = (torch.zeros(3).to(source) - source) / sdd
-    alpha1 = ((dims + 1).to(source) - source) / sdd
+    min_plane = torch.zeros(3).to(source) - 0.5
+    max_plane = dims.to(source) - 0.5
+
+    alpha0 = (min_plane - source) / sdd
+    alpha1 = (max_plane - source) / sdd
     alphas = torch.stack([alpha0, alpha1])
 
     alphamin = alphas.min(dim=0).values.max(dim=-1).values.unsqueeze(-1)
@@ -145,7 +148,7 @@ def _get_xyzs(alpha, source, target, dims, eps):
     ).unsqueeze(1)
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
-    xyzs = 2 * xyzs / dims - 1
+    xyzs = 2 * (xyzs + 0.5) / dims - 1
     return xyzs
 
 
