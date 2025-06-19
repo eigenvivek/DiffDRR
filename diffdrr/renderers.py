@@ -15,7 +15,7 @@ class Siddon(torch.nn.Module):
         self,
         mode: str = "nearest",  # Interpolation mode for grid_sample
         stop_gradients_through_grid_sample: bool = False,  # Apply torch.no_grad when calling grid_sample
-        filter_intersections_outside_volume: bool = True,  # Use alphamin/max to filter the intersections
+        filter_intersections_outside_volume: bool = False,  # Use alphamin/max to filter the intersections
         reducefn: str = "sum",  # Function for combining samples along each ray
         eps: float = 1e-8,  # Small constant to avoid div by zero errors
     ):
@@ -51,7 +51,7 @@ class Siddon(torch.nn.Module):
 
         # Calculate the midpoint of every pair of adjacent intersections
         # These midpoints lie exclusively in a single voxel
-        alphamid = (alphas[..., 0:-1] + alphas[..., 1:]) / 2
+        alphamid = (alphas[..., :-1] + alphas[..., 1:]) / 2
 
         # Get the XYZ coordinate of each midpoint (normalized to [-1, +1]^3)
         xyzs = _get_xyzs(alphamid, source, target, dims, self.eps)

@@ -194,16 +194,12 @@ def render(
             **kwargs,
         )
     else:
-        n_points = target.shape[1] // self.n_patches
         partials = []
-        for idx in range(self.n_patches):
-            partial = self.renderer(
-                density,
-                source,
-                target[:, idx * n_points : (idx + 1) * n_points],
-                img[..., idx * n_points : (idx + 1) * n_points],
-                **kwargs,
-            )
+        for t, i in zip(
+            target.chunk(self.n_patches, dim=1),
+            img.chunk(self.n_patches, dim=-1),
+        ):
+            partial = self.renderer(density, source, t, i, **kwargs)
             partials.append(partial)
         img = torch.cat(partials, dim=-1)
 
