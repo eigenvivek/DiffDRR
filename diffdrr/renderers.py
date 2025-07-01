@@ -240,7 +240,7 @@ class Trilinear(torch.nn.Module):
             B, D, _ = img.shape
             C = int(mask.max().item() + 1)
             channels = _get_voxel(
-                mask, xyzs, img=None, mode=self.mode, align_corners=align_corners
+                mask, xyzs, img=None, mode="nearest", align_corners=align_corners
             ).long()
             img = (
                 torch.zeros(B, C, D)
