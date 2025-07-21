@@ -39,6 +39,8 @@ class DRR(nn.Module):
         patch_size: int | None = None,  # Render patches of the DRR in series
         renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
         persistent: bool = True,  # Set persistent value in `torch.nn.Module.register_buffer`
+        compile_renderer: bool = False,  # Compile the renderer for performance boost
+        checkpoint_gradients: bool = False,  # Checkpoint gradients to improve memory usage
         **renderer_kwargs,  # Kwargs for the renderer
     ):
         super().__init__()
@@ -96,8 +98,11 @@ class DRR(nn.Module):
             raise ValueError(
                 f"renderer must be 'siddon' or 'trilinear', not {renderer}"
             )
+        if compile_renderer:
+            self.renderer = torch.compile(self.renderer, mode="default")
         self.reshape = reshape
         self.patch_size = patch_size
+        self.checkpoint_gradients = checkpoint_gradients
 
     def reshape_transform(self, img, batch_size):
         if self.reshape:
@@ -141,6 +146,8 @@ def reshape_subsampled_drr(img: torch.Tensor, detector: Detector, batch_size: in
     return drr
 
 # %% ../notebooks/api/00_drr.ipynb 10
+from torch.utils.checkpoint import checkpoint
+
 from .pose import RigidTransform, convert
 
 
@@ -163,7 +170,19 @@ def forward(
 
     # Create the source / target points and render the image
     source, target = self.detector(pose, calibration)
-    img = self.render(self.density, source, target, mask_to_channels, **kwargs)
+
+    if self.checkpoint_gradients:
+        img = checkpoint(
+            self.render,
+            self.density,
+            source,
+            target,
+            mask_to_channels,
+            **kwargs,
+            use_reentrant=False,
+        )
+    else:
+        img = self.render(self.density, source, target, mask_to_channels, **kwargs)
     return self.reshape_transform(img, batch_size=len(pose))
 
 
