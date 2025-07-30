@@ -13,6 +13,7 @@ class Siddon(torch.nn.Module):
 
     def __init__(
         self,
+        voxel_shift: float = 0.5,  # 0 or 0.5, depending if the voxel is at the top left corner or the center
         mode: str = "nearest",  # Interpolation mode for grid_sample
         stop_gradients_through_grid_sample: bool = False,  # Apply torch.no_grad when calling grid_sample
         filter_intersections_outside_volume: bool = False,  # Use alphamin/max to filter the intersections
@@ -24,6 +25,7 @@ class Siddon(torch.nn.Module):
         self.stop_gradients_through_grid_sample = stop_gradients_through_grid_sample
         self.filter_intersections_outside_volume = filter_intersections_outside_volume
         self.reducefn = reducefn
+        self.voxel_shift = voxel_shift
         self.eps = eps
 
     def dims(self, volume):
@@ -45,6 +47,7 @@ class Siddon(torch.nn.Module):
             source,
             target,
             dims,
+            self.voxel_shift,
             self.eps,
             self.filter_intersections_outside_volume,
         )
@@ -54,7 +57,7 @@ class Siddon(torch.nn.Module):
         alphamid = (alphas[..., :-1] + alphas[..., 1:]) / 2
 
         # Get the XYZ coordinate of each midpoint (normalized to [-1, +1]^3)
-        xyzs = _get_xyzs(alphamid, source, target, dims, self.eps)
+        xyzs = _get_xyzs(alphamid, source, target, dims, self.voxel_shift, self.eps)
 
         # Use torch.nn.functional.grid_sample to lookup the values of each intersected voxel
         if self.stop_gradients_through_grid_sample:
@@ -90,12 +93,14 @@ class Siddon(torch.nn.Module):
         return img
 
 # %% ../notebooks/api/01_renderers.ipynb 8
-def _get_alphas(source, target, dims, eps, filter_intersections_outside_volume):
+def _get_alphas(
+    source, target, dims, voxel_shift, eps, filter_intersections_outside_volume
+):
     """Calculates the parametric intersections of each ray with the planes of the CT volume."""
     # Parameterize the parallel XYZ planes that comprise the CT volumes
-    alphax = torch.arange(dims[0] + 1).to(source) - 0.5
-    alphay = torch.arange(dims[1] + 1).to(source) - 0.5
-    alphaz = torch.arange(dims[2] + 1).to(source) - 0.5
+    alphax = torch.arange(dims[0] + 1).to(source) - voxel_shift
+    alphay = torch.arange(dims[1] + 1).to(source) - voxel_shift
+    alphaz = torch.arange(dims[2] + 1).to(source) - voxel_shift
 
     # Calculate the parametric intersection of each ray with every plane
     sx, sy, sz = source[..., 0:1], source[..., 1:2], source[..., 2:3]
@@ -120,12 +125,12 @@ def _filter_intersections_outside_volume(alphas, source, target, dims, eps):
     return alphas
 
 
-def _get_alpha_minmax(source, target, dims, eps):
+def _get_alpha_minmax(source, target, dims, voxel_shift, eps):
     """Calculate the first and last intersections of each ray with the volume."""
     sdd = target - source + eps
 
-    min_plane = torch.zeros(3).to(source) - 0.5
-    max_plane = dims.to(source) - 0.5
+    min_plane = torch.zeros(3).to(source) - voxel_shift
+    max_plane = dims.to(source) - voxel_shift
 
     alpha0 = (min_plane - source) / sdd
     alpha1 = (max_plane - source) / sdd
@@ -139,7 +144,7 @@ def _get_alpha_minmax(source, target, dims, eps):
     return alphamin, alphamax
 
 
-def _get_xyzs(alpha, source, target, dims, eps):
+def _get_xyzs(alpha, source, target, dims, voxel_shift, eps):
     """Given a set of rays and parametric coordinates, calculates the XYZ coordinates."""
     # Get the world coordinates of every point parameterized by alpha
     xyzs = (
@@ -148,7 +153,7 @@ def _get_xyzs(alpha, source, target, dims, eps):
     ).unsqueeze(1)
 
     # Normalize coordinates to be in [-1, +1] for grid_sample
-    xyzs = 2 * (xyzs + 0.5) / dims - 1
+    xyzs = 2 * (xyzs + voxel_shift) / dims - 1
     return xyzs
 
 
@@ -187,6 +192,7 @@ class Trilinear(torch.nn.Module):
 
     def __init__(
         self,
+        voxel_shift: float = 0.5,  # 0 or 0.5, depending if the voxel is at the top left corner or the center
         mode: str = "bilinear",  # Interpolation mode for grid_sample
         reducefn: str = "sum",  # Function for combining samples along each ray
         eps: float = 1e-8,  # Small constant to avoid div by zero errors
@@ -194,6 +200,7 @@ class Trilinear(torch.nn.Module):
         super().__init__()
         self.mode = mode
         self.reducefn = reducefn
+        self.voxel_shift = voxel_shift
         self.eps = eps
 
     def dims(self, volume):
@@ -215,7 +222,9 @@ class Trilinear(torch.nn.Module):
 
         # Sample points along the rays and rescale to [-1, 1]
         if alphamin is None or alphamax is None:
-            alphamin, alphamax = _get_alpha_minmax(source, target, dims, self.eps)
+            alphamin, alphamax = _get_alpha_minmax(
+                source, target, dims, self.voxel_shift, self.eps
+            )
             alphamin = alphamin.min()
             alphamax = alphamax.max()
         alphas = torch.linspace(0, 1, n_points)[None, None].to(volume)
@@ -223,7 +232,7 @@ class Trilinear(torch.nn.Module):
 
         # Render the DRR
         # Get the XYZ coordinate of each alpha, normalized for grid_sample
-        xyzs = _get_xyzs(alphas, source, target, dims, self.eps)
+        xyzs = _get_xyzs(alphas, source, target, dims, self.voxel_shift, self.eps)
 
         # Sample the volume with trilinear interpolation
         img = _get_voxel(volume, xyzs, img, self.mode, align_corners=align_corners)

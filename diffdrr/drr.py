@@ -38,6 +38,7 @@ class DRR(nn.Module):
         reverse_x_axis: bool = True,  # If True, obey radiologic convention (e.g., heart on right)
         patch_size: int | None = None,  # Render patches of the DRR in series
         renderer: str = "siddon",  # Rendering backend, either "siddon" or "trilinear"
+        voxel_shift: float = 0.5,  # 0 or 0.5, depending if the voxel is at the top left corner or the center
         persistent: bool = True,  # Set persistent value in `torch.nn.Module.register_buffer`
         compile_renderer: bool = False,  # Compile the renderer for performance boost
         checkpoint_gradients: bool = False,  # Checkpoint gradients to improve memory usage
@@ -91,9 +92,9 @@ class DRR(nn.Module):
 
         # Initialize the renderer
         if renderer == "siddon":
-            self.renderer = Siddon(**renderer_kwargs)
+            self.renderer = Siddon(voxel_shift, **renderer_kwargs)
         elif renderer == "trilinear":
-            self.renderer = Trilinear(**renderer_kwargs)
+            self.renderer = Trilinear(voxel_shift, **renderer_kwargs)
         else:
             raise ValueError(
                 f"renderer must be 'siddon' or 'trilinear', not {renderer}"
