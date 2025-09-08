@@ -86,7 +86,7 @@ class Sobel(torch.nn.Module):
 
     def forward(self, img):
         x = gaussian_blur(img, 5, self.sigma)
-        x = self.filter(img)
+        x = self.filter(x)
         return x
 
 # %% ../notebooks/api/05_metrics.ipynb 10
