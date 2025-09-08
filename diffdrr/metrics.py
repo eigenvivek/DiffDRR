@@ -67,7 +67,7 @@ from torchvision.transforms.functional import gaussian_blur
 
 
 class Sobel(torch.nn.Module):
-    def __init__(self, sigma):
+    def __init__(self, sigma: float):
         super().__init__()
         self.sigma = sigma
         self.filter = torch.nn.Conv2d(
@@ -86,7 +86,7 @@ class Sobel(torch.nn.Module):
 
     def forward(self, img):
         x = gaussian_blur(img, 5, self.sigma)
-        x = self.filter(img)
+        x = self.filter(x)
         return x
 
 # %% ../notebooks/api/05_metrics.ipynb 10
