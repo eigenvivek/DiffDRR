@@ -85,7 +85,10 @@ class Sobel(torch.nn.Module):
         self.filter.weight = torch.nn.Parameter(G, requires_grad=False)
 
     def forward(self, img):
-        x = gaussian_blur(img, 5, self.sigma)
+        x = img
+        if self.sigma > 0:
+            kernel_size = int(6 * self.sigma + 1) | 1
+            x = gaussian_blur(img, kernel_size, self.sigma)
         x = self.filter(x)
         return x
 
