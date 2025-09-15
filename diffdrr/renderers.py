@@ -130,7 +130,7 @@ def _get_alpha_minmax(source, target, dims, voxel_shift, eps):
     sdd = target - source + eps
 
     min_plane = torch.zeros(3).to(source) - voxel_shift
-    max_plane = dims.to(source) - voxel_shift
+    max_plane = (dims + 1).to(source) - voxel_shift
 
     alpha0 = (min_plane - source) / sdd
     alpha1 = (max_plane - source) / sdd
