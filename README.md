@@ -103,7 +103,7 @@ optimization runs like this:
 ![](experiments/registration.gif)
 
 The full example is available at
-[`optimizers.ipynb`](https://vivekg.dev/DiffDRR/tutorials/optimizers.html).
+[`registration.ipynb`](https://vivekg.dev/DiffDRR/tutorials/registration.html).
 
 #### *🆕 Examples on Real-World Data 🆕*
 
