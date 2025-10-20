@@ -160,6 +160,7 @@ def forward(
     convention: str = None,  # If parameterization is Euler angles, specify convention
     calibration: RigidTransform = None,  # Optional calibration matrix with the detector's intrinsic parameters
     mask_to_channels: bool = False,  # If True, structures from the CT mask are rendered in separate channels
+    degrees: bool = False,  # If parameterization is Euler angles, use degrees instead of radians
     **kwargs,  # Passed to the renderer
 ):
     """Generate DRR with rotational and translational parameters."""
@@ -167,7 +168,12 @@ def forward(
     if parameterization is None:
         pose = args[0]
     else:
-        pose = convert(*args, parameterization=parameterization, convention=convention)
+        pose = convert(
+            *args,
+            parameterization=parameterization,
+            convention=convention,
+            degrees=degrees,
+        )
 
     # Create the source / target points and render the image
     source, target = self.detector(pose, calibration)
