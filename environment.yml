@@ -20,3 +20,5 @@ dependencies:
   - tqdm
   - pyvista>=0.45.0
   - vtk>9.4.0
+  - pip:
+    - roma
