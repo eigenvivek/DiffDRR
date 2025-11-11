@@ -18,5 +18,6 @@ dependencies:
   - fastcore
   - scipy
   - tqdm
+  - roma
   - pyvista>=0.45.0
   - vtk>9.4.0
