@@ -158,7 +158,7 @@ class LogGeodesicSE3(torch.nn.Module):
         return pose_2.compose(pose_1.inverse()).get_se3_log().norm(dim=1)
 
 # %% ../notebooks/api/05_metrics.ipynb 18
-from roma import rotmat_geodesic_distance
+from .pose import so3_log_map
 
 
 class DoubleGeodesicSE3(torch.nn.Module):
@@ -175,7 +175,9 @@ class DoubleGeodesicSE3(torch.nn.Module):
         self.sdr = sdd / 2
         self.eps = eps
 
-        self.rot_geo = lambda r1, r2: rotmat_geodesic_distance(r1, r2)
+        self.rot_geo = lambda r1, r2: self.sdr * so3_log_map(
+            r1.transpose(-1, -2) @ r2
+        ).norm(dim=-1)
         self.xyz_geo = lambda t1, t2: (t1 - t2).norm(dim=-1)
 
     def forward(self, pose_1: RigidTransform, pose_2: RigidTransform):
