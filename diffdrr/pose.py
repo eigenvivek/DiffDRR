@@ -39,6 +39,9 @@ class RigidTransform(torch.nn.Module):
     def __getitem__(self, idx):
         return type(self)(self.matrix[idx])
 
+    def __matmul__(self, T):
+        return T.compose(self)
+
     def forward(self, x):
         """Apply (a batch) of rigid transforms to a pointcloud."""
         x_pad = torch.nn.functional.pad(x, (0, 1), value=1.0)
