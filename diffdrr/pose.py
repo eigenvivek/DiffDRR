@@ -37,7 +37,7 @@ class RigidTransform(torch.nn.Module):
         return len(self.matrix)
 
     def __getitem__(self, idx):
-        return self.matrix[idx]
+        return type(self)(self.matrix[idx])
 
     def forward(self, x):
         """Apply (a batch) of rigid transforms to a pointcloud."""
