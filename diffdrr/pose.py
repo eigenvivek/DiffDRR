@@ -61,11 +61,11 @@ class RigidTransform(torch.nn.Module):
             matrix = make_matrix(Rinv, tinv)
         else:
             matrix = self.matrix.inverse()
-        return RigidTransform(matrix)
+        return type(self)(matrix)
 
     def compose(self, T):
         matrix = torch.einsum("bij, bjk -> bik", T.matrix, self.matrix)
-        return RigidTransform(matrix)
+        return type(self)(matrix)
 
     def convert(self, parameterization, convention=None, degrees=False):
         translation = -self.inverse().translation
