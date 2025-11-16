@@ -18,7 +18,15 @@ class RigidTransform(torch.nn.Module):
     inversion, and conversions to various representations of SE(3).
     """
 
+    def __new__(cls, matrix, eps=1e-6):
+        if isinstance(matrix, cls):
+            return matrix
+        return super().__new__(cls)
+
     def __init__(self, matrix, eps=1e-6):
+        if isinstance(matrix, type(self)):
+            return
+
         super().__init__()
         if matrix.dim() == 2:
             matrix = matrix.unsqueeze(0)
