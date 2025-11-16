@@ -8,6 +8,7 @@ __all__ = ['RigidTransform', 'convert', 'rotation_9d_to_matrix', 'matrix_to_rota
 import torch
 
 from einops import rearrange
+from roma import is_orthonormal_matrix
 
 
 class RigidTransform(torch.nn.Module):
@@ -17,11 +18,12 @@ class RigidTransform(torch.nn.Module):
     inversion, and conversions to various representations of SE(3).
     """
 
-    def __init__(self, matrix):
+    def __init__(self, matrix, eps=1e-6):
         super().__init__()
         if matrix.dim() == 2:
             matrix = matrix.unsqueeze(0)
         self.register_buffer("matrix", matrix)
+        self.eps = eps
 
     def __len__(self):
         return len(self.matrix)
@@ -43,11 +45,14 @@ class RigidTransform(torch.nn.Module):
         return self.matrix[..., :3, 3]
 
     def inverse(self):
-        R = self.matrix[..., :3, :3]
-        t = self.matrix[..., :3, 3]
-        Rinv = R.mT
-        tinv = -torch.einsum("bij, bj -> bi", Rinv, t)
-        matrix = make_matrix(Rinv, tinv)
+        if is_orthonormal_matrix(self.matrix[..., :3, :3], self.eps):
+            R = self.matrix[..., :3, :3]
+            t = self.matrix[..., :3, 3]
+            Rinv = R.mT
+            tinv = -torch.einsum("bij, bj -> bi", Rinv, t)
+            matrix = make_matrix(Rinv, tinv)
+        else:
+            matrix = self.matrix.inverse()
         return RigidTransform(matrix)
 
     def compose(self, T):
