@@ -18,7 +18,15 @@ class RigidTransform(torch.nn.Module):
     inversion, and conversions to various representations of SE(3).
     """
 
+    def __new__(cls, matrix, eps=1e-6):
+        if isinstance(matrix, cls):
+            return matrix
+        return super().__new__(cls)
+
     def __init__(self, matrix, eps=1e-6):
+        if isinstance(matrix, type(self)):
+            return
+
         super().__init__()
         if matrix.dim() == 2:
             matrix = matrix.unsqueeze(0)
@@ -29,7 +37,10 @@ class RigidTransform(torch.nn.Module):
         return len(self.matrix)
 
     def __getitem__(self, idx):
-        return self.matrix[idx]
+        return type(self)(self.matrix[idx])
+
+    def __matmul__(self, T):
+        return T.compose(self)
 
     def forward(self, x):
         """Apply (a batch) of rigid transforms to a pointcloud."""
@@ -53,11 +64,11 @@ class RigidTransform(torch.nn.Module):
             matrix = make_matrix(Rinv, tinv)
         else:
             matrix = self.matrix.inverse()
-        return RigidTransform(matrix)
+        return type(self)(matrix)
 
     def compose(self, T):
         matrix = torch.einsum("bij, bjk -> bik", T.matrix, self.matrix)
-        return RigidTransform(matrix)
+        return type(self)(matrix)
 
     def convert(self, parameterization, convention=None, degrees=False):
         translation = -self.inverse().translation
