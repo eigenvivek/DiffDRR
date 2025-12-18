@@ -106,7 +106,8 @@ class RigidTransform(torch.nn.Module):
 
 # %% ../notebooks/api/06_pose.ipynb 7
 def make_matrix(R, t):
-    assert (batch_size := len(R)) == len(t)
+    batch_size = len(R)
+    assert batch_size == len(t)
     matrix = torch.zeros(batch_size, 4, 4).to(R)
     matrix[..., :3, :3] = R
     matrix[..., :3, 3] = t
