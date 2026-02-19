@@ -10,6 +10,18 @@ DiffDRR
 [![Docs](https://github.com/eigenvivek/DiffDRR/actions/workflows/deploy.yaml/badge.svg)](https://vivekg.dev/DiffDRR/)
 [![Code style: black](https://img.shields.io/badge/Code%20style-black-black.svg)](https://github.com/psf/black)
 
+> [!NOTE]
+>
+> If you're using `DiffDRR` for your projects, consider instead using [`nanodrr`](https://github.com/eigenvivek/nanodrr), a
+> highly optimized reimplementation by the same authors.
+>
+> `nanodrr` contains all the same functionality as `DiffDRR`, but since it's redesigned from scratch, it achieves
+> - 5x faster rendering speeds
+> - 2.5x less memory consumption
+> - Compatiblity with `torch.compile` and automatic mixed precision
+> 
+> ...all while still being pure PyTorch!
+
 `DiffDRR` is a PyTorch-based digitally reconstructed radiograph (DRR) generator that provides
 
 1. Differentiable X-ray rendering
