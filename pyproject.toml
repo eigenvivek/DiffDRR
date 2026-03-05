@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diffdrr"
+dynamic = ["version"]
+description = "Auto-differentiable digitally reconstructed radiographs in PyTorch"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [{name = "Vivek Gopalakrishnan", email = "vivekg@mit.edu"}]
+keywords = ['nbdev', 'jupyter', 'notebook', 'python']
+classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
+dependencies = ['matplotlib', 'seaborn', 'tqdm', 'imageio', 'fastcore', "'pyvista[all]'", 'einops', 'torchvision', 'scipy', 'torchio', 'timm', 'numpy', 'kornia', 'roma', 'torch', 'roma']
+
+[project.urls]
+Repository = "https://github.com/eigenvivek/DiffDRR"
+Documentation = "https://vivekg.dev/DiffDRR"
+
+[project.entry-points.nbdev]
+diffdrr = "diffdrr._modidx:d"
+
+[project.optional-dependencies]
+dev = ['nbdev', 'black', 'flake8', 'ipykernel', 'ipywidgets', 'jupyterlab', 'jupyterlab_execute_time', 'jupyterlab-code-formatter', 'isort']
+
+[tool.setuptools.dynamic]
+version = {attr = "diffdrr.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["diffdrr"]
+
+[tool.nbdev]
+nbs_path = 'notebooks'
+tst_flags = 'slow|cuda'
+jupyter_hooks = true
+custom_sidebar = true
+title = 'diffdrr'
