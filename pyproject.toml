@@ -12,7 +12,7 @@ license = {text = "MIT"}
 authors = [{name = "Vivek Gopalakrishnan", email = "vivekg@mit.edu"}]
 keywords = ['nbdev', 'jupyter', 'notebook', 'python']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
-dependencies = ['matplotlib', 'seaborn', 'tqdm', 'imageio', 'fastcore', "'pyvista[all]'", 'einops', 'torchvision', 'scipy', 'torchio', 'timm', 'numpy', 'kornia', 'roma', 'torch', 'roma']
+dependencies = ['matplotlib', 'seaborn', 'tqdm', 'imageio', 'fastcore', 'pyvista[all]', 'einops', 'torchvision', 'scipy', 'torchio', 'timm', 'numpy', 'kornia', 'roma', 'torch', 'roma']
 
 [project.urls]
 Repository = "https://github.com/eigenvivek/DiffDRR"
