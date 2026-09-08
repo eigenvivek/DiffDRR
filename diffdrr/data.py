@@ -212,6 +212,21 @@ def canonicalize(subject):
 
 # %% ../notebooks/api/03_data.ipynb #ba2941e0-cb0d-44c7-9b00-4dad1ced447d
 def transform_hu_to_density(volume, bone_attenuation_multiplier):
+    """
+    Convert Hounsfield units to a density-like quantity for rendering.
+
+    Voxels are split at -800 and 350 HU into air, soft tissue, and bone. Soft
+    tissue and bone keep their HU values (bone scaled by
+    `bone_attenuation_multiplier`), every voxel at or below -800 HU is assigned
+    the lowest soft-tissue value present in the volume, and the result is
+    min-max normalized per volume.
+
+    The -800 HU floor removes all structure below that threshold. This is
+    immaterial where bone carries the signal, but on thoracic CT most aerated
+    lung parenchyma (roughly -950 to -700 HU) is mapped onto the floor and
+    becomes indistinguishable from the air outside the patient. See
+    `nanodrr.data.preprocess.hu_to_mu` for a physically derived alternative.
+    """
     # volume can be loaded as int16, need to convert to float32 to use float bone_attenuation_multiplier
     volume = volume.to(torch.float32)
     air = torch.where(volume <= -800)
